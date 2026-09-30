@@ -1,16 +1,12 @@
 {
-  "name": "fluxa",
+  "name": "@fluxa/frontend",
   "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "frontend"
-  ],
   "scripts": {
-    "dev": "next dev frontend",
-    "build": "next build frontend",
-    "start": "next start frontend",
-    "lint": "eslint frontend",
-    "seed:accounts": "node backend/scripts/seed-demo-accounts.mjs"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

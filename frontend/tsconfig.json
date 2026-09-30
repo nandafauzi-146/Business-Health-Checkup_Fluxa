@@ -19,21 +19,19 @@
       }
     ],
     "paths": {
-      "@/*": ["./frontend/*"],
-      "@frontend/*": ["./frontend/*"],
-      "@intelligence/*": ["./intelligence/*"],
-      "@backend/*": ["./backend/*"]
+      "@/*": ["./*"],
+      "@intelligence/*": ["../intelligence/*"],
+      "@backend/*": ["../backend/*"]
     }
   },
   "include": [
     "next-env.d.ts",
-    "frontend/**/*.ts",
-    "frontend/**/*.tsx",
-    "intelligence/**/*.ts",
-    "backend/**/*.ts",
+    "**/*.ts",
+    "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    "../intelligence/**/*.ts"
   ],
-  "exclude": ["node_modules", "frontend/.next"]
+  "exclude": ["node_modules", "../node_modules"]
 }
