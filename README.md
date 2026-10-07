@@ -13,14 +13,17 @@ fluxa/
 ├── frontend/                     # Pilar 1: Aplikasi Web Next.js (App Router + Tailwind)
 │   ├── app/                      # Halaman, layouts, dan API route handlers
 │   │   ├── api/business-health/  # Endpoint evaluasi kesehatan bisnis via Intelligence
+│   │   ├── dashboard/            # Dashboard operasional setelah login
+│   │   ├── cashier/              # Halaman POS kasir
+│   │   ├── admin/transactions/   # Riwayat transaksi Admin dan Owner
 │   │   ├── layout.tsx
 │   │   ├── page.tsx
 │   │   └── globals.css
 │   ├── components/               # Komponen UI & Layout
 │   │   ├── ui/                   # Button, Card, Dialog, Badge, Input, dll.
-│   │   └── layout/               # Sidebar, Header, Navbar per role
+│   │   └── layout/               # AppShell untuk sidebar dan header bersama
 │   ├── features/                 # Logika antarmuka per modul fungsional
-│   │   ├── cashier/              # Terminal POS kasir, keranjang, checkout
+│   │   ├── cashier/              # Terminal POS, keranjang, checkout melalui RPC
 │   │   ├── products/             # Manajemen katalog produk & stok
 │   │   ├── owner/                # Dashboard eksekutif & rapor finansial owner
 │   │   ├── auth/                 # Form login & penanganan sesi
@@ -85,3 +88,5 @@ npm run seed:accounts
 - **Mata Uang:** Seluruh kolom uang di database dan kalkulator bisnis menggunakan tipe `integer` rupiah utuh (bukan desimal/float).
 - **Integritas Transaksi:** Mutasi penjualan dan stok wajib melalui RPC Supabase (`create_sale`, `close_shift`, `void_sale`, `adjust_stock`).
 - **Akses Role:** Dibagi secara ketat menggunakan Row Level Security (RLS) pada tingkat database Supabase.
+- **Alur Aplikasi:** Pengguna diarahkan ke `/dashboard` setelah login; halaman operasional memakai `components/layout/app-shell.tsx` untuk navigasi bersama, dan akses transaksi dibatasi untuk Admin dan Owner.
+- **Checkout Kasir:** Pembukaan shift dan checkout menggunakan RPC Supabase (`open_shift`, `create_sale`); jangan mengubah stok atau membuat transaksi langsung dari frontend.
