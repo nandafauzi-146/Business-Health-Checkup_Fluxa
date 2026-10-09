@@ -1,0 +1,54 @@
+[
+  {
+    "id": "p-1",
+    "code": "HEMAT10",
+    "name": "Diskon Belanja 10%",
+    "type": "percentage",
+    "value": 10,
+    "min_purchase": 50000,
+    "max_discount": 25000,
+    "start_date": "2026-10-01",
+    "end_date": null,
+    "is_active": true,
+    "description": "Diskon 10% minimal belanja Rp50.000, maksimal potongan Rp25.000"
+  },
+  {
+    "id": "p-2",
+    "code": "FLUXA20K",
+    "name": "Potongan Langsung Rp20.000",
+    "type": "fixed",
+    "value": 20000,
+    "min_purchase": 100000,
+    "max_discount": null,
+    "start_date": "2026-10-01",
+    "end_date": null,
+    "is_active": true,
+    "description": "Potongan langsung Rp20.000 untuk belanja di atas Rp100.000"
+  },
+  {
+    "id": "p-3",
+    "code": "MEMBER5K",
+    "name": "Spesial Member Baru",
+    "type": "fixed",
+    "value": 5000,
+    "min_purchase": 25000,
+    "max_discount": null,
+    "start_date": "2026-09-01",
+    "end_date": null,
+    "is_active": true,
+    "description": "Potongan Rp5.000 tanpa syarat khusus untuk pelanggan terdaftar"
+  },
+  {
+    "id": "p-4",
+    "code": "PROMOFLASH",
+    "name": "Flash Sale 25%",
+    "type": "percentage",
+    "value": 25,
+    "min_purchase": 75000,
+    "max_discount": 50000,
+    "start_date": "2026-10-05",
+    "end_date": "2026-10-31",
+    "is_active": true,
+    "description": "Flash sale spesial diskon 25%"
+  }
+]

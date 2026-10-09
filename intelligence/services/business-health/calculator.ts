@@ -84,6 +84,85 @@ export function calculateFinancialMetrics(input: FinancialHealthInput): Financia
     status = 'WASPADA';
   }
 
+  // Perhitungan 6 Dimensi Rapor Kesehatan Bisnis secara Deterministik
+  // 1. Profitabilitas
+  let profScore = Math.min(100, Math.max(10, Math.round((net_margin_pct * 3) + (gross_margin_pct * 0.8))));
+  if (revenue <= 0) profScore = 20;
+
+  // 2. Cash Flow
+  let cfScore = Math.min(100, Math.max(10, Math.round(cash_runway_months * 18)));
+  if (cash_on_hand <= 0) cfScore = 15;
+
+  // 3. Efisiensi Biaya (Opex / Revenue)
+  const opexRatio = revenue > 0 ? (operating_expenses / revenue) * 100 : 50;
+  let opexScore = Math.min(100, Math.max(10, Math.round(100 - (opexRatio * 1.5))));
+
+  // 4. Utang & Kasbon (Receivables vs Cash)
+  const recRatio = cash_on_hand > 0 ? (receivables / cash_on_hand) * 100 : 100;
+  let debtScore = Math.min(100, Math.max(10, Math.round(100 - (recRatio * 0.6))));
+
+  // 5. Pertumbuhan (Didasarkan pada kapasitas omzet dan profitabilitas)
+  let growthScore = Math.min(100, Math.max(20, Math.round(profScore * 0.6 + cfScore * 0.4)));
+
+  // 6. Perputaran Stok (Turnover: Revenue / Inventory)
+  const inventoryTurnover = inventory_value > 0 ? (revenue / inventory_value) : 1;
+  let stockTurnoverScore = Math.min(100, Math.max(15, Math.round(inventoryTurnover * 35)));
+
+  const dimension_scores = [
+    {
+      dimension: 'Profitabilitas',
+      score: profScore,
+      status: profScore >= 70 ? ('sehat' as const) : profScore >= 45 ? ('waspada' as const) : ('kritis' as const),
+      cause: `Margin bersih ${net_margin_pct}% dan margin kotor ${gross_margin_pct}% dari total omzet.`,
+      action: profScore >= 70
+        ? 'Pertahankan margin laba. Evaluasi berkala produk dengan kontribusi margin terbesar.'
+        : 'Tinjau ulang harga jual produk bermargin tipis dan tekan biaya pokok kulakan.'
+    },
+    {
+      dimension: 'Cash Flow',
+      score: cfScore,
+      status: cfScore >= 70 ? ('sehat' as const) : cfScore >= 45 ? ('waspada' as const) : ('kritis' as const),
+      cause: `Cadangan kas mampu menopang operasional selama ${cash_runway_months} bulan.`,
+      action: cfScore >= 70
+        ? 'Likuiditas kas sangat baik. Simpan 20% surplus ke rekening cadangan dana darurat.'
+        : 'Perketat pengeluaran kas non-prioritas dan percepat penagihan piutang pelanggan.'
+    },
+    {
+      dimension: 'Efisiensi Biaya',
+      score: opexScore,
+      status: opexScore >= 70 ? ('sehat' as const) : opexScore >= 45 ? ('waspada' as const) : ('kritis' as const),
+      cause: `Beban operasional sebesar ${opexRatio.toFixed(1)}% dari total pendapatan penjualan.`,
+      action: opexScore >= 70
+        ? 'Struktur biaya operasional sangat ramping dan terkontrol dengan baik.'
+        : 'Audit pos pengeluaran terbesar (sewa, listrik, logistik) dan cari opsi penghematan.'
+    },
+    {
+      dimension: 'Utang & Kasbon',
+      score: debtScore,
+      status: debtScore >= 70 ? ('sehat' as const) : debtScore >= 45 ? ('waspada' as const) : ('kritis' as const),
+      cause: `Total piutang kasbon pelanggan tercatat Rp ${receivables.toLocaleString('id-ID')}.`,
+      action: debtScore >= 70
+        ? 'Tingkat piutang terkendali terhadap saldo kas.'
+        : 'Batasi plafon kasbon pelanggan dan kirimkan pengingat tagihan sebelum jatuh tempo.'
+    },
+    {
+      dimension: 'Pertumbuhan',
+      score: growthScore,
+      status: growthScore >= 70 ? ('sehat' as const) : growthScore >= 45 ? ('waspada' as const) : ('kritis' as const),
+      cause: `Total omzet berjalan sebesar Rp ${revenue.toLocaleString('id-ID')} dengan laba bersih Rp ${net_profit.toLocaleString('id-ID')}.`,
+      action: 'Dorong repeat order melalui penawaran bundling dan optimasi produk terlaris.'
+    },
+    {
+      dimension: 'Perputaran Stok',
+      score: stockTurnoverScore,
+      status: stockTurnoverScore >= 70 ? ('sehat' as const) : stockTurnoverScore >= 45 ? ('waspada' as const) : ('kritis' as const),
+      cause: `Nilai persediaan barang di gudang adalah Rp ${inventory_value.toLocaleString('id-ID')}.`,
+      action: stockTurnoverScore >= 70
+        ? 'Perputaran stok optimal, tidak ada penumpukan barang berlebih.'
+        : 'Segera lakukan clearance promo untuk barang slow-moving agar modal kembali cair.'
+    }
+  ];
+
   return {
     gross_profit,
     net_profit,
@@ -93,5 +172,6 @@ export function calculateFinancialMetrics(input: FinancialHealthInput): Financia
     cash_runway_months,
     health_score,
     status,
+    dimension_scores,
   };
 }
