@@ -11,9 +11,25 @@ export type Json =
 
 export type UserRole = 'kasir' | 'admin' | 'owner'
 
+type WithTableRelationships<T> = {
+  [Name in keyof T]: T[Name] extends {
+    Row: infer Row
+    Insert: infer Insert
+    Update: infer Update
+  }
+    ? { Row: Row; Insert: Insert; Update: Update; Relationships: [] }
+    : T[Name]
+}
+
+type WithViewRelationships<T> = {
+  [Name in keyof T]: T[Name] extends { Row: infer Row }
+    ? { Row: Row; Relationships: [] }
+    : T[Name]
+}
+
 export interface Database {
   public: {
-    Tables: {
+    Tables: WithTableRelationships<{
       profiles: {
         Row: {
           id: string
@@ -39,6 +55,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       categories: {
         Row: {
@@ -62,6 +79,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       products: {
         Row: {
@@ -109,6 +127,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       customers: {
         Row: {
@@ -135,6 +154,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       shifts: {
         Row: {
@@ -179,6 +199,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       sales: {
         Row: {
@@ -235,6 +256,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       sale_items: {
         Row: {
@@ -357,6 +379,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       receivables: {
         Row: {
@@ -428,6 +451,7 @@ export interface Database {
           created_by?: string
           created_at?: string
         }
+        Relationships: []
       }
       checkups: {
         Row: {
@@ -514,8 +538,8 @@ export interface Database {
           created_at?: string
         }
       }
-    }
-    Views: {
+    }>
+    Views: WithViewRelationships<{
       v_monthly_revenue_cogs: {
         Row: {
           month: string
@@ -547,7 +571,7 @@ export interface Database {
           is_low_stock: boolean
         }
       }
-    }
+    }>
     Functions: {
       open_shift: {
         Args: {
