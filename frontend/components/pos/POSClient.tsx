@@ -338,7 +338,7 @@ export default function POSClient({ products: initialProducts, customers, active
   }
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
+    <div className="cashier-dashboard role-dashboard-enter" style={{ display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
       {/* Product panel */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20, overflow: 'hidden', borderRight: '1px solid var(--line)' }}>
         {/* Card Pemberitahuan Promo Muncul (Di Atas) */}

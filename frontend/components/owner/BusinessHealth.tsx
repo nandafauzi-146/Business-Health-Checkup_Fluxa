@@ -322,12 +322,12 @@ export default function BusinessHealthClient({
           <div style={{ height: 260, width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData}>
-                <PolarGrid stroke="#ECEEF4" />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: '#7B8194', fontWeight: 600 }} />
-                <Radar name="Skor" dataKey="score" stroke="#2F6BFF" fill="#2F6BFF" fillOpacity={0.25} />
+                <PolarGrid stroke="var(--line)" />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: 'var(--mute)', fontWeight: 600 }} />
+                <Radar name="Skor" dataKey="score" stroke="var(--acc)" fill="var(--acc)" fillOpacity={0.25} />
                 <Tooltip
                   formatter={(val: any) => [`${val}/100`, 'Skor']}
-                  contentStyle={{ background: '#fff', borderRadius: 8, border: '1px solid #ECEEF4', fontSize: 12 }}
+                  contentStyle={{ background: 'var(--panel)', color: 'var(--ink)', borderRadius: 8, border: '1px solid var(--line)', fontSize: 12 }}
                 />
               </RadarChart>
             </ResponsiveContainer>

@@ -90,7 +90,7 @@ export default function OwnerDashboardClient({
   const dailyMax = Math.max(...daily.map((d: any) => d.total_revenue || 0))
 
   return (
-    <div>
+    <div className="owner-dashboard role-dashboard-enter">
       {/* Page header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>

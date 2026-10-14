@@ -27,12 +27,12 @@ function FormattedMessage({ text }: { text: string }) {
         if (!trimmed) return <div key={idx} style={{ height: 4 }} />
 
         if (trimmed.startsWith('## ')) return (
-          <div key={idx} style={{ fontWeight: 800, fontSize: 14, color: '#0f1a3e', borderBottom: '1px solid #e5e9f2', paddingBottom: 4, marginTop: 8 }}>
+          <div key={idx} style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)', borderBottom: '1px solid var(--line)', paddingBottom: 4, marginTop: 8 }}>
             {trimmed.replace('## ', '')}
           </div>
         )
         if (trimmed.startsWith('### ')) return (
-          <div key={idx} style={{ fontWeight: 700, fontSize: 13, color: '#2F6BFF', marginTop: 6 }}>
+          <div key={idx} style={{ fontWeight: 700, fontSize: 13, color: 'var(--acc)', marginTop: 6 }}>
             {trimmed.replace('### ', '')}
           </div>
         )
@@ -40,7 +40,7 @@ function FormattedMessage({ text }: { text: string }) {
           const content = trimmed.substring(2)
           return (
             <div key={idx} style={{ display: 'flex', gap: 7, alignItems: 'flex-start' }}>
-              <span style={{ color: '#2F6BFF', fontWeight: 700, marginTop: 1, flexShrink: 0 }}>•</span>
+              <span style={{ color: 'var(--acc)', fontWeight: 700, marginTop: 1, flexShrink: 0 }}>•</span>
               <span dangerouslySetInnerHTML={{ __html: content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
             </div>
           )
@@ -49,7 +49,7 @@ function FormattedMessage({ text }: { text: string }) {
           const match = trimmed.match(/^(\d+\.)\s(.*)/)
           if (match) return (
             <div key={idx} style={{ display: 'flex', gap: 7, alignItems: 'flex-start' }}>
-              <span style={{ color: '#2F6BFF', fontWeight: 700, flexShrink: 0, minWidth: 18 }}>{match[1]}</span>
+              <span style={{ color: 'var(--acc)', fontWeight: 700, flexShrink: 0, minWidth: 18 }}>{match[1]}</span>
               <span dangerouslySetInnerHTML={{ __html: match[2].replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
             </div>
           )
@@ -161,9 +161,9 @@ export default function ChatAI() {
         .chat-bubble-fab:hover { transform: scale(1.07) !important; }
         .chat-msg-user { animation: chatSlideUp 0.2s ease; }
         .chat-msg-ai { animation: chatSlideUp 0.25s ease; }
-        .chat-starter-btn:hover { background: #2F6BFF !important; color: #fff !important; border-color: #2F6BFF !important; }
-        .chat-send-btn:hover:not(:disabled) { background: #1a55e3 !important; transform: scale(1.05); }
-        .chat-input-area:focus-within { border-color: #2F6BFF !important; box-shadow: 0 0 0 3px rgba(47,107,255,0.15) !important; }
+        .chat-starter-btn:hover { background: var(--acc) !important; color: #fff !important; border-color: var(--acc) !important; }
+        .chat-send-btn:hover:not(:disabled) { background: var(--acc-hover) !important; transform: scale(1.05); }
+        .chat-input-area:focus-within { border-color: var(--acc) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc) 15%, transparent) !important; }
       `}</style>
 
       {/* Floating Action Button */}
@@ -174,7 +174,7 @@ export default function ChatAI() {
         style={{
           position: 'fixed', bottom: 28, right: 28, zIndex: 9999,
           width: 58, height: 58, borderRadius: '50%', border: 'none', cursor: 'pointer',
-          background: 'linear-gradient(135deg, #2F6BFF 0%, #1a3fa8 100%)',
+          background: 'linear-gradient(135deg, var(--acc) 0%, #4338ca 100%)',
           color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 8px 24px rgba(47,107,255,0.45)',
           transition: 'transform 0.2s ease',
@@ -188,7 +188,7 @@ export default function ChatAI() {
             position: 'absolute', top: -2, right: -2, width: 18, height: 18,
             background: '#ef4444', borderRadius: '50%', fontSize: 11, fontWeight: 700,
             color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: '2px solid #fff',
+            border: '2px solid var(--panel)',
           }}>{unread}</span>
         )}
       </button>
@@ -200,11 +200,11 @@ export default function ChatAI() {
           style={{
             position: 'fixed', bottom: 98, right: 28, zIndex: 9998,
             width: chatWidth, height: chatHeight,
-            background: '#fff', borderRadius: 20,
+            background: 'var(--panel)', borderRadius: 20,
             boxShadow: '0 24px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)',
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
             animation: 'chatSlideUp 0.25s ease',
-            border: '1px solid #e5e9f2',
+            border: '1px solid var(--line)',
           }}
         >
           {/* Header */}
@@ -221,7 +221,7 @@ export default function ChatAI() {
 
             <div style={{
               width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-              background: 'linear-gradient(135deg, #2F6BFF, #63b3ed)',
+              background: 'linear-gradient(135deg, var(--acc), #7c3aed)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 0 16px rgba(47,107,255,0.6)',
             }}>
@@ -233,7 +233,7 @@ export default function ChatAI() {
                 FluxAI
                 <span style={{
                   fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 8,
-                  background: 'rgba(47,107,255,0.4)', color: '#90cdf4', letterSpacing: 0.5,
+                  background: 'rgba(88,135,255,0.24)', color: '#bfdbfe', letterSpacing: 0.5,
                 }}>AI BISNIS</span>
               </div>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -292,21 +292,21 @@ export default function ChatAI() {
           <div style={{
             flex: 1, overflowY: 'auto', padding: '16px 16px 8px',
             display: 'flex', flexDirection: 'column', gap: 12,
-            scrollbarWidth: 'thin', scrollbarColor: '#e5e9f2 transparent',
+            scrollbarWidth: 'thin', scrollbarColor: 'var(--line) transparent',
           }}>
             {/* Welcome message */}
             {messages.length === 0 && (
               <div className="chat-msg-ai" style={{
-                background: 'linear-gradient(135deg, #f0f5ff, #e8efff)',
-                border: '1px solid #d1dffe', borderRadius: 16, padding: '14px 16px',
+                background: 'linear-gradient(135deg, var(--accs), var(--panel))',
+                border: '1px solid var(--line)', borderRadius: 16, padding: '14px 16px',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <Sparkles size={15} color="#2F6BFF" />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#1a2d6b' }}>
+                  <Sparkles size={15} color="var(--acc)" />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
                     Halo! Saya FluxAI — Asisten Bisnis Anda 👋
                   </span>
                 </div>
-                <p style={{ fontSize: 13, color: '#4a5568', margin: 0, lineHeight: 1.6 }}>
+                <p style={{ fontSize: 13, color: 'var(--mute)', margin: 0, lineHeight: 1.6 }}>
                   Saya siap membantu menganalisis kondisi keuangan, stok, piutang, dan performa bisnis toko Anda
                   berdasarkan data real-time dari sistem.
                 </p>
@@ -314,7 +314,7 @@ export default function ChatAI() {
                   href="/owner/rapor"
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 10,
-                    fontSize: 12, fontWeight: 700, color: '#2F6BFF', textDecoration: 'none',
+                    fontSize: 12, fontWeight: 700, color: 'var(--acc)', textDecoration: 'none',
                   }}
                 >
                   Lihat Laporan Lengkap AI <ChevronRight size={13} />
@@ -325,7 +325,7 @@ export default function ChatAI() {
             {/* Starter questions */}
             {showStarters && messages.length === 0 && (
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#9ba3af', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mute)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   Pertanyaan Populer
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -335,14 +335,14 @@ export default function ChatAI() {
                       className="chat-starter-btn"
                       onClick={() => sendMessage(q)}
                       style={{
-                        background: '#fff', border: '1px solid #e5e9f2', borderRadius: 10,
+                        background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 10,
                         padding: '9px 12px', cursor: 'pointer', textAlign: 'left',
-                        fontSize: 12.5, color: '#374151', fontWeight: 500,
+                        fontSize: 12.5, color: 'var(--ink)', fontWeight: 500,
                         display: 'flex', alignItems: 'center', gap: 8,
                         transition: 'all 0.15s ease',
                       }}
                     >
-                      <ChevronRight size={13} style={{ color: '#2F6BFF', flexShrink: 0 }} />
+                      <ChevronRight size={13} style={{ color: 'var(--acc)', flexShrink: 0 }} />
                       {q}
                     </button>
                   ))}
@@ -364,7 +364,7 @@ export default function ChatAI() {
                 {msg.role === 'assistant' && (
                   <div style={{
                     width: 28, height: 28, borderRadius: 8, flexShrink: 0, marginTop: 2,
-                    background: 'linear-gradient(135deg, #2F6BFF, #63b3ed)',
+                    background: 'linear-gradient(135deg, var(--acc), #7c3aed)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
                     <Bot size={14} color="#fff" />
@@ -375,9 +375,9 @@ export default function ChatAI() {
                   maxWidth: '80%', padding: '10px 14px', borderRadius: msg.role === 'user'
                     ? '16px 16px 4px 16px' : '4px 16px 16px 16px',
                   background: msg.role === 'user'
-                    ? 'linear-gradient(135deg, #2F6BFF, #1a55e3)' : '#f8f9fc',
-                  color: msg.role === 'user' ? '#fff' : '#1a202c',
-                  border: msg.role === 'user' ? 'none' : '1px solid #e5e9f2',
+                    ? 'linear-gradient(135deg, var(--acc), var(--acc-hover))' : 'var(--bg)',
+                  color: msg.role === 'user' ? '#fff' : 'var(--ink)',
+                  border: msg.role === 'user' ? 'none' : '1px solid var(--line)',
                   fontSize: 13.5,
                 }}>
                   {msg.role === 'user'
@@ -386,7 +386,7 @@ export default function ChatAI() {
                   }
                   <div style={{
                     fontSize: 10, marginTop: 4,
-                    color: msg.role === 'user' ? 'rgba(255,255,255,0.6)' : '#9ba3af',
+                    color: msg.role === 'user' ? 'rgba(255,255,255,0.7)' : 'var(--mute)',
                     textAlign: 'right',
                   }}>
                     {msg.timestamp.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
@@ -400,18 +400,18 @@ export default function ChatAI() {
               <div className="chat-msg-ai" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{
                   width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                  background: 'linear-gradient(135deg, #2F6BFF, #63b3ed)',
+                  background: 'linear-gradient(135deg, var(--acc), #7c3aed)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <Bot size={14} color="#fff" />
                 </div>
                 <div style={{
-                  background: '#f8f9fc', border: '1px solid #e5e9f2', borderRadius: '4px 16px 16px 16px',
+                  background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: '4px 16px 16px 16px',
                   padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 5,
                 }}>
                   {[0, 1, 2].map(i => (
                     <span key={i} style={{
-                      width: 7, height: 7, borderRadius: '50%', background: '#2F6BFF', display: 'block',
+                      width: 7, height: 7, borderRadius: '50%', background: 'var(--acc)', display: 'block',
                       animation: `typingDot 1.2s ease ${i * 0.2}s infinite`,
                     }} />
                   ))}
@@ -424,13 +424,13 @@ export default function ChatAI() {
 
           {/* Input area */}
           <div style={{
-            padding: '12px 14px', borderTop: '1px solid #e5e9f2', flexShrink: 0, background: '#fff',
+            padding: '12px 14px', borderTop: '1px solid var(--line)', flexShrink: 0, background: 'var(--panel)',
           }}>
             <div
               className="chat-input-area"
               style={{
                 display: 'flex', alignItems: 'flex-end', gap: 10,
-                background: '#f8f9fc', border: '1.5px solid #e5e9f2', borderRadius: 14,
+                background: 'var(--input-bg)', border: '1.5px solid var(--line)', borderRadius: 14,
                 padding: '8px 8px 8px 14px', transition: 'all 0.2s ease',
               }}
             >
@@ -446,7 +446,7 @@ export default function ChatAI() {
                 style={{
                   flex: 1, border: 'none', outline: 'none', background: 'transparent',
                   fontSize: 13.5, resize: 'none', lineHeight: 1.5, maxHeight: 120,
-                  overflowY: 'auto', fontFamily: 'inherit', color: '#1a202c',
+                  overflowY: 'auto', fontFamily: 'inherit', color: 'var(--ink)',
                   scrollbarWidth: 'none',
                 }}
                 onInput={e => {
@@ -462,8 +462,8 @@ export default function ChatAI() {
                 disabled={loading || !input.trim()}
                 style={{
                   width: 36, height: 36, borderRadius: 10, border: 'none', cursor: 'pointer',
-                  background: loading || !input.trim() ? '#e5e9f2' : '#2F6BFF',
-                  color: loading || !input.trim() ? '#9ba3af' : '#fff',
+                  background: loading || !input.trim() ? 'var(--line)' : 'var(--acc)',
+                  color: loading || !input.trim() ? 'var(--mute)' : '#fff',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0, transition: 'all 0.15s ease',
                 }}
@@ -471,7 +471,7 @@ export default function ChatAI() {
                 <Send size={16} />
               </button>
             </div>
-            <div style={{ fontSize: 10.5, color: '#c4c9d4', textAlign: 'center', marginTop: 7 }}>
+            <div style={{ fontSize: 10.5, color: 'var(--mute)', textAlign: 'center', marginTop: 7 }}>
               FluxAI menggunakan data real dari database toko Anda • Enter untuk kirim
             </div>
           </div>

@@ -84,21 +84,21 @@ export default function CashflowClient({
           <div style={{ height: 320, width: '100%', marginTop: 12 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ECEEF4" vertical={false} />
-                <XAxis dataKey="date" stroke="#7B8194" fontSize={12} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
+                <XAxis dataKey="date" stroke="var(--mute)" fontSize={12} tickLine={false} />
                 <YAxis
-                  stroke="#7B8194"
+                  stroke="var(--mute)"
                   fontSize={12}
                   tickLine={false}
                   tickFormatter={val => `Rp ${(val / 1000).toLocaleString('id-ID')}k`}
                 />
                 <Tooltip
                   formatter={(val: any) => [`Rp ${Number(val).toLocaleString('id-ID')}`, '']}
-                  contentStyle={{ background: '#fff', borderRadius: 8, border: '1px solid #ECEEF4', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                  contentStyle={{ background: 'var(--panel)', color: 'var(--ink)', borderRadius: 8, border: '1px solid var(--line)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                 />
                 <Legend />
-                <Bar dataKey="cash_in" name="Kas Masuk" fill="#1F9D63" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="cash_out" name="Kas Keluar" fill="#E5484D" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="cash_in" name="Kas Masuk" fill="var(--ok)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="cash_out" name="Kas Keluar" fill="var(--bad)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

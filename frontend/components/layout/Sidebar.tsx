@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import BrandLogo from '@/components/ui/BrandLogo'
 import {
   LayoutDashboard, ShoppingCart, Package, Users, DollarSign,
   CreditCard, BarChart3, FileText, Activity, LogOut,
-  ChevronRight, Sparkles, Bell, TrendingUp, ClipboardList,
-  Layers, Settings, AlertCircle, Tag
+  ChevronRight, Sparkles, TrendingUp, ClipboardList,
+  Layers, AlertCircle, Tag, Menu, PanelLeftClose, PanelLeftOpen, X
 } from 'lucide-react'
 import { TutupShiftModal } from '@/components/pos/KasMasukModal'
 
@@ -107,6 +108,27 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
   const router = useRouter()
   const supabase = createClient()
   const [loggingOut, setLoggingOut] = useState(false)
+  const [pinnedOpen, setPinnedOpen] = useState(false)
+  const [hoverOpen, setHoverOpen] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const mobileTriggerRef = useRef<HTMLButtonElement>(null)
+  const keyboardNavigationRef = useRef(false)
+  const isExpanded = pinnedOpen || hoverOpen
+
+  useEffect(() => {
+    const handleKeyboardNavigation = (event: KeyboardEvent) => {
+      if (event.key === 'Tab') keyboardNavigationRef.current = true
+    }
+    const handlePointerNavigation = () => {
+      keyboardNavigationRef.current = false
+    }
+    document.addEventListener('keydown', handleKeyboardNavigation)
+    document.addEventListener('pointerdown', handlePointerNavigation)
+    return () => {
+      document.removeEventListener('keydown', handleKeyboardNavigation)
+      document.removeEventListener('pointerdown', handlePointerNavigation)
+    }
+  }, [])
 
   // State untuk modal Tutup Shift (hanya kasir)
   const [showTutupModal, setShowTutupModal] = useState(false)
@@ -154,6 +176,18 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
     }
   }, [role, supabase])
 
+  useEffect(() => {
+    if (!mobileOpen) return
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileOpen(false)
+        mobileTriggerRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [mobileOpen])
+
   const initials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
 
   const doLogout = async () => {
@@ -196,10 +230,35 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
   const groups = menuByRole[role] || menuByRole.kasir
 
   const roleLabel = role === 'kasir' ? 'Kasir' : role === 'admin' ? 'Admin' : 'Owner'
-  const roleColor = role === 'kasir' ? '#B26A00' : role === 'admin' ? '#2F6BFF' : '#1F9D63'
+  const roleColor = 'var(--acc)'
+  const closeMobileSidebar = () => {
+    setMobileOpen(false)
+    if (window.matchMedia('(max-width: 860px)').matches) {
+      mobileTriggerRef.current?.focus()
+    }
+  }
 
   return (
     <>
+      <button
+        type="button"
+        className="sidebar-mobile-trigger"
+        ref={mobileTriggerRef}
+        aria-controls="fluxa-sidebar"
+        aria-label="Buka navigasi"
+        aria-expanded={mobileOpen}
+        onClick={() => setMobileOpen(true)}
+      >
+        <Menu size={21} />
+      </button>
+      {mobileOpen && (
+        <button
+          type="button"
+          className="sidebar-mobile-backdrop"
+          aria-label="Tutup navigasi"
+          onClick={closeMobileSidebar}
+        />
+      )}
       {/* Modal Tutup Shift — muncul di atas sidebar saat kasir mau logout */}
       {showTutupModal && currentShift && (
         <TutupShiftModal
@@ -214,22 +273,49 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
         />
       )}
 
-      <aside className="sidebar">
+      <aside
+        id="fluxa-sidebar"
+        className={`sidebar${isExpanded ? ' sidebar-expanded' : ''}${pinnedOpen ? ' sidebar-pinned' : ''}${mobileOpen ? ' sidebar-mobile-open' : ''}`}
+        aria-label="Navigasi utama"
+        onMouseEnter={() => setHoverOpen(true)}
+        onMouseLeave={() => setHoverOpen(false)}
+        onFocusCapture={() => {
+          if (keyboardNavigationRef.current) setHoverOpen(true)
+        }}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setHoverOpen(false)
+          }
+        }}
+      >
         {/* Logo + User */}
-        <div style={{ padding: '16px 12px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 16 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: 'linear-gradient(135deg, #2F6BFF, #1636A8)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-            }}>
-              <BarChart3 size={16} color="#fff" />
-            </div>
-            <span style={{ fontWeight: 700, fontSize: 17 }}>Fluxa</span>
+        <div className="sidebar-identity">
+          <div className="sidebar-brand-row">
+            <Link className="sidebar-brand" href={role === 'kasir' ? '/kasir' : `/${role}`} aria-label="Fluxa, dashboard">
+              <BrandLogo size={32} />
+              <span className="sidebar-label sidebar-brand-name">Fluxa</span>
+            </Link>
+            <button
+              type="button"
+              className="sidebar-expand-toggle"
+              aria-label={pinnedOpen ? 'Ciutkan sidebar' : 'Perluas dan sematkan sidebar'}
+              aria-expanded={isExpanded}
+              onClick={() => setPinnedOpen((pinned) => !pinned)}
+            >
+              {pinnedOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+            </button>
+            <button
+              type="button"
+              className="sidebar-mobile-close"
+              aria-label="Tutup navigasi"
+              onClick={closeMobileSidebar}
+            >
+              <X size={20} />
+            </button>
           </div>
 
           {/* User info */}
-          <div style={{
+          <div className="sidebar-user sidebar-label" style={{
             display: 'flex', alignItems: 'center', gap: 9, padding: '10px',
             background: 'var(--bg)', borderRadius: 12, marginBottom: 4
           }}>
@@ -244,7 +330,7 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
 
           {/* Shift indicator untuk kasir */}
           {role === 'kasir' && currentShift && (
-            <div style={{
+            <div className="sidebar-shift sidebar-label" style={{
               display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px',
               background: 'var(--oks)', borderRadius: 8, marginTop: 6, marginBottom: 4
             }}>
@@ -253,7 +339,7 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
             </div>
           )}
           {role === 'kasir' && !currentShift && (
-            <div style={{
+            <div className="sidebar-shift sidebar-label" style={{
               display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px',
               background: 'var(--warns)', borderRadius: 8, marginTop: 6, marginBottom: 4
             }}>
@@ -264,26 +350,30 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
         </div>
 
         {/* Navigation */}
-        <nav style={{ padding: '8px 8px', flex: 1 }}>
+        <nav className="sidebar-navigation" aria-label="Menu aplikasi">
           {groups.map(group => (
-            <div key={group.label}>
-              <div className="nav-group-label">{group.label}</div>
+            <div className="sidebar-nav-group" key={group.label}>
+              <div className="nav-group-label sidebar-label">{group.label}</div>
               {group.items.map(item => {
                 const isActive = pathname === item.href || (item.href !== '/' + role && pathname.startsWith(item.href))
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`nav-item ${isActive ? 'active' : ''}`}
+                    className={`nav-item sidebar-link ${isActive ? 'active' : ''}`}
+                    aria-label={item.label}
+                    aria-current={isActive ? 'page' : undefined}
+                    title={isExpanded ? undefined : item.label}
+                    onClick={closeMobileSidebar}
                   >
                     <span style={{ color: isActive ? 'var(--acc)' : 'var(--mute)', flexShrink: 0 }}>
                       {item.icon}
                     </span>
-                    {item.label}
+                    <span className="sidebar-label sidebar-link-label">{item.label}</span>
                     {item.badge !== undefined && (
-                      <span className="nav-badge">{item.badge}</span>
+                      <span className="nav-badge sidebar-label">{item.badge}</span>
                     )}
-                    {isActive && <ChevronRight size={13} style={{ marginLeft: 'auto', color: 'var(--acc)' }} />}
+                    {isActive && <ChevronRight className="sidebar-active-chevron sidebar-label" size={13} style={{ marginLeft: 'auto', color: 'var(--acc)' }} />}
                   </Link>
                 )
               })}
@@ -293,7 +383,7 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
 
         {/* Promo card (admin/kasir) */}
         {role !== 'owner' && (
-          <div className="promo-card">
+          <div className="promo-card sidebar-label">
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
               <Sparkles size={14} color="#fff" />
               <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>Business Health AI</span>
@@ -312,16 +402,20 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
         )}
 
         {/* Logout */}
-        <div style={{ padding: '8px 8px 16px' }}>
+        <div className="sidebar-logout">
           <button
             id="logout-btn"
             onClick={handleLogout}
             disabled={loggingOut}
             className="nav-item"
+            aria-label={loggingOut ? 'Sedang keluar' : role === 'kasir' && currentShift ? 'Tutup Shift dan Keluar' : 'Keluar'}
+            title={isExpanded ? undefined : 'Keluar'}
             style={{ width: '100%', border: 'none', background: 'transparent', color: 'var(--bad)' }}
           >
             <LogOut size={16} style={{ color: 'var(--bad)' }} />
-            {loggingOut ? 'Keluar...' : role === 'kasir' && currentShift ? 'Tutup Shift & Keluar' : 'Keluar'}
+            <span className="sidebar-label sidebar-link-label">
+              {loggingOut ? 'Keluar...' : role === 'kasir' && currentShift ? 'Tutup Shift & Keluar' : 'Keluar'}
+            </span>
           </button>
         </div>
       </aside>

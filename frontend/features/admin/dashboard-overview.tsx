@@ -40,7 +40,7 @@ export default function DashboardOverview({
 
   return (
     <AppShell adminName={fullName} role={role} pageTitle="Dashboard">
-      <section className="dashboard-page">
+      <section className="dashboard-page role-dashboard-enter">
         <div className="dashboard-heading">
           <div>
             <div className="transaction-eyebrow">RINGKASAN <span>/</span> HARI INI</div>

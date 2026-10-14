@@ -1,37 +1,89 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { ShoppingCart, Package, TrendingUp, AlertCircle, DollarSign, ArrowRight, Layers, CreditCard, RotateCcw } from 'lucide-react'
-import { KpiCard, SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
+import { ShoppingCart, Package, TrendingUp, DollarSign, ArrowRight, Layers, CreditCard } from 'lucide-react'
+import { KpiCard, SectionCard, StatusTag } from '@/components/ui/Cards'
 import { PageHeader } from '@/components/layout/Topbar'
+import type { Database } from '@/lib/supabase/types'
 import Link from 'next/link'
+
+type DailySale = Database['public']['Views']['v_daily_sales_summary']['Row']
+type LowStockProduct = Database['public']['Views']['v_low_stock_products']['Row']
+type SaleRow = Database['public']['Tables']['sales']['Row']
+type RecentSale = Pick<SaleRow, 'id' | 'invoice_number' | 'final_amount' | 'payment_method' | 'status'> & {
+  customers: { name: string } | { name: string }[] | null
+}
+type VoidedSale = Pick<
+  SaleRow,
+  'id' | 'invoice_number' | 'final_amount' | 'void_reason' | 'voided_at' | 'created_at'
+> & {
+  profiles: { full_name: string } | { full_name: string }[] | null
+}
+
+function AnimatedStat({
+  label,
+  value,
+  format,
+  icon,
+  description,
+}: {
+  label: string
+  value: number | null
+  format: (value: number) => string
+  icon: React.ReactNode
+  description: string
+}) {
+  const [displayValue, setDisplayValue] = useState(value === null ? null : 0)
+
+  useEffect(() => {
+    if (value === null) return
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const duration = prefersReducedMotion ? 0 : 480
+    let frame = 0
+    let startTime: number | undefined
+
+    const update = (time: number) => {
+      if (startTime === undefined) startTime = time
+      const progress = duration === 0 ? 1 : Math.min((time - startTime) / duration, 1)
+      const easedProgress = 1 - (1 - progress) ** 3
+      setDisplayValue(Math.round(value * easedProgress))
+      if (progress < 1) frame = window.requestAnimationFrame(update)
+    }
+
+    frame = window.requestAnimationFrame(update)
+    return () => window.cancelAnimationFrame(frame)
+  }, [value])
+
+  return (
+    <KpiCard
+      className="admin-dashboard-kpi"
+      label={label}
+      value={displayValue === null ? '—' : format(displayValue)}
+      icon={icon}
+      changeLabel={description}
+    />
+  )
+}
+
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true)
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches)
+    updatePreference()
+    mediaQuery.addEventListener('change', updatePreference)
+
+    return () => mediaQuery.removeEventListener('change', updatePreference)
+  }, [])
+
+  return prefersReducedMotion
+}
 
 function formatRp(n: number) {
   return 'Rp' + new Intl.NumberFormat('id-ID').format(n)
 }
-
-const DEMO_DAILY = [
-  { sale_date: '01', total_revenue: 1800000, transaction_count: 12 },
-  { sale_date: '02', total_revenue: 2200000, transaction_count: 16 },
-  { sale_date: '03', total_revenue: 1500000, transaction_count: 9 },
-  { sale_date: '04', total_revenue: 3100000, transaction_count: 22 },
-  { sale_date: '05', total_revenue: 2800000, transaction_count: 18 },
-  { sale_date: '06', total_revenue: 4200000, transaction_count: 28 },
-  { sale_date: '07', total_revenue: 3700000, transaction_count: 24 },
-]
-
-const DEMO_LOW_STOCK = [
-  { id: '1', name: 'Kopi Arabika 250g', category_name: 'Minuman', stock: 3, min_stock: 10, unit: 'pcs' },
-  { id: '2', name: 'Gula Pasir 1kg', category_name: 'Bahan Baku', stock: 5, min_stock: 20, unit: 'kg' },
-  { id: '3', name: 'Susu UHT Full Cream', category_name: 'Minuman', stock: 2, min_stock: 12, unit: 'liter' },
-]
-
-const DEMO_SALES = [
-  { id: '1', invoice_number: 'INV-001', final_amount: 135000, payment_method: 'cash', status: 'completed', created_at: new Date().toISOString(), customers: { name: 'Budi Santoso' } },
-  { id: '2', invoice_number: 'INV-002', final_amount: 87500, payment_method: 'qris', status: 'completed', created_at: new Date().toISOString(), customers: null },
-  { id: '3', invoice_number: 'INV-003', final_amount: 212000, payment_method: 'credit', status: 'completed', created_at: new Date().toISOString(), customers: { name: 'Siti Rahayu' } },
-  { id: '4', invoice_number: 'INV-004', final_amount: 45000, payment_method: 'transfer', status: 'voided', created_at: new Date().toISOString(), customers: null },
-]
 
 const payMethodLabel: Record<string, { label: string; bg: string; color: string }> = {
   cash: { label: 'Tunai', bg: 'var(--oks)', color: 'var(--ok)' },
@@ -41,12 +93,12 @@ const payMethodLabel: Record<string, { label: string; bg: string; color: string 
 }
 
 interface Props {
-  dailySales: any[]
-  lowStockProducts: any[]
-  recentSales: any[]
-  voidedSales?: any[]
-  todaySummary: any
-  totalProducts: number
+  dailySales: DailySale[]
+  lowStockProducts: LowStockProduct[]
+  recentSales: RecentSale[]
+  voidedSales?: VoidedSale[]
+  todaySummary: DailySale | null
+  totalProducts: number | null
 }
 
 export default function AdminDashboardClient({
@@ -57,62 +109,60 @@ export default function AdminDashboardClient({
   todaySummary,
   totalProducts
 }: Props) {
-  const daily = dailySales.length > 0 ? dailySales : DEMO_DAILY
-  const lowStock = lowStockProducts.length > 0 ? lowStockProducts : DEMO_LOW_STOCK
-  const sales = recentSales.length > 0 ? recentSales : DEMO_SALES
-  const voidList = voidedSales.length > 0 ? voidedSales : [
-    {
-      id: 'demo-void-1',
-      invoice_number: 'INV-20261007-004',
-      final_amount: 145000,
-      payment_method: 'cash',
-      void_reason: 'Pelanggan membatalkan pesanan (barang salah ambil)',
-      voided_at: new Date().toISOString(),
-      profiles: { full_name: 'Budi Santoso' }
-    }
-  ]
-
-  const today = todaySummary || DEMO_DAILY[DEMO_DAILY.length - 1]
+  const daily = dailySales
+  const lowStock = lowStockProducts
+  const sales = recentSales
+  const voidList = voidedSales
+  const prefersReducedMotion = usePrefersReducedMotion()
+  const revenue = todaySummary ? Number(todaySummary.total_revenue) : null
+  const transactionCount = todaySummary ? Number(todaySummary.transaction_count) : null
+  const averageBasket = revenue !== null && transactionCount !== null && transactionCount > 0
+    ? Math.round(revenue / transactionCount)
+    : null
 
   return (
-    <div>
-      <PageHeader
-        title="Dashboard Admin"
-        subtitle="Ringkasan performa penjualan dan monitoring operasional toko hari ini"
-        actions={
-          <Link href="/admin/transaksi" className="btn btn-primary">
-            <ShoppingCart size={15} /> Lihat Semua Transaksi
-          </Link>
-        }
-      />
+    <div className="admin-dashboard">
+      <div className="admin-dashboard-enter" style={{ animationDelay: '0ms' }}>
+        <PageHeader
+          title="Dashboard Admin"
+          subtitle="Ringkasan performa penjualan dan monitoring operasional toko hari ini"
+          actions={
+            <Link href="/admin/transaksi" className="btn btn-primary">
+              <ShoppingCart size={15} /> Lihat Semua Transaksi
+            </Link>
+          }
+        />
+      </div>
 
       {/* KPIs Grid */}
       <div className="kpi-grid">
-        <KpiCard
+        <AnimatedStat
           label="Omzet Penjualan Hari Ini"
-          value={formatRp(today?.total_revenue || 3700000)}
+          value={revenue}
+          format={formatRp}
           icon={<DollarSign size={16} />}
-          change={8.3}
-          changeLabel="vs hari kemarin"
+          description="Dari transaksi hari ini"
         />
-        <KpiCard
+        <AnimatedStat
           label="Jumlah Transaksi"
-          value={String(today?.transaction_count || 24)}
+          value={transactionCount}
+          format={(value) => value.toLocaleString('id-ID')}
           icon={<ShoppingCart size={16} />}
-          change={5.2}
-          changeLabel="vs hari kemarin"
+          description="Transaksi hari ini"
         />
-        <KpiCard
+        <AnimatedStat
           label="Total Produk Aktif"
-          value={String(totalProducts || 47)}
+          value={totalProducts}
+          format={(value) => value.toLocaleString('id-ID')}
           icon={<Package size={16} />}
-          changeLabel={`${lowStock.length} produk stok menipis`}
+          description={`${lowStock.length} produk stok menipis`}
         />
-        <KpiCard
+        <AnimatedStat
           label="Rata-rata Keranjang Belanja"
-          value={formatRp(today?.total_revenue && today?.transaction_count ? Math.round(today.total_revenue / today.transaction_count) : 154167)}
+          value={averageBasket}
+          format={formatRp}
           icon={<TrendingUp size={16} />}
-          changeLabel="Per nota transaksi hari ini"
+          description="Per nota transaksi hari ini"
         />
       </div>
 
@@ -120,8 +170,9 @@ export default function AdminDashboardClient({
         {/* Left: Chart & Recent Sales */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {/* Chart */}
+          <div className="admin-dashboard-enter" style={{ animationDelay: '150ms' }}>
           <SectionCard title="Tren Omzet 7 Hari Terakhir">
-            <ResponsiveContainer width="100%" height={210}>
+            {daily.length > 0 ? <ResponsiveContainer width="100%" height={210}>
               <BarChart data={daily} margin={{ top: 10, right: 0, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
                 <XAxis
@@ -129,10 +180,13 @@ export default function AdminDashboardClient({
                   tick={{ fontSize: 11, fill: 'var(--mute)' }}
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={(v: any) => typeof v === 'string' ? (v.length > 2 ? v.slice(-2) : v) : v}
+                  tickFormatter={(value) => String(typeof value === 'string' && value.length > 2 ? value.slice(-2) : value)}
                 />
                 <Tooltip
-                  formatter={(v: any, n: any) => [n === 'total_revenue' ? formatRp(v) : v, n === 'total_revenue' ? 'Omzet' : 'Transaksi']}
+                  formatter={(value, name) => [
+                    String(name) === 'total_revenue' ? formatRp(Number(value ?? 0)) : String(value ?? ''),
+                    String(name) === 'total_revenue' ? 'Omzet' : 'Transaksi'
+                  ]}
                   contentStyle={{
                     background: 'var(--panel)',
                     border: '1px solid var(--line)',
@@ -142,12 +196,21 @@ export default function AdminDashboardClient({
                     boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
                   }}
                 />
-                <Bar dataKey="total_revenue" radius={[6, 6, 0, 0]} fill="var(--acc)" />
+                <Bar
+                  dataKey="total_revenue"
+                  radius={[6, 6, 0, 0]}
+                  fill="var(--acc)"
+                  isAnimationActive={!prefersReducedMotion}
+                  animationDuration={650}
+                  animationEasing="ease-out"
+                />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer> : <div className="dashboard-empty-state" style={{ height: 210, display: 'grid', placeItems: 'center' }}>Belum ada data omzet untuk ditampilkan.</div>}
           </SectionCard>
+          </div>
 
           {/* Recent sales */}
+          <div className="admin-dashboard-enter" style={{ animationDelay: '300ms' }}>
           <SectionCard
             title="Transaksi Kasir Terbaru"
             action={
@@ -156,7 +219,7 @@ export default function AdminDashboardClient({
               </Link>
             }
           >
-            <div className="table-container">
+            {sales.length > 0 ? <div className="table-container">
               <table className="data-table">
                 <thead>
                   <tr>
@@ -168,18 +231,18 @@ export default function AdminDashboardClient({
                   </tr>
                 </thead>
                 <tbody>
-                  {sales.map((s: any) => {
+                  {sales.map((s, index) => {
                     const pay = payMethodLabel[s.payment_method] || { label: s.payment_method, bg: 'var(--bg)', color: 'var(--ink)' }
 
                     return (
-                      <tr key={s.id}>
+                      <tr key={s.id} className="admin-dashboard-table-row" style={{ animationDelay: `${320 + index * 35}ms` }}>
                         <td>
                           <span style={{ fontWeight: 600, fontSize: 12.5, fontFamily: 'monospace', color: 'var(--acc)' }}>
                             {s.invoice_number}
                           </span>
                         </td>
                         <td style={{ fontSize: 13 }}>
-                          {s.customers?.name || <span style={{ color: 'var(--mute)', fontStyle: 'italic' }}>Umum</span>}
+                          {(Array.isArray(s.customers) ? s.customers[0]?.name : s.customers?.name) || <span style={{ color: 'var(--mute)', fontStyle: 'italic' }}>Umum</span>}
                         </td>
                         <td>
                           <span style={{
@@ -207,13 +270,15 @@ export default function AdminDashboardClient({
                   })}
                 </tbody>
               </table>
-            </div>
+            </div> : <div className="dashboard-empty-state">Belum ada transaksi terbaru.</div>}
           </SectionCard>
+          </div>
         </div>
 
         {/* Right: Low Stock & Quick Actions */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {/* Low stock */}
+          <div className="admin-dashboard-enter" style={{ animationDelay: '225ms' }}>
           <SectionCard
             title={`Peringatan Stok Menipis ${lowStock.length > 0 ? `(${lowStock.length})` : ''}`}
             action={
@@ -227,8 +292,8 @@ export default function AdminDashboardClient({
                 ✅ Seluruh stok produk dalam batas aman
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {lowStock.map((p: any) => {
+              <div className="admin-stock-list" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {lowStock.map((p, index) => {
                   const pct = p.min_stock > 0 ? Math.round((p.stock / p.min_stock) * 100) : 0
                   const isCritical = p.stock <= 0 || pct < 30
 
@@ -239,7 +304,8 @@ export default function AdminDashboardClient({
                         padding: '12px 14px',
                         background: 'var(--bg)',
                         border: '1px solid var(--line)',
-                        borderRadius: 12
+                        borderRadius: 12,
+                        ['--stock-delay' as string]: `${index * 65}ms`
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
@@ -251,9 +317,10 @@ export default function AdminDashboardClient({
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ flex: 1, height: 5, background: 'var(--line)', borderRadius: 4, overflow: 'hidden' }}>
-                          <div style={{
+                        <div className="admin-stock-progress-fill" style={{
+                            ['--stock-progress' as string]: `${Math.min(pct, 100)}%`,
                             height: '100%',
-                            width: `${Math.min(pct, 100)}%`,
+                            width: 'var(--stock-progress)',
                             background: isCritical ? 'var(--bad)' : 'var(--warn)',
                             borderRadius: 4
                           }} />
@@ -268,8 +335,10 @@ export default function AdminDashboardClient({
               </div>
             )}
           </SectionCard>
+          </div>
  
           {/* Laporan Refund & Pembatalan Kasir */}
+          <div className="admin-dashboard-enter" style={{ animationDelay: '300ms' }}>
           <SectionCard
             title="Laporan Refund & Pembatalan Kasir"
             action={
@@ -284,7 +353,7 @@ export default function AdminDashboardClient({
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {voidList.map((v: any) => (
+                {voidList.map((v) => (
                   <div
                     key={v.id}
                     style={{
@@ -301,7 +370,7 @@ export default function AdminDashboardClient({
                           {v.invoice_number}
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--mute)' }}>
-                          Kasir: {v.profiles?.full_name || 'Kasir'} • {new Date(v.voided_at || v.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
+                          Kasir: {(Array.isArray(v.profiles) ? v.profiles[0]?.full_name : v.profiles?.full_name) || 'Kasir'} • {new Date(v.voided_at || v.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
                         </div>
                       </div>
                       <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--bad)' }}>
@@ -316,8 +385,10 @@ export default function AdminDashboardClient({
               </div>
             )}
           </SectionCard>
+          </div>
 
           {/* Quick actions */}
+          <div className="admin-dashboard-enter" style={{ animationDelay: '375ms' }}>
           <SectionCard title="Akses Cepat Modul Admin">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {[
@@ -361,6 +432,7 @@ export default function AdminDashboardClient({
               ))}
             </div>
           </SectionCard>
+          </div>
         </div>
       </div>
     </div>

@@ -150,21 +150,21 @@ export default function FinancialReportClient({ reports }: { reports: MonthlyDat
               <div style={{ height: 260, width: '100%', marginTop: 8 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={reports.slice().reverse()} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#ECEEF4" vertical={false} />
-                    <XAxis dataKey="month" stroke="#7B8194" fontSize={11} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
+                    <XAxis dataKey="month" stroke="var(--mute)" fontSize={11} tickLine={false} />
                     <YAxis
-                      stroke="#7B8194"
+                      stroke="var(--mute)"
                       fontSize={11}
                       tickLine={false}
                       tickFormatter={val => `Rp ${(val / 1000).toLocaleString('id-ID')}k`}
                     />
                     <Tooltip
                       formatter={(val: any) => [`Rp ${Number(val).toLocaleString('id-ID')}`, '']}
-                      contentStyle={{ background: '#fff', borderRadius: 8, border: '1px solid #ECEEF4' }}
+                      contentStyle={{ background: 'var(--panel)', color: 'var(--ink)', borderRadius: 8, border: '1px solid var(--line)' }}
                     />
                     <Legend />
-                    <Bar dataKey="gross_profit" name="Laba Kotor" fill="#1F9D63" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="net_profit" name="Laba Bersih" fill="#2F6BFF" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="gross_profit" name="Laba Kotor" fill="var(--ok)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="net_profit" name="Laba Bersih" fill="var(--acc)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

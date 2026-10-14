@@ -21,9 +21,9 @@ interface Props {
 }
 
 const roleBadges: Record<string, { label: string; bg: string; color: string; icon: any }> = {
-  owner: { label: 'Owner', bg: 'var(--oks)', color: 'var(--ok)', icon: ShieldCheck },
+  owner: { label: 'Owner', bg: 'var(--accs)', color: 'var(--acc)', icon: ShieldCheck },
   admin: { label: 'Admin', bg: 'var(--accs)', color: 'var(--acc)', icon: Shield },
-  kasir: { label: 'Kasir', bg: 'var(--warns)', color: 'var(--warn)', icon: UserCog }
+  kasir: { label: 'Kasir', bg: 'var(--accs)', color: 'var(--acc)', icon: UserCog }
 }
 
 export default function UsersManagementClient({ initialUsers, roleScope = 'all', currentUserId }: Props) {
@@ -320,7 +320,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
                             width: 36,
                             height: 36,
                             fontSize: 13,
-                            background: u.role === 'owner' ? '#1F9D63' : u.role === 'admin' ? '#2F6BFF' : '#B26A00'
+                            background: 'var(--acc)'
                           }}>
                             {u.full_name.slice(0, 2).toUpperCase()}
                           </div>

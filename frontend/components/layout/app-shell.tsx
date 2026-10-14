@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { UserRole } from "@/lib/supabase/types";
+import BrandLogo from "@/components/ui/BrandLogo";
 
 type AppShellProps = {
   adminName: string;
@@ -54,7 +55,7 @@ export default function AppShell({ adminName, role, pageTitle, children }: AppSh
         onTouchStart={() => setSidebarPinned(true)}
       >
         <Link className="transaction-brand" href="/dashboard" aria-label="Fluxa, dashboard">
-          <span className="transaction-brand-mark">F</span>
+          <BrandLogo size={28} />
           <span>fluxa<span className="transaction-brand-dot">.</span></span>
         </Link>
         <p className="transaction-nav-label">MENU UTAMA</p>

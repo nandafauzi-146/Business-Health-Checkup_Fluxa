@@ -8,6 +8,7 @@ import {
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useTheme } from '@/components/layout/ThemeProvider'
 
 export interface NotificationItem {
   id: string
@@ -231,12 +232,14 @@ function getDefaultNotifications(role: 'kasir' | 'admin' | 'owner'): Notificatio
 
 export default function Topbar({ title, subtitle, actions, role }: TopbarProps) {
   const pathname = usePathname()
-  const [dark, setDark] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
+  const [appearanceOpen, setAppearanceOpen] = useState(false)
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'reports'>('all')
   const [mounted, setMounted] = useState(false)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const notifRef = useRef<HTMLDivElement>(null)
+  const appearanceRef = useRef<HTMLDivElement>(null)
+  const { preference, isDark, setPreference } = useTheme()
 
   // Tentukan role efektif
   const effectiveRole: 'kasir' | 'admin' | 'owner' = useMemo(() => {
@@ -246,20 +249,13 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
     return 'kasir'
   }, [role, pathname])
 
-  // Inisialisasi tema & klik luar dropdown
+  // Close popovers when clicking outside.
   useEffect(() => {
     setMounted(true)
-    const isDark = document.documentElement.classList.contains('dark') ||
-      localStorage.getItem('fluxa-theme') === 'dark'
-    setDark(isDark)
-    if (isDark) {
-      document.documentElement.classList.add('dark')
-    }
-
     const handleClickOutside = (e: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
-        setNotifOpen(false)
-      }
+      const target = e.target as Node
+      if (notifRef.current && !notifRef.current.contains(target)) setNotifOpen(false)
+      if (appearanceRef.current && !appearanceRef.current.contains(target)) setAppearanceOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -311,18 +307,6 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
     window.addEventListener('fluxa_refund_created', handleRefundCreated)
     return () => window.removeEventListener('fluxa_refund_created', handleRefundCreated)
   }, [effectiveRole])
-
-  const toggleTheme = () => {
-    const nextDark = !dark
-    setDark(nextDark)
-    if (nextDark) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('fluxa-theme', 'dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('fluxa-theme', 'light')
-    }
-  }
 
   // Tandai 1 notifikasi telah dibaca
   const markAsRead = (id: string) => {
@@ -391,9 +375,9 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
 
   // Label & warna role
   const roleMeta = {
-    kasir: { label: 'KASIR', color: 'var(--ok)', bg: 'var(--oks)', title: 'Pusat Notifikasi Kasir' },
+    kasir: { label: 'KASIR', color: 'var(--acc)', bg: 'var(--accs)', title: 'Pusat Notifikasi Kasir' },
     admin: { label: 'ADMIN', color: 'var(--acc)', bg: 'var(--accs)', title: 'Pusat Notifikasi & Laporan Admin' },
-    owner: { label: 'OWNER', color: 'var(--warn)', bg: 'var(--warns)', title: 'Pusat Laporan & Intelijen Bisnis Owner' },
+    owner: { label: 'OWNER', color: 'var(--acc)', bg: 'var(--accs)', title: 'Pusat Laporan & Intelijen Bisnis Owner' },
   }[effectiveRole]
 
   return (
@@ -406,16 +390,47 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
 
       {/* Right side */}
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
-        {/* Theme Toggle */}
-        <button
-          className="icon-btn"
-          onClick={toggleTheme}
-          aria-label="Toggle tema"
-          id="theme-toggle"
-          title={dark ? 'Mode Terang' : 'Mode Gelap'}
-        >
-          {dark ? <Sun size={15} /> : <Moon size={15} />}
-        </button>
+        {/* Appearance menu */}
+        <div ref={appearanceRef} className="appearance-menu">
+          <button
+            className="icon-btn"
+            onClick={() => setAppearanceOpen((open) => !open)}
+            aria-label="Appearance"
+            aria-expanded={appearanceOpen}
+            aria-haspopup="menu"
+            id="theme-toggle"
+            title="Appearance"
+          >
+            {isDark ? <Moon size={15} /> : <Sun size={15} />}
+          </button>
+          {appearanceOpen && (
+            <div className="appearance-popover" role="menu" aria-label="Appearance">
+              <strong>Appearance</strong>
+              {([
+                ['light', 'Light'],
+                ['dark', 'Dark'],
+                ['system', 'System'],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className="appearance-option"
+                  role="menuitemradio"
+                  aria-checked={preference === value}
+                  onClick={() => {
+                    setPreference(value)
+                    setAppearanceOpen(false)
+                  }}
+                >
+                  <span className="appearance-radio" aria-hidden="true">
+                    {preference === value && <span />}
+                  </span>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Notifikasi Lonceng */}
         <div ref={notifRef} style={{ position: 'relative' }}>

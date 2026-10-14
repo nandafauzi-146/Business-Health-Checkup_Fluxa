@@ -14,18 +14,20 @@ Panduan desain UI untuk semua peran (Admin, Kasir, Owner), diturunkan dari refer
 
 | Token | Light | Dark | Dipakai untuk |
 |---|---|---|---|
-| `--bg` | `#F1F3F7` | `#0F1218` | Latar halaman |
-| `--panel` | `#FFFFFF` | `#171B24` | Kartu, sidebar, dialog |
-| `--ink` | `#12141C` | `#E8EBF2` | Teks utama |
-| `--mute` | `#7B8194` | `#8A92A6` | Label, keterangan, header tabel |
-| `--line` | `#ECEEF4` | `#262C39` | Garis pemisah, border kartu |
-| `--acc` | `#2F6BFF` | `#5B8CFF` | Tombol utama, item aktif, grafik utama |
-| `--accs` | `#E8EFFF` | `#1B2848` | Latar item aktif, catatan info |
-| `--ok` / `--oks` | `#1F9D63` / `#DFF5E9` | `#5FD39B` / `#143024` | Naik, aman, selesai |
-| `--warn` / `--warns` | `#B26A00` / `#FDF0D5` | `#F0B04A` / `#3A2B0E` | Stok menipis, menunggu, diedit |
-| `--bad` / `--bads` | `#E5484D` / `#FDE8E8` | `#FF7B80` / `#3D1C1E` | Turun, kritis, ditolak |
+| `--bg` | `#F8FAFC` | `#0F1117` | Latar halaman |
+| `--sidebar` | `#FFFFFF` | `#171A22` | Sidebar surface token (Midnight navigation uses `#111827`) |
+| `--panel` | `#FFFFFF` | `#1A1D26` | Kartu, dialog |
+| `--ink` | `#111827` | `#F5F6FA` | Teks utama |
+| `--mute` | `#64748B` | `#929BB0` | Label, keterangan, header tabel |
+| `--line` | `#E2E8F0` | `#2A2F3B` | Garis pemisah, border kartu |
+| `--acc` | `#5887FF` | `#5887FF` | Tombol utama, item aktif, grafik utama |
+| `--acc-hover` | `#3D6FE8` | `#3D6FE8` | Hover aksi utama |
+| `--accs` | `#EAF0FF` | `#202D49` | Latar item aktif, catatan info |
+| `--ok` / `--oks` | `#059669` / `#D1FAE5` | `#34D399` / `#12352D` | Naik, aman, selesai |
+| `--warn` / `--warns` | `#B77900` / `#FEF3C7` | `#FBBF24` / `#3A2F16` | Stok menipis, menunggu, diedit |
+| `--bad` / `--bads` | `#E11D48` / `#FFE4E6` | `#FB7185` / `#3A202A` | Turun, kritis, ditolak |
 
-Warna pendukung untuk segmen data (bar bawah kartu): biru `#2F6BFF`, hijau `#2FBF85`, oranye `#F08A2B`.
+Warna pendukung untuk segmen data (bar bawah kartu): biru `#5887FF`, hijau `#34D399`, oranye `#F08A2B`.
 
 Gradien hanya dipakai di dua tempat: kartu promo sidebar (`#2451D6` → `#0B1330`, 160°) dan area di bawah grafik garis (aksen dengan opasitas 30% → 0%).
 
@@ -57,7 +59,7 @@ Gradien hanya dipakai di dua tempat: kartu promo sidebar (`#2451D6` → `#0B1330
 ```
 ┌───────────┬──────────────────────────────────────────┐
 │ Sidebar   │ Top bar: pencarian ⌘K · tema · notif · avatar │
-│ 236 px    ├──────────────────────────────────────────┤
+│ 72 → 260  ├──────────────────────────────────────────┤
 │ sticky    │ Judul halaman        [chip tanggal] [Ekspor] │
 │           │ ┌─KPI─┐┌─KPI─┐┌─KPI─┐┌─KPI─┐                │
 │ promo di  │ ┌── kolom utama 1.9fr ──┐ ┌─ kolom 1fr ─┐ │
@@ -69,15 +71,18 @@ Gradien hanya dipakai di dua tempat: kartu promo sidebar (`#2451D6` → `#0B1330
 
 - Lebar maksimum konten 1360 px, dipusatkan.
 - Baris KPI: 4 kartu, grid otomatis (`minmax(190px, 1fr)`).
-- Di bawah 860 px: sidebar menjadi bar menu horizontal yang bisa digeser, kolom menjadi satu, sembunyikan kartu promo.
+- Sidebar desktop collapsed pada 72 px dan melebar ke 260 px saat hover atau dipin; area utama ikut reflow.
+- Tablet landscape memakai toggle pin; pada lebar mobile sidebar menjadi drawer dengan backdrop dan tombol tutup.
+- Di bawah 860 px kolom menjadi satu dan kartu promo disembunyikan kecuali saat drawer terbuka.
 - Tabel lebar dibungkus kontainer `overflow-x:auto`, halaman tidak boleh bergeser ke samping.
 
 ## 6. Komponen
 
 ### Sidebar
-- Logo (kotak biru 24 px berisi ikon + nama produk) di atas.
-- Menu dikelompokkan dengan judul grup kecil abu-abu. Item: ikon 16 px + label, tinggi sekitar 36 px, radius 10 px.
-- **Aktif:** latar `--accs`, teks `--acc` bobot 600, garis biru 3 px di tepi kiri.
+- Logo FLUXA tampil sebagai ikon saat collapsed dan ikon beserta nama saat expanded.
+- Menu dikelompokkan dengan judul grup kecil. Item memiliki ikon 20–22 px, area klik minimal 44 px, dan radius 10 px.
+- **Aktif:** latar `#1D3155`, ikon `#8DABFF`, dan indikator 3 px di tepi kiri pada dark Midnight; Light memakai token `--accs` dan `--acc`.
+- **Sidebar dark:** latar `#111827`, border `#293548`, hover `#222F42`, ikon idle `#A5B4C8`.
 - **Badge jumlah** (mis. stok menipis): pil merah, teks putih 11 px, rata kanan.
 - Kartu promo di bawah: gradien biru gelap, judul putih 14 px, satu tombol biru penuh.
 

@@ -7,12 +7,13 @@ interface KpiCardProps {
   icon: ReactNode
   change?: number
   changeLabel?: string
+  className?: string
 }
 
-export function KpiCard({ label, value, icon, change, changeLabel }: KpiCardProps) {
+export function KpiCard({ label, value, icon, change, changeLabel, className }: KpiCardProps) {
   const isUp = change !== undefined && change >= 0
   return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div className={`card${className ? ` ${className}` : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--mute)' }}>{label}</span>
         <span style={{ color: 'var(--acc)', background: 'var(--accs)', width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
