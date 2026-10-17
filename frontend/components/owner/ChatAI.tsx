@@ -12,7 +12,7 @@ interface Message {
 
 const STARTER_QUESTIONS = [
   'Mengapa laba saya turun bulan ini?',
-  'Siapa pelanggan yang masih punya kasbon?',
+  'Berapa sisa hutang ke supplier yang belum lunas?',
   'Produk mana yang stoknya menipis?',
   'Bagaimana kondisi kas bisnis saya saat ini?',
   'Apa yang harus saya lakukan untuk meningkatkan omzet?',
