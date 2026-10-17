@@ -30,14 +30,14 @@ RINGKASAN KEUANGAN:
 - Laba Bersih: ${fmt(ctx.net_profit)} (${ctx.net_margin}%)
 - Kas di Tangan: ${fmt(ctx.cash)}
 - Nilai Stok: ${fmt(ctx.inventory)}
-- Total Piutang/Kasbon: ${fmt(ctx.receivables)}
+- Total Hutang ke Supplier: ${fmt(ctx.payables || 0)}
 `.trim()
 
-  if (ctx.receivable_list && ctx.receivable_list.length > 0) {
-    block += '\n\nRINCIAN PIUTANG PELANGGAN:\n'
-    ctx.receivable_list.forEach((r: any, i: number) => {
+  if (ctx.payable_list && ctx.payable_list.length > 0) {
+    block += '\n\nRINCIAN HUTANG KE SUPPLIER / VENDOR:\n'
+    ctx.payable_list.forEach((r: any, i: number) => {
       const overdue = r.due_date && new Date(r.due_date) < new Date() ? ' [LEWAT JATUH TEMPO]' : ''
-      block += `${i + 1}. ${r.customer_name} | Tanggal: ${r.created_at?.split('T')[0]} | Jatuh Tempo: ${r.due_date || '-'}${overdue} | Sisa: ${fmt(r.remaining_amount)}\n`
+      block += `${i + 1}. ${r.supplier_name || r.customer_name} | Tanggal: ${r.created_at?.split('T')[0]} | Jatuh Tempo: ${r.due_date || '-'}${overdue} | Sisa: ${fmt(r.remaining_amount)}\n`
     })
   }
 

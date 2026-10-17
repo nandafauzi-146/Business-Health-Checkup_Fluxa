@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from 'recharts'
-import { Sparkles, RefreshCw, Key, CheckCircle, AlertTriangle, Bot, Activity, Layers, ArrowUpRight, Check, DollarSign, Calendar, Users, FileText } from 'lucide-react'
+import { Sparkles, RefreshCw, Key, CheckCircle, AlertTriangle, Bot, Activity, Layers, ArrowUpRight, Check, DollarSign, Calendar, Users, FileText, Building2 } from 'lucide-react'
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
 import { PageHeader } from '@/components/layout/Topbar'
 import { FinancialHealthInput, BusinessHealthDiagnosis } from '@intelligence/index'
@@ -410,19 +410,19 @@ export default function BusinessHealthClient({
 
       {/* Audit Data Konkret dari Database (Bukti Transparansi) */}
       <div style={{ marginBottom: 20 }}>
-        <SectionCard title="Audit Bukti Database: Rincian Piutang / Kasbon & Beban Riil yang Dianalisis AI">
+        <SectionCard title="Audit Bukti Database: Rincian Hutang Operasional, Supplier & Beban Riil yang Dianalisis AI">
           <div className="hb-audit-grid">
-            {/* Tabel Piutang Riil */}
+            {/* Tabel Hutang Operasional & Supplier Riil */}
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Users size={15} color="var(--warn)" />
-                Kasbon / Piutang Pelanggan di Database ({input.receivable_details?.length || 0})
+                <Building2 size={15} color="var(--warn)" />
+                Hutang Operasional, Sewa & Supplier ({input.receivable_details?.length || 0})
               </div>
               <div className="table-container">
                 <table className="data-table" style={{ fontSize: 12 }}>
                   <thead>
                     <tr>
-                      <th>Pelanggan</th>
+                      <th>Pihak / Mitra</th>
                       <th>Tgl Buat</th>
                       <th>Jatuh Tempo</th>
                       <th>Sisa Tagihan</th>

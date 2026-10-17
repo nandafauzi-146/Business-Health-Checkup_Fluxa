@@ -10,11 +10,11 @@ function formatRp(n: number) {
 }
 
 const DEMO_PRODUCTS = [
-  { id: '1', name: 'Kopi Arabika 250g', categories: { name: 'Minuman' }, sell_price: 55000, stock: 12, unit: 'pcs', is_active: true, sku: 'KA-001' },
-  { id: '2', name: 'Gula Pasir 1kg', categories: { name: 'Bahan Baku' }, sell_price: 18000, stock: 30, unit: 'kg', is_active: true, sku: 'GP-001' },
-  { id: '3', name: 'Susu UHT Full Cream', categories: { name: 'Minuman' }, sell_price: 22000, stock: 18, unit: 'liter', is_active: true, sku: 'SU-001' },
-  { id: '4', name: 'Teh Hijau Celup', categories: { name: 'Minuman' }, sell_price: 14000, stock: 45, unit: 'kotak', is_active: true, sku: 'TH-001' },
-  { id: '5', name: 'Roti Tawar', categories: { name: 'Makanan' }, sell_price: 18000, stock: 8, unit: 'bungkus', is_active: true, sku: 'RT-001' },
+  { id: '1', name: 'Kopi Arabika 250g', categories: { name: 'Minuman' }, sell_price: 55000, stock: 12, unit: 'pcs', is_active: true, sku: 'KA-001', image_url: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=300&q=80' },
+  { id: '2', name: 'Gula Pasir 1kg', categories: { name: 'Bahan Baku' }, sell_price: 18000, stock: 30, unit: 'kg', is_active: true, sku: 'GP-001', image_url: 'https://images.unsplash.com/photo-1581441363689-1f3c3c414635?w=300&q=80' },
+  { id: '3', name: 'Susu UHT Full Cream', categories: { name: 'Minuman' }, sell_price: 22000, stock: 18, unit: 'liter', is_active: true, sku: 'SU-001', image_url: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300&q=80' },
+  { id: '4', name: 'Teh Hijau Celup', categories: { name: 'Minuman' }, sell_price: 14000, stock: 45, unit: 'kotak', is_active: true, sku: 'TH-001', image_url: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=300&q=80' },
+  { id: '5', name: 'Roti Tawar', categories: { name: 'Makanan' }, sell_price: 18000, stock: 8, unit: 'bungkus', is_active: true, sku: 'RT-001', image_url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&q=80' },
   { id: '6', name: 'Minyak Goreng 2L', categories: { name: 'Bahan Baku' }, sell_price: 32000, stock: 15, unit: 'botol', is_active: true, sku: 'MG-001' },
   { id: '7', name: 'Kecap Manis 140ml', categories: { name: 'Bahan Baku' }, sell_price: 8500, stock: 24, unit: 'botol', is_active: true, sku: 'KM-001' },
   { id: '8', name: 'Indomie Goreng', categories: { name: 'Makanan' }, sell_price: 3500, stock: 100, unit: 'pcs', is_active: true, sku: 'IG-001' },
@@ -24,7 +24,7 @@ const EMOJI_MAP: Record<string, string> = {
   'Minuman': '☕', 'Bahan Baku': '🧂', 'Makanan': '🍞', 'Lainnya': '📦'
 }
 
-type PayMethod = 'cash' | 'qris' | 'transfer' | 'credit'
+type PayMethod = 'cash' | 'qris' | 'transfer'
 
 interface CartItem {
   product_id: string
@@ -33,6 +33,7 @@ interface CartItem {
   quantity: number
   stock: number
   unit: string
+  image_url?: string | null
 }
 
 interface Promotion {
@@ -137,7 +138,7 @@ export default function POSClient({ products: initialProducts, customers, active
           setPromotions(JSON.parse(cached))
           return
         }
-      } catch {}
+      } catch { }
       // Demo data hardcode
       setPromotions([
         { id: 'p-1', code: 'HEMAT10', name: 'Diskon Belanja 10%', type: 'percentage', value: 10, min_purchase: 50000, max_discount: 25000, is_active: true },
@@ -153,7 +154,7 @@ export default function POSClient({ products: initialProducts, customers, active
       if (cached) {
         setPromotions(JSON.parse(cached))
       }
-    } catch {}
+    } catch { }
     fetchPromos()
 
     // Listen perubahan dari admin (localStorage event lintas tab)
@@ -161,7 +162,7 @@ export default function POSClient({ products: initialProducts, customers, active
       if (e.key === 'fluxa_active_promotions' && e.newValue) {
         try {
           setPromotions(JSON.parse(e.newValue))
-        } catch {}
+        } catch { }
       }
     }
 
@@ -252,7 +253,15 @@ export default function POSClient({ products: initialProducts, customers, active
         return prev.map(c => c.product_id === product.id ? { ...c, quantity: c.quantity + 1 } : c)
       }
       if (product.stock <= 0) { showToast('Stok habis!'); return prev }
-      return [...prev, { product_id: product.id, name: product.name, sell_price: product.sell_price, quantity: 1, stock: product.stock, unit: product.unit }]
+      return [...prev, {
+        product_id: product.id,
+        name: product.name,
+        sell_price: product.sell_price,
+        quantity: 1,
+        stock: product.stock,
+        unit: product.unit,
+        image_url: product.image_url || null
+      }]
     })
   }
 
@@ -284,7 +293,6 @@ export default function POSClient({ products: initialProducts, customers, active
 
   const handleCheckout = async () => {
     if (cart.length === 0) { showToast('Keranjang kosong!'); return }
-    if (payMethod === 'credit' && !customerId) { showToast('Pilih pelanggan untuk kasbon!'); return }
     if (!activeShift) { showToast('Buka shift terlebih dahulu!'); return }
 
     setProcessing(true)
@@ -324,7 +332,6 @@ export default function POSClient({ products: initialProducts, customers, active
     { key: 'cash', label: 'Tunai', icon: <Wallet size={15} /> },
     { key: 'qris', label: 'QRIS', icon: <Smartphone size={15} /> },
     { key: 'transfer', label: 'Transfer', icon: <ArrowRight size={15} /> },
-    { key: 'credit', label: 'Kasbon', icon: <CreditCard size={15} /> },
   ]
 
   // Jika belum ada shift aktif, tampilkan modal Buka Shift (blocking fullscreen)
@@ -531,14 +538,43 @@ export default function POSClient({ products: initialProducts, customers, active
                 >
                   {cartItem && (
                     <div style={{
-                      position: 'absolute', top: 6, right: 6, width: 20, height: 20,
+                      position: 'absolute', top: 6, right: 6, width: 22, height: 22,
                       background: 'var(--acc)', color: '#fff', borderRadius: '50%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700,
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.2)', zIndex: 3
                     }}>
                       {cartItem.quantity}
                     </div>
                   )}
-                  <div className="product-thumb">{EMOJI_MAP[cat] || '📦'}</div>
+                  {p.image_url ? (
+                    <div className="product-image-container">
+                      <img
+                        src={p.image_url}
+                        alt={p.name}
+                        className="product-card-img"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                          const fallback = (e.target as HTMLElement).nextElementSibling;
+                          if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                        }}
+                      />
+                      <div
+                        style={{
+                          display: 'none',
+                          width: '100%',
+                          height: '100%',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'var(--accs)',
+                          fontSize: 24
+                        }}
+                      >
+                        {EMOJI_MAP[cat] || '📦'}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="product-thumb">{EMOJI_MAP[cat] || '📦'}</div>
+                  )}
                   <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 2, lineHeight: 1.3 }}>{p.name}</div>
                   <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--acc)' }}>{formatRp(p.sell_price)}</div>
                   <div style={{ fontSize: 10, color: p.stock < p.min_stock ? 'var(--warn)' : 'var(--mute)', marginTop: 2 }}>
@@ -586,9 +622,20 @@ export default function POSClient({ products: initialProducts, customers, active
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {cart.map(item => (
                 <div key={item.product_id} style={{ padding: '10px', background: 'var(--bg)', borderRadius: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                    <div style={{ flex: 1, fontSize: 13, fontWeight: 600, lineHeight: 1.3, paddingRight: 8 }}>{item.name}</div>
-                    <button onClick={() => removeFromCart(item.product_id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bad)', padding: 2 }} aria-label={`Hapus ${item.name}`}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover', flexShrink: 0, border: '1px solid var(--line)' }}
+                        />
+                      ) : null}
+                      <div style={{ flex: 1, fontSize: 13, fontWeight: 600, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.name}
+                      </div>
+                    </div>
+                    <button onClick={() => removeFromCart(item.product_id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bad)', padding: 2, flexShrink: 0 }} aria-label={`Hapus ${item.name}`}>
                       <Trash2 size={13} />
                     </button>
                   </div>
@@ -844,18 +891,15 @@ export default function POSClient({ products: initialProducts, customers, active
               </div>
             </div>
 
-            {payMethod === 'credit' && (
-              <div style={{ marginBottom: 14 }}>
-                <label className="label" htmlFor="customer-select">Pelanggan (wajib untuk kasbon)</label>
-                <select id="customer-select" className="input" value={customerId} onChange={e => setCustomerId(e.target.value)}>
-                  <option value="">Pilih pelanggan...</option>
-                  {customers.map((c: any) => (
-                    <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
-                  ))}
-                  <option value="demo-cust">Demo: Budi Santoso</option>
-                </select>
-              </div>
-            )}
+            <div style={{ marginBottom: 14 }}>
+              <label className="label" htmlFor="customer-select">Pelanggan / Member (Opsional)</label>
+              <select id="customer-select" className="input" value={customerId} onChange={e => setCustomerId(e.target.value)}>
+                <option value="">Pelanggan Umum (Tanpa Member)</option>
+                {customers.map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
+                ))}
+              </select>
+            </div>
 
             {payMethod === 'cash' && (
               <div style={{ marginBottom: 14 }}>

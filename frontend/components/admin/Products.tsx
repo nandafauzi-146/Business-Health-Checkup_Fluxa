@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Plus, Search, Package, Edit, Trash2, X, Check, Filter } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Plus, Search, Package, Edit, Trash2, X, Check, Filter, Camera, Image as ImageIcon, Upload, Link as LinkIcon } from 'lucide-react'
 import { SectionCard, StatusTag } from '@/components/ui/Cards'
 import { PageHeader } from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
@@ -11,11 +11,11 @@ function formatRp(n: number) {
 }
 
 const DEMO_PRODUCTS = [
-  { id: '1', name: 'Kopi Arabika 250g', sku: 'KA-001', category_id: '1', categories: { name: 'Minuman' }, buy_price: 35000, sell_price: 55000, stock: 3, min_stock: 10, unit: 'pcs', is_active: true },
-  { id: '2', name: 'Gula Pasir 1kg', sku: 'GP-001', category_id: '2', categories: { name: 'Bahan Baku' }, buy_price: 14000, sell_price: 18000, stock: 5, min_stock: 20, unit: 'kg', is_active: true },
-  { id: '3', name: 'Susu UHT Full Cream', sku: 'SU-001', category_id: '1', categories: { name: 'Minuman' }, buy_price: 15000, sell_price: 22000, stock: 18, min_stock: 12, unit: 'liter', is_active: true },
-  { id: '4', name: 'Teh Hijau Celup', sku: 'TH-001', category_id: '1', categories: { name: 'Minuman' }, buy_price: 8000, sell_price: 14000, stock: 45, min_stock: 15, unit: 'kotak', is_active: true },
-  { id: '5', name: 'Roti Tawar Gandum', sku: 'RT-001', category_id: '3', categories: { name: 'Makanan' }, buy_price: 12000, sell_price: 18000, stock: 8, min_stock: 10, unit: 'bungkus', is_active: false },
+  { id: '1', name: 'Kopi Arabika 250g', sku: 'KA-001', category_id: '1', categories: { name: 'Minuman' }, buy_price: 35000, sell_price: 55000, stock: 3, min_stock: 10, unit: 'pcs', is_active: true, image_url: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=300&q=80' },
+  { id: '2', name: 'Gula Pasir 1kg', sku: 'GP-001', category_id: '2', categories: { name: 'Bahan Baku' }, buy_price: 14000, sell_price: 18000, stock: 5, min_stock: 20, unit: 'kg', is_active: true, image_url: 'https://images.unsplash.com/photo-1581441363689-1f3c3c414635?w=300&q=80' },
+  { id: '3', name: 'Susu UHT Full Cream', sku: 'SU-001', category_id: '1', categories: { name: 'Minuman' }, buy_price: 15000, sell_price: 22000, stock: 18, min_stock: 12, unit: 'liter', is_active: true, image_url: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300&q=80' },
+  { id: '4', name: 'Teh Hijau Celup', sku: 'TH-001', category_id: '1', categories: { name: 'Minuman' }, buy_price: 8000, sell_price: 14000, stock: 45, min_stock: 15, unit: 'kotak', is_active: true, image_url: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=300&q=80' },
+  { id: '5', name: 'Roti Tawar Gandum', sku: 'RT-001', category_id: '3', categories: { name: 'Makanan' }, buy_price: 12000, sell_price: 18000, stock: 8, min_stock: 10, unit: 'bungkus', is_active: false, image_url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&q=80' },
 ]
 
 interface Category {
@@ -35,6 +35,7 @@ interface Product {
   category_id?: string | null
   categories?: { name: string } | null
   is_active: boolean
+  image_url?: string | null
 }
 
 interface Props {
@@ -53,6 +54,7 @@ export default function ProductsClient({ products: initialProducts, categories }
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ type: 'ok' | 'bad'; msg: string } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
     name: '',
@@ -63,6 +65,7 @@ export default function ProductsClient({ products: initialProducts, categories }
     min_stock: '5',
     unit: 'pcs',
     category_id: '',
+    image_url: '',
     is_active: true
   })
 
@@ -90,6 +93,7 @@ export default function ProductsClient({ products: initialProducts, categories }
       min_stock: '5',
       unit: 'pcs',
       category_id: categories[0]?.id || '',
+      image_url: '',
       is_active: true
     })
     setShowDialog(true)
@@ -106,9 +110,58 @@ export default function ProductsClient({ products: initialProducts, categories }
       min_stock: String(p.min_stock || '5'),
       unit: p.unit || 'pcs',
       category_id: p.category_id || '',
+      image_url: p.image_url || '',
       is_active: p.is_active
     })
     setShowDialog(true)
+  }
+
+  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Format file harus berupa gambar (JPG, PNG, WebP)', 'bad')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const maxDim = 400
+        let width = img.width
+        let height = img.height
+
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width)
+            width = maxDim
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height)
+            height = maxDim
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height)
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82)
+          setForm(f => ({ ...f, image_url: compressedDataUrl }))
+          showToast('Foto produk berhasil dipilih!', 'ok')
+        } else {
+          setForm(f => ({ ...f, image_url: event.target?.result as string }))
+          showToast('Foto produk berhasil dipilih!', 'ok')
+        }
+      }
+      img.src = event.target?.result as string
+    }
+    reader.readAsDataURL(file)
   }
 
   const handleSave = async (e: React.FormEvent) => {
@@ -125,6 +178,7 @@ export default function ProductsClient({ products: initialProducts, categories }
         min_stock: parseInt(form.min_stock) || 5,
         unit: form.unit.trim() || 'pcs',
         category_id: form.category_id || null,
+        image_url: form.image_url ? form.image_url.trim() : null,
         is_active: form.is_active,
         updated_at: new Date().toISOString()
       }
@@ -181,6 +235,7 @@ export default function ProductsClient({ products: initialProducts, categories }
           min_stock: parseInt(form.min_stock) || 5,
           unit: form.unit || 'pcs',
           category_id: form.category_id || null,
+          image_url: form.image_url ? form.image_url.trim() : null,
           is_active: form.is_active,
           categories: categoryObj ? { name: categoryObj.name } : p.categories
         } : p))
@@ -198,6 +253,7 @@ export default function ProductsClient({ products: initialProducts, categories }
           min_stock: parseInt(form.min_stock) || 5,
           unit: form.unit || 'pcs',
           category_id: form.category_id || null,
+          image_url: form.image_url ? form.image_url.trim() : null,
           is_active: form.is_active,
           categories: categoryObj ? { name: categoryObj.name } : null
         }
@@ -337,12 +393,31 @@ export default function ProductsClient({ products: initialProducts, categories }
                     <tr key={p.id}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          {p.image_url ? (
+                            <img
+                              src={p.image_url}
+                              alt={p.name}
+                              style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 10,
+                                objectFit: 'cover',
+                                border: '1px solid var(--line)',
+                                flexShrink: 0
+                              }}
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                                const fallback = (e.target as HTMLElement).nextElementSibling;
+                                if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
                           <div style={{
-                            width: 36,
-                            height: 36,
+                            width: 40,
+                            height: 40,
                             borderRadius: 10,
                             background: p.is_active ? 'var(--accs)' : 'var(--bg)',
-                            display: 'flex',
+                            display: p.image_url ? 'none' : 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             flexShrink: 0
@@ -494,6 +569,112 @@ export default function ProductsClient({ products: initialProducts, categories }
                       value={form.sku}
                       onChange={e => setForm(f => ({ ...f, sku: e.target.value }))}
                     />
+                  </div>
+                </div>
+
+                {/* Foto Produk */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <label className="label" style={{ marginBottom: 0 }}>
+                      Foto Produk (Tampil di Katalog Kasir)
+                    </label>
+                    {form.image_url && (
+                      <button
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, image_url: '' }))}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--bad)',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4
+                        }}
+                      >
+                        <Trash2 size={12} /> Hapus Foto
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{
+                    display: 'flex',
+                    gap: 12,
+                    alignItems: 'center',
+                    padding: 12,
+                    background: 'var(--bg)',
+                    borderRadius: 12,
+                    border: '1px solid var(--line)'
+                  }}>
+                    {/* Preview Box */}
+                    <div style={{
+                      width: 68,
+                      height: 68,
+                      borderRadius: 10,
+                      background: 'var(--panel)',
+                      border: '1px solid var(--line)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      flexShrink: 0
+                    }}>
+                      {form.image_url ? (
+                        <img
+                          src={form.image_url}
+                          alt="Preview Produk"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <ImageIcon size={26} color="var(--mute)" opacity={0.5} />
+                      )}
+                    </div>
+
+                    {/* Input Controls */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7 }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={handleImageFileUpload}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}
+                        >
+                          <Camera size={13} /> Upload Foto
+                        </button>
+                        <span style={{ fontSize: 11, color: 'var(--mute)' }}>atau masukkan link/URL gambar:</span>
+                      </div>
+
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        background: 'var(--panel)',
+                        border: '1px solid var(--line)',
+                        borderRadius: 8,
+                        padding: '0 8px'
+                      }}>
+                        <LinkIcon size={12} color="var(--mute)" />
+                        <input
+                          className="input"
+                          style={{ border: 'none', padding: '6px 0', fontSize: 12, background: 'transparent', width: '100%' }}
+                          placeholder="https://... (URL foto gambar web)"
+                          value={form.image_url}
+                          onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
