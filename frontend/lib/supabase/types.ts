@@ -96,6 +96,7 @@ export interface Database {
           stock: number
           min_stock: number
           unit: string
+          image_url: string | null
           is_active: boolean
           created_at: string
           updated_at: string
@@ -111,6 +112,7 @@ export interface Database {
           stock?: number
           min_stock?: number
           unit?: string
+          image_url?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -126,6 +128,7 @@ export interface Database {
           stock?: number
           min_stock?: number
           unit?: string
+          image_url?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
