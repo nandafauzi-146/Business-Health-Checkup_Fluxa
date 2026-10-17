@@ -171,107 +171,107 @@ export default function AdminDashboardClient({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {/* Chart */}
           <div className="admin-dashboard-enter" style={{ animationDelay: '150ms' }}>
-          <SectionCard title="Tren Omzet 7 Hari Terakhir">
-            {daily.length > 0 ? <ResponsiveContainer width="100%" height={210}>
-              <BarChart data={daily} margin={{ top: 10, right: 0, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
-                <XAxis
-                  dataKey="sale_date"
-                  tick={{ fontSize: 11, fill: 'var(--mute)' }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(value) => String(typeof value === 'string' && value.length > 2 ? value.slice(-2) : value)}
-                />
-                <Tooltip
-                  formatter={(value, name) => [
-                    String(name) === 'total_revenue' ? formatRp(Number(value ?? 0)) : String(value ?? ''),
-                    String(name) === 'total_revenue' ? 'Omzet' : 'Transaksi'
-                  ]}
-                  contentStyle={{
-                    background: 'var(--panel)',
-                    border: '1px solid var(--line)',
-                    borderRadius: 12,
-                    fontSize: 12.5,
-                    color: 'var(--ink)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
-                  }}
-                />
-                <Bar
-                  dataKey="total_revenue"
-                  radius={[6, 6, 0, 0]}
-                  fill="var(--acc)"
-                  isAnimationActive={!prefersReducedMotion}
-                  animationDuration={650}
-                  animationEasing="ease-out"
-                />
-              </BarChart>
-            </ResponsiveContainer> : <div className="dashboard-empty-state" style={{ height: 210, display: 'grid', placeItems: 'center' }}>Belum ada data omzet untuk ditampilkan.</div>}
-          </SectionCard>
+            <SectionCard title="Tren Omzet 7 Hari Terakhir">
+              {daily.length > 0 ? <ResponsiveContainer width="100%" height={210}>
+                <BarChart data={daily} margin={{ top: 10, right: 0, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
+                  <XAxis
+                    dataKey="sale_date"
+                    tick={{ fontSize: 11, fill: 'var(--mute)' }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(value) => String(typeof value === 'string' && value.length > 2 ? value.slice(-2) : value)}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => [
+                      String(name) === 'total_revenue' ? formatRp(Number(value ?? 0)) : String(value ?? ''),
+                      String(name) === 'total_revenue' ? 'Omzet' : 'Transaksi'
+                    ]}
+                    contentStyle={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--line)',
+                      borderRadius: 12,
+                      fontSize: 12.5,
+                      color: 'var(--ink)',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+                    }}
+                  />
+                  <Bar
+                    dataKey="total_revenue"
+                    radius={[6, 6, 0, 0]}
+                    fill="var(--acc)"
+                    isAnimationActive={!prefersReducedMotion}
+                    animationDuration={650}
+                    animationEasing="ease-out"
+                  />
+                </BarChart>
+              </ResponsiveContainer> : <div className="dashboard-empty-state" style={{ height: 210, display: 'grid', placeItems: 'center' }}>Belum ada data omzet untuk ditampilkan.</div>}
+            </SectionCard>
           </div>
 
           {/* Recent sales */}
           <div className="admin-dashboard-enter" style={{ animationDelay: '300ms' }}>
-          <SectionCard
-            title="Transaksi Kasir Terbaru"
-            action={
-              <Link href="/admin/transaksi" className="btn btn-secondary btn-sm">
-                Lihat Semua <ArrowRight size={12} />
-              </Link>
-            }
-          >
-            {sales.length > 0 ? <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Invoice</th>
-                    <th>Pelanggan</th>
-                    <th>Metode</th>
-                    <th>Total</th>
-                    <th style={{ textAlign: 'right' }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sales.map((s, index) => {
-                    const pay = payMethodLabel[s.payment_method] || { label: s.payment_method, bg: 'var(--bg)', color: 'var(--ink)' }
+            <SectionCard
+              title="Transaksi Kasir Terbaru"
+              action={
+                <Link href="/admin/transaksi" className="btn btn-secondary btn-sm">
+                  Lihat Semua <ArrowRight size={12} />
+                </Link>
+              }
+            >
+              {sales.length > 0 ? <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Invoice</th>
+                      <th>Pelanggan</th>
+                      <th>Metode</th>
+                      <th>Total</th>
+                      <th style={{ textAlign: 'right' }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sales.map((s, index) => {
+                      const pay = payMethodLabel[s.payment_method] || { label: s.payment_method, bg: 'var(--bg)', color: 'var(--ink)' }
 
-                    return (
-                      <tr key={s.id} className="admin-dashboard-table-row" style={{ animationDelay: `${320 + index * 35}ms` }}>
-                        <td>
-                          <span style={{ fontWeight: 600, fontSize: 12.5, fontFamily: 'monospace', color: 'var(--acc)' }}>
-                            {s.invoice_number}
-                          </span>
-                        </td>
-                        <td style={{ fontSize: 13 }}>
-                          {(Array.isArray(s.customers) ? s.customers[0]?.name : s.customers?.name) || <span style={{ color: 'var(--mute)', fontStyle: 'italic' }}>Umum</span>}
-                        </td>
-                        <td>
-                          <span style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            padding: '2px 8px',
-                            borderRadius: 6,
-                            background: pay.bg,
-                            color: pay.color
-                          }}>
-                            {pay.label}
-                          </span>
-                        </td>
-                        <td style={{ fontWeight: 700, fontSize: 13 }}>
-                          {formatRp(s.final_amount)}
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <StatusTag
-                            status={s.status === 'completed' ? 'sehat' : 'void'}
-                            label={s.status === 'completed' ? 'Selesai' : 'Void'}
-                          />
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div> : <div className="dashboard-empty-state">Belum ada transaksi terbaru.</div>}
-          </SectionCard>
+                      return (
+                        <tr key={s.id} className="admin-dashboard-table-row" style={{ animationDelay: `${320 + index * 35}ms` }}>
+                          <td>
+                            <span style={{ fontWeight: 600, fontSize: 12.5, fontFamily: 'monospace', color: 'var(--acc)' }}>
+                              {s.invoice_number}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: 13 }}>
+                            {(Array.isArray(s.customers) ? s.customers[0]?.name : s.customers?.name) || <span style={{ color: 'var(--mute)', fontStyle: 'italic' }}>Umum</span>}
+                          </td>
+                          <td>
+                            <span style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              padding: '2px 8px',
+                              borderRadius: 6,
+                              background: pay.bg,
+                              color: pay.color
+                            }}>
+                              {pay.label}
+                            </span>
+                          </td>
+                          <td style={{ fontWeight: 700, fontSize: 13 }}>
+                            {formatRp(s.final_amount)}
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <StatusTag
+                              status={s.status === 'completed' ? 'sehat' : 'void'}
+                              label={s.status === 'completed' ? 'Selesai' : 'Void'}
+                            />
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div> : <div className="dashboard-empty-state">Belum ada transaksi terbaru.</div>}
+            </SectionCard>
           </div>
         </div>
 
@@ -279,159 +279,159 @@ export default function AdminDashboardClient({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {/* Low stock */}
           <div className="admin-dashboard-enter" style={{ animationDelay: '225ms' }}>
-          <SectionCard
-            title={`Peringatan Stok Menipis ${lowStock.length > 0 ? `(${lowStock.length})` : ''}`}
-            action={
-              <Link href="/admin/stok" className="btn btn-secondary btn-sm">
-                Kelola Stok <ArrowRight size={12} />
-              </Link>
-            }
-          >
-            {lowStock.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--ok)', fontSize: 13, fontWeight: 500 }}>
-                ✅ Seluruh stok produk dalam batas aman
-              </div>
-            ) : (
-              <div className="admin-stock-list" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {lowStock.map((p, index) => {
-                  const pct = p.min_stock > 0 ? Math.round((p.stock / p.min_stock) * 100) : 0
-                  const isCritical = p.stock <= 0 || pct < 30
+            <SectionCard
+              title={`Peringatan Stok Menipis ${lowStock.length > 0 ? `(${lowStock.length})` : ''}`}
+              action={
+                <Link href="/admin/stok" className="btn btn-secondary btn-sm">
+                  Kelola Stok <ArrowRight size={12} />
+                </Link>
+              }
+            >
+              {lowStock.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--ok)', fontSize: 13, fontWeight: 500 }}>
+                  ✅ Seluruh stok produk dalam batas aman
+                </div>
+              ) : (
+                <div className="admin-stock-list" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {lowStock.map((p, index) => {
+                    const pct = p.min_stock > 0 ? Math.round((p.stock / p.min_stock) * 100) : 0
+                    const isCritical = p.stock <= 0 || pct < 30
 
-                  return (
+                    return (
+                      <div
+                        key={p.id}
+                        style={{
+                          padding: '12px 14px',
+                          background: 'var(--bg)',
+                          border: '1px solid var(--line)',
+                          borderRadius: 12,
+                          ['--stock-delay' as string]: `${index * 65}ms`
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--ink)' }}>{p.name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--mute)' }}>{p.category_name || 'Umum'}</div>
+                          </div>
+                          <StatusTag status={isCritical ? 'kritis' : 'menipis'} />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ flex: 1, height: 5, background: 'var(--line)', borderRadius: 4, overflow: 'hidden' }}>
+                            <div className="admin-stock-progress-fill" style={{
+                              ['--stock-progress' as string]: `${Math.min(pct, 100)}%`,
+                              height: '100%',
+                              width: 'var(--stock-progress)',
+                              background: isCritical ? 'var(--bad)' : 'var(--warn)',
+                              borderRadius: 4
+                            }} />
+                          </div>
+                          <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--mute)', whiteSpace: 'nowrap' }}>
+                            {p.stock} / {p.min_stock} {p.unit}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </SectionCard>
+          </div>
+
+          {/* Laporan Refund & Pembatalan Kasir */}
+          <div className="admin-dashboard-enter" style={{ animationDelay: '300ms' }}>
+            <SectionCard
+              title="Laporan Refund & Pembatalan Kasir"
+              action={
+                <Link href="/admin/transaksi" style={{ fontSize: 12, color: 'var(--acc)', textDecoration: 'none', fontWeight: 600 }}>
+                  Audit Transaksi →
+                </Link>
+              }
+            >
+              {voidList.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--mute)', fontSize: 12.5 }}>
+                  Belum ada transaksi refund yang dilaporkan hari ini
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {voidList.map((v) => (
                     <div
-                      key={p.id}
+                      key={v.id}
                       style={{
                         padding: '12px 14px',
                         background: 'var(--bg)',
                         border: '1px solid var(--line)',
-                        borderRadius: 12,
-                        ['--stock-delay' as string]: `${index * 65}ms`
+                        borderLeft: '3px solid var(--bad)',
+                        borderRadius: 12
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
                         <div>
-                          <div style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--ink)' }}>{p.name}</div>
-                          <div style={{ fontSize: 11, color: 'var(--mute)' }}>{p.category_name || 'Umum'}</div>
+                          <div style={{ fontWeight: 700, fontSize: 13, fontFamily: 'monospace', color: 'var(--ink)' }}>
+                            {v.invoice_number}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--mute)' }}>
+                            Kasir: {(Array.isArray(v.profiles) ? v.profiles[0]?.full_name : v.profiles?.full_name) || 'Kasir'} • {new Date(v.voided_at || v.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
+                          </div>
                         </div>
-                        <StatusTag status={isCritical ? 'kritis' : 'menipis'} />
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ flex: 1, height: 5, background: 'var(--line)', borderRadius: 4, overflow: 'hidden' }}>
-                        <div className="admin-stock-progress-fill" style={{
-                            ['--stock-progress' as string]: `${Math.min(pct, 100)}%`,
-                            height: '100%',
-                            width: 'var(--stock-progress)',
-                            background: isCritical ? 'var(--bad)' : 'var(--warn)',
-                            borderRadius: 4
-                          }} />
-                        </div>
-                        <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--mute)', whiteSpace: 'nowrap' }}>
-                          {p.stock} / {p.min_stock} {p.unit}
+                        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--bad)' }}>
+                          -Rp {v.final_amount.toLocaleString('id-ID')}
                         </span>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </SectionCard>
-          </div>
- 
-          {/* Laporan Refund & Pembatalan Kasir */}
-          <div className="admin-dashboard-enter" style={{ animationDelay: '300ms' }}>
-          <SectionCard
-            title="Laporan Refund & Pembatalan Kasir"
-            action={
-              <Link href="/admin/transaksi" style={{ fontSize: 12, color: 'var(--acc)', textDecoration: 'none', fontWeight: 600 }}>
-                Audit Transaksi →
-              </Link>
-            }
-          >
-            {voidList.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--mute)', fontSize: 12.5 }}>
-                Belum ada transaksi refund yang dilaporkan hari ini
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {voidList.map((v) => (
-                  <div
-                    key={v.id}
-                    style={{
-                      padding: '12px 14px',
-                      background: 'var(--bg)',
-                      border: '1px solid var(--line)',
-                      borderLeft: '3px solid var(--bad)',
-                      borderRadius: 12
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: 13, fontFamily: 'monospace', color: 'var(--ink)' }}>
-                          {v.invoice_number}
-                        </div>
-                        <div style={{ fontSize: 11, color: 'var(--mute)' }}>
-                          Kasir: {(Array.isArray(v.profiles) ? v.profiles[0]?.full_name : v.profiles?.full_name) || 'Kasir'} • {new Date(v.voided_at || v.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
-                        </div>
+                      <div style={{ fontSize: 11.5, color: 'var(--mute)', background: 'var(--panel)', padding: '5px 8px', borderRadius: 6, marginTop: 4 }}>
+                        <strong>Alasan:</strong> {v.void_reason || 'Pembatalan transaksi oleh kasir'}
                       </div>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--bad)' }}>
-                        -Rp {v.final_amount.toLocaleString('id-ID')}
-                      </span>
                     </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--mute)', background: 'var(--panel)', padding: '5px 8px', borderRadius: 6, marginTop: 4 }}>
-                      <strong>Alasan:</strong> {v.void_reason || 'Pembatalan transaksi oleh kasir'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </SectionCard>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
           </div>
 
           {/* Quick actions */}
           <div className="admin-dashboard-enter" style={{ animationDelay: '375ms' }}>
-          <SectionCard title="Akses Cepat Modul Admin">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              {[
-                { label: 'Katalog Produk', href: '/admin/produk', icon: <Package size={18} />, color: 'var(--acc)', bg: 'var(--accs)' },
-                { label: 'Audit Stok', href: '/admin/stok', icon: <Layers size={18} />, color: 'var(--ok)', bg: 'var(--oks)' },
-                { label: 'Catat Biaya', href: '/admin/biaya', icon: <DollarSign size={18} />, color: 'var(--warn)', bg: 'var(--warns)' },
-                { label: 'Kasbon Pelanggan', href: '/admin/kasbon', icon: <CreditCard size={18} />, color: 'var(--bad)', bg: 'var(--bads)' },
-              ].map(a => (
-                <Link
-                  key={a.label}
-                  href={a.href}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '16px 12px',
-                    background: 'var(--bg)',
-                    border: '1px solid var(--line)',
-                    borderRadius: 14,
-                    textDecoration: 'none',
-                    color: 'var(--ink)',
-                    transition: 'all 0.15s ease'
-                  }}
-                  className="quick-action-link"
-                >
-                  <div style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 10,
-                    background: a.bg,
-                    color: a.color,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    {a.icon}
-                  </div>
-                  <span style={{ fontSize: 12.5, fontWeight: 600, textAlign: 'center' }}>{a.label}</span>
-                </Link>
-              ))}
-            </div>
-          </SectionCard>
+            <SectionCard title="Akses Cepat Modul Admin">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {[
+                  { label: 'Katalog Produk', href: '/admin/produk', icon: <Package size={18} />, color: 'var(--acc)', bg: 'var(--accs)' },
+                  { label: 'Audit Stok', href: '/admin/stok', icon: <Layers size={18} />, color: 'var(--ok)', bg: 'var(--oks)' },
+                  { label: 'Catat Biaya', href: '/admin/biaya', icon: <DollarSign size={18} />, color: 'var(--warn)', bg: 'var(--warns)' },
+                  { label: 'Kasbon Pelanggan', href: '/admin/kasbon', icon: <CreditCard size={18} />, color: 'var(--bad)', bg: 'var(--bads)' },
+                ].map(a => (
+                  <Link
+                    key={a.label}
+                    href={a.href}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '16px 12px',
+                      background: 'var(--bg)',
+                      border: '1px solid var(--line)',
+                      borderRadius: 14,
+                      textDecoration: 'none',
+                      color: 'var(--ink)',
+                      transition: 'all 0.15s ease'
+                    }}
+                    className="quick-action-link"
+                  >
+                    <div style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 10,
+                      background: a.bg,
+                      color: a.color,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      {a.icon}
+                    </div>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, textAlign: 'center' }}>{a.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </SectionCard>
           </div>
         </div>
       </div>

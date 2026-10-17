@@ -19,7 +19,7 @@ export default async function OwnerLayout({ children }: { children: React.ReactN
   if (profile?.role !== 'owner') redirect('/login')
 
   return (
-    <div className="app-layout">
+    <div className="app-layout" data-role="owner">
       <Sidebar role="owner" userName={profile.full_name || 'Owner'} />
       <div className="main-area">
         <Topbar title="" role="owner" />

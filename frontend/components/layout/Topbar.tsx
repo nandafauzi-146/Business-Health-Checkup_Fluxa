@@ -5,10 +5,11 @@ import {
   Activity, TrendingUp, ShieldAlert, CheckCheck, X, ChevronRight,
   Receipt, CreditCard, Sparkles, Check
 } from 'lucide-react'
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from '@/components/layout/ThemeProvider'
+import { menuByRole } from '@/components/layout/role-navigation'
 
 export interface NotificationItem {
   id: string
@@ -232,13 +233,20 @@ function getDefaultNotifications(role: 'kasir' | 'admin' | 'owner'): Notificatio
 
 export default function Topbar({ title, subtitle, actions, role }: TopbarProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const [notifOpen, setNotifOpen] = useState(false)
   const [appearanceOpen, setAppearanceOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const deferredSearchQuery = useDeferredValue(searchQuery)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [activeSearchIndex, setActiveSearchIndex] = useState(-1)
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'reports'>('all')
   const [mounted, setMounted] = useState(false)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const notifRef = useRef<HTMLDivElement>(null)
   const appearanceRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const { preference, isDark, setPreference } = useTheme()
 
   // Tentukan role efektif
@@ -248,6 +256,47 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
     if (pathname?.startsWith('/admin')) return 'admin'
     return 'kasir'
   }, [role, pathname])
+  const isDashboardPage = pathname === '/admin' || pathname === '/owner' || pathname === '/kasir'
+  const isSearchPending = searchQuery !== deferredSearchQuery
+  const searchableMenuItems = useMemo(
+    () => menuByRole[effectiveRole].flatMap(group =>
+      group.items.map(item => ({ label: item.label, href: item.href, group: group.label }))
+    ),
+    [effectiveRole]
+  )
+  const filteredSearchItems = useMemo(() => {
+    const query = deferredSearchQuery.trim().toLocaleLowerCase('id-ID')
+    if (!query) return []
+    return searchableMenuItems.filter(item =>
+      `${item.label} ${item.group}`.toLocaleLowerCase('id-ID').includes(query)
+    )
+  }, [deferredSearchQuery, searchableMenuItems])
+
+  const navigateToSearchResult = (href: string) => {
+    setSearchOpen(false)
+    setSearchQuery('')
+    setActiveSearchIndex(-1)
+    router.push(href)
+  }
+
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Escape') {
+      setSearchOpen(false)
+      setActiveSearchIndex(-1)
+    } else if (event.key === 'ArrowDown' && !isSearchPending && filteredSearchItems.length > 0) {
+      event.preventDefault()
+      setSearchOpen(true)
+      setActiveSearchIndex(index => (index + 1) % filteredSearchItems.length)
+    } else if (event.key === 'ArrowUp' && !isSearchPending && filteredSearchItems.length > 0) {
+      event.preventDefault()
+      setSearchOpen(true)
+      setActiveSearchIndex(index => index <= 0 ? filteredSearchItems.length - 1 : index - 1)
+    } else if (event.key === 'Enter' && searchOpen && !isSearchPending && filteredSearchItems.length > 0) {
+      event.preventDefault()
+      const selected = filteredSearchItems[activeSearchIndex >= 0 ? activeSearchIndex : 0]
+      navigateToSearchResult(selected.href)
+    }
+  }
 
   // Close popovers when clicking outside.
   useEffect(() => {
@@ -256,6 +305,7 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
       const target = e.target as Node
       if (notifRef.current && !notifRef.current.contains(target)) setNotifOpen(false)
       if (appearanceRef.current && !appearanceRef.current.contains(target)) setAppearanceOpen(false)
+      if (searchRef.current && !searchRef.current.contains(target)) setSearchOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -382,14 +432,92 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
 
   return (
     <div className="topbar">
-      {/* Search */}
-      <div className="search-pill" style={{ flex: 1, maxWidth: 340 }}>
-        <Search size={14} color="var(--mute)" />
-        <input placeholder="Cari... ⌘K" aria-label="Cari" />
-      </div>
+      {isDashboardPage && (
+        <div ref={searchRef} className="dashboard-search-wrap">
+          <div className="search-pill">
+            <Search size={17} aria-hidden="true" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              role="combobox"
+              aria-label="Cari menu dashboard"
+              aria-autocomplete="list"
+              aria-haspopup="listbox"
+              aria-expanded={searchOpen}
+              aria-controls="dashboard-search-results"
+              aria-activedescendant={
+                searchOpen && activeSearchIndex >= 0
+                  ? `dashboard-search-option-${activeSearchIndex}`
+                  : undefined
+              }
+              placeholder="Cari menu..."
+              value={searchQuery}
+              onFocus={() => setSearchOpen(true)}
+              onChange={event => {
+                setSearchQuery(event.target.value)
+                setSearchOpen(true)
+                setActiveSearchIndex(-1)
+              }}
+              onKeyDown={handleSearchKeyDown}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="dashboard-search-clear"
+                aria-label="Hapus pencarian"
+                onClick={() => {
+                  setSearchQuery('')
+                  setActiveSearchIndex(-1)
+                  setSearchOpen(true)
+                  searchInputRef.current?.focus()
+                }}
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
+          {searchOpen && (
+            <div
+              id="dashboard-search-results"
+              className="dashboard-search-results"
+              role="listbox"
+              aria-label="Hasil pencarian menu"
+            >
+              {isSearchPending ? (
+                <p className="dashboard-search-empty" role="status">Mencari menu...</p>
+              ) : searchQuery.trim() ? (
+                filteredSearchItems.length > 0 ? (
+                  filteredSearchItems.map((item, index) => (
+                    <button
+                      key={item.href}
+                      id={`dashboard-search-option-${index}`}
+                      type="button"
+                      role="option"
+                      aria-selected={activeSearchIndex === index}
+                      className={`dashboard-search-result${activeSearchIndex === index ? ' is-active' : ''}`}
+                      onMouseEnter={() => setActiveSearchIndex(index)}
+                      onClick={() => navigateToSearchResult(item.href)}
+                    >
+                      <span>
+                        <strong>{item.label}</strong>
+                        <small>{item.group}</small>
+                      </span>
+                      <ChevronRight size={16} aria-hidden="true" />
+                    </button>
+                  ))
+                ) : (
+                  <p className="dashboard-search-empty" role="status">Menu tidak ditemukan.</p>
+                )
+              ) : (
+                <p className="dashboard-search-empty">Ketik nama menu untuk mencari.</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Right side */}
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
+      <div className="topbar-actions">
         {/* Appearance menu */}
         <div ref={appearanceRef} className="appearance-menu">
           <button

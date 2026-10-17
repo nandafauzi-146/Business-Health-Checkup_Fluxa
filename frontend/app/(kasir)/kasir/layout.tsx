@@ -28,7 +28,7 @@ export default async function KasirLayout({ children }: { children: React.ReactN
   const activeShift = shifts?.[0] || null
 
   return (
-    <div className="app-layout">
+    <div className="app-layout" data-role="kasir">
       <Sidebar
         role="kasir"
         userName={profile.full_name || 'Kasir'}

@@ -1,313 +1,562 @@
 'use client'
 
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts'
-import { TrendingUp, DollarSign, ShoppingCart, AlertCircle, Package, CreditCard, Sparkles } from 'lucide-react'
-import { KpiCard, SectionCard, StatusTag } from '@/components/ui/Cards'
+import {
+  Activity,
+  AlertCircle,
+  ArrowUpRight,
+  CalendarDays,
+  CreditCard,
+  DollarSign,
+  Download,
+  FileText,
+  Package,
+  Sparkles,
+  TrendingUp,
+} from 'lucide-react'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ComposedChart,
+  Line,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
+import { SectionCard, StatusTag } from '@/components/ui/Cards'
+import type { Database, Json } from '@/lib/supabase/types'
 
-function formatRp(n: number) {
-  return 'Rp' + new Intl.NumberFormat('id-ID').format(n)
+type MonthlySummary = Database['public']['Views']['v_monthly_revenue_cogs']['Row']
+type DailySale = Database['public']['Views']['v_daily_sales_summary']['Row']
+type Checkup = Pick<
+  Database['public']['Tables']['checkups']['Row'],
+  'overall_score' | 'health_status' | 'metrics' | 'ai_recommendations' | 'period_start' | 'period_end' | 'created_at'
+>
+type HealthDimension = {
+  dimension: string
+  score: number
+  status: 'sehat' | 'waspada' | 'kritis'
 }
-function formatK(n: number) {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'Jt'
-  if (n >= 1_000) return (n / 1_000).toFixed(0) + 'Rb'
-  return String(n)
+type BestSellingProduct = {
+  id: string
+  name: string
+  quantity: number
+  revenue: number
+}
+type CategorySale = {
+  id: string
+  name: string
+  revenue: number
+}
+type RecentSale = {
+  id: string
+  invoice_number: string
+  final_amount: number
+  created_at: string
 }
 
 interface Props {
-  currentMonth: any
-  prevMonth: any
-  monthlySummary: any[]
-  dailySales: any[]
-  latestCheckup: any
+  currentMonth: MonthlySummary | null
+  prevMonth: MonthlySummary | null
+  monthlySummary: MonthlySummary[]
+  dailySales: DailySale[]
+  latestCheckup: Checkup | null
   lowStockCount: number
   totalPendingReceivables: number
+  bestSellingProducts: BestSellingProduct[]
+  categorySales: CategorySale[]
+  recentSales: RecentSale[]
 }
 
-const DEMO_MONTHLY = [
-  { month: '2026-05', gross_revenue: 42000000, cogs: 28000000, gross_profit: 14000000 },
-  { month: '2026-06', gross_revenue: 48000000, cogs: 30000000, gross_profit: 18000000 },
-  { month: '2026-07', gross_revenue: 38000000, cogs: 24000000, gross_profit: 14000000 },
-  { month: '2026-08', gross_revenue: 52000000, cogs: 32000000, gross_profit: 20000000 },
-  { month: '2026-09', gross_revenue: 61000000, cogs: 38000000, gross_profit: 23000000 },
-  { month: '2026-10', gross_revenue: 55000000, cogs: 34000000, gross_profit: 21000000 },
-]
+const CATEGORIES_PALETTE = ['#4f83ff', '#8b5cf6', '#20d9f5', '#fbbf24', '#34d399', '#fb7185']
 
-const DEMO_DAILY = [
-  { sale_date: '01', total_revenue: 1800000 },
-  { sale_date: '02', total_revenue: 2200000 },
-  { sale_date: '03', total_revenue: 1500000 },
-  { sale_date: '04', total_revenue: 3100000 },
-  { sale_date: '05', total_revenue: 2800000 },
-  { sale_date: '06', total_revenue: 4200000 },
-  { sale_date: '07', total_revenue: 3700000 },
-]
+const currencyFormatter = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  maximumFractionDigits: 0,
+})
 
-const HEALTH_SCORES = [
-  { dimension: 'Profitabilitas', score: 72, status: 'sehat' },
-  { dimension: 'Cash Flow', score: 58, status: 'waspada' },
-  { dimension: 'Efisiensi Biaya', score: 45, status: 'waspada' },
-  { dimension: 'Utang', score: 81, status: 'sehat' },
-  { dimension: 'Pertumbuhan', score: 65, status: 'waspada' },
-  { dimension: 'Perputaran Stok', score: 38, status: 'kritis' },
-]
+function formatRp(value: number | null | undefined) {
+  return value === null || value === undefined ? '—' : currencyFormatter.format(value)
+}
 
-function ScoreCircle({ score, status }: { score: number, status: string }) {
-  const color = status === 'sehat' ? 'var(--ok)' : status === 'waspada' ? 'var(--warn)' : 'var(--bad)'
-  const bg = status === 'sehat' ? 'var(--oks)' : status === 'waspada' ? 'var(--warns)' : 'var(--bads)'
+function formatCompact(value: number) {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)} jt`
+  if (value >= 1_000) return `${Math.round(value / 1_000)} rb`
+  return String(value)
+}
+
+function formatMonth(value: string) {
+  return new Intl.DateTimeFormat('id-ID', {
+    month: 'short',
+    timeZone: 'Asia/Jakarta',
+  }).format(new Date(`${value}-01T12:00:00+07:00`))
+}
+
+function formatDay(value: string) {
+  return new Intl.DateTimeFormat('id-ID', {
+    weekday: 'short',
+    day: 'numeric',
+    timeZone: 'Asia/Jakarta',
+  }).format(new Date(`${value}T12:00:00+07:00`))
+}
+
+function formatTime(value: string) {
+  return new Intl.DateTimeFormat('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Jakarta',
+  }).format(new Date(value))
+}
+
+function getHealthDimensions(metrics: Json | null): HealthDimension[] {
+  if (!metrics || typeof metrics !== 'object' || Array.isArray(metrics)) return []
+
+  const dimensions = metrics.dimension_scores
+  if (!Array.isArray(dimensions)) return []
+
+  return dimensions.flatMap((dimension): HealthDimension[] => {
+    if (!dimension || typeof dimension !== 'object' || Array.isArray(dimension)) return []
+
+    const name = dimension.dimension
+    const score = dimension.score
+    const status = dimension.status
+
+    if (
+      typeof name !== 'string'
+      || typeof score !== 'number'
+      || (status !== 'sehat' && status !== 'waspada' && status !== 'kritis')
+    ) return []
+
+    return [{ dimension: name, score, status }]
+  })
+}
+
+function exportMonthlyReport(months: MonthlySummary[]) {
+  const escapeCsv = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`
+  const rows = [
+    ['Periode', 'Omzet (Rp)', 'HPP (Rp)', 'Laba Kotor (Rp)'],
+    ...months.map((month) => [month.month, month.gross_revenue, month.cogs, month.gross_profit]),
+  ]
+  const csv = `\uFEFF${rows.map((row) => row.map(escapeCsv).join(',')).join('\r\n')}`
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = `fluxa-ringkasan-${new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta' }).format(new Date())}.csv`
+  document.body.append(anchor)
+  anchor.click()
+  anchor.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true)
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches)
+    updatePreference()
+    mediaQuery.addEventListener('change', updatePreference)
+    return () => mediaQuery.removeEventListener('change', updatePreference)
+  }, [])
+
+  return prefersReducedMotion
+}
+
+function Sparkline({ values, color }: { values: number[]; color: string }) {
+  if (values.length < 2 || values.every((value) => value === 0)) return null
+
+  const minimum = Math.min(...values)
+  const range = Math.max(...values) - minimum || 1
+  const points = values.map((value, index) => {
+    const x = (index / (values.length - 1)) * 100
+    const y = 30 - ((value - minimum) / range) * 24
+    return `${x},${y}`
+  })
+
   return (
-    <div style={{
-      width: 50, height: 50, borderRadius: '50%',
-      background: bg, color, fontWeight: 700, fontSize: 16,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-    }}>{score}</div>
+    <svg className="owner-kpi-sparkline" viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points={points.join(' ')} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function DashboardKpi({
+  label,
+  value,
+  detail,
+  icon,
+  color,
+  values,
+}: {
+  label: string
+  value: string
+  detail: string
+  icon: React.ReactNode
+  color: string
+  values: number[]
+}) {
+  return (
+    <article className="card owner-dashboard-kpi">
+      <div className="owner-kpi-heading">
+        <span>{label}</span>
+        <span className="owner-kpi-icon" style={{ '--kpi-color': color } as React.CSSProperties}>{icon}</span>
+      </div>
+      <strong className="owner-kpi-value">{value}</strong>
+      <div className="owner-kpi-footer">
+        <span style={{ color }}>{detail}</span>
+        <Sparkline values={values} color={color} />
+      </div>
+    </article>
   )
 }
 
 export default function OwnerDashboardClient({
-  currentMonth, prevMonth, monthlySummary, dailySales,
-  latestCheckup, lowStockCount, totalPendingReceivables
+  currentMonth,
+  prevMonth,
+  monthlySummary,
+  dailySales,
+  latestCheckup,
+  lowStockCount,
+  totalPendingReceivables,
+  bestSellingProducts,
+  categorySales,
+  recentSales,
 }: Props) {
-
-  const monthly = monthlySummary.length > 0 ? monthlySummary : DEMO_MONTHLY
-  const daily = dailySales.length > 0 ? dailySales : DEMO_DAILY
-
-  const cur = currentMonth || DEMO_MONTHLY[DEMO_MONTHLY.length - 1]
-  const prev = prevMonth || DEMO_MONTHLY[DEMO_MONTHLY.length - 2]
-
-  const revenueChange = prev?.gross_revenue ? ((cur.gross_revenue - prev.gross_revenue) / prev.gross_revenue) * 100 : 0
-  const profitChange = prev?.gross_profit ? ((cur.gross_profit - prev.gross_profit) / prev.gross_profit) * 100 : 0
-
-  const overallScore = latestCheckup?.overall_score || 62
-
-  const monthlyChartData = monthly.map((m: any) => ({
-    name: m.month?.slice(5) || m.sale_date,
-    Omzet: m.gross_revenue,
-    'HPP': m.cogs,
-    'Laba Kotor': m.gross_profit,
+  const prefersReducedMotion = usePrefersReducedMotion()
+  const overallScore = latestCheckup?.overall_score ?? null
+  const healthDimensions = getHealthDimensions(latestCheckup?.metrics ?? null)
+  const monthLabel = new Intl.DateTimeFormat('id-ID', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Asia/Jakarta',
+  }).format(new Date())
+  const sevenDayRevenue = dailySales.reduce((total, sale) => total + sale.total_revenue, 0)
+  const sevenDayTransactions = dailySales.reduce((total, sale) => total + sale.transaction_count, 0)
+  const averageTransaction = sevenDayTransactions > 0 ? Math.round(sevenDayRevenue / sevenDayTransactions) : null
+  const dailyChartData = dailySales.map((sale) => ({
+    name: formatDay(sale.sale_date),
+    revenue: sale.total_revenue,
+    transactions: sale.transaction_count,
   }))
-
-  const dailyMax = Math.max(...daily.map((d: any) => d.total_revenue || 0))
+  const monthlyChartData = monthlySummary.map((month) => ({
+    name: formatMonth(month.month),
+    revenue: month.gross_revenue,
+    profit: month.gross_profit,
+  }))
+  const revenueChange = currentMonth && prevMonth && prevMonth.gross_revenue > 0
+    ? ((currentMonth.gross_revenue - prevMonth.gross_revenue) / prevMonth.gross_revenue) * 100
+    : null
+  const latestRecommendation = latestCheckup?.ai_recommendations?.trim()
+  const healthStatus = latestCheckup?.health_status ?? null
+  const healthColor = healthStatus === 'sehat'
+    ? 'var(--ok)'
+    : healthStatus === 'waspada'
+      ? 'var(--warn)'
+      : 'var(--bad)'
+  const totalCategoryRevenue = categorySales.reduce((total, category) => total + category.revenue, 0)
+  const maximumProductQuantity = Math.max(...bestSellingProducts.map((product) => product.quantity), 0)
 
   return (
     <div className="owner-dashboard role-dashboard-enter">
-      {/* Page header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+      <header className="owner-dashboard-header">
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700 }}>Dashboard Owner</h1>
-          <p style={{ color: 'var(--mute)', fontSize: 13, marginTop: 2 }}>
-            Ringkasan kinerja bisnis Anda
-          </p>
+          <div className="dashboard-eyebrow"><Activity size={13} /> RINGKASAN BISNIS</div>
+          <h1>Selamat datang kembali 👋</h1>
+          <p>Berikut ringkasan performa bisnis Anda.</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <div style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '6px 12px', fontSize: 13, color: 'var(--mute)' }}>
-            Okt 2026
-          </div>
-          <button className="btn btn-primary" style={{ gap: 5 }}>
-            <TrendingUp size={14} /> Ekspor
+        <div className="owner-dashboard-actions">
+          <span className="dashboard-period"><CalendarDays size={14} /> {monthLabel}</span>
+          <button
+            className="btn btn-primary"
+            type="button"
+            onClick={() => exportMonthlyReport(monthlySummary)}
+            disabled={monthlySummary.length === 0}
+          >
+            <Download size={15} /> Ekspor
           </button>
         </div>
+      </header>
+
+      <div className="owner-dashboard-kpis">
+        <DashboardKpi
+          label="Omzet 7 Hari"
+          value={formatRp(sevenDayRevenue)}
+          detail={revenueChange === null ? 'Performa periode ini' : `${revenueChange >= 0 ? '+' : ''}${revenueChange.toFixed(1)}% vs bulan lalu`}
+          icon={<DollarSign size={17} />}
+          color="#20d9f5"
+          values={dailySales.map((sale) => sale.total_revenue)}
+        />
+        <DashboardKpi
+          label="Laba Kotor Bulan Ini"
+          value={formatRp(currentMonth?.gross_profit)}
+          detail={currentMonth && currentMonth.gross_revenue > 0
+            ? `Margin ${((currentMonth.gross_profit / currentMonth.gross_revenue) * 100).toFixed(1)}%`
+            : 'Menunggu transaksi'}
+          icon={<TrendingUp size={17} />}
+          color="#22d3a6"
+          values={monthlySummary.map((month) => month.gross_profit)}
+        />
+        <DashboardKpi
+          label="Jumlah Transaksi"
+          value={sevenDayTransactions.toLocaleString('id-ID')}
+          detail="7 hari terakhir"
+          icon={<CreditCard size={17} />}
+          color="#a78bfa"
+          values={dailySales.map((sale) => sale.transaction_count)}
+        />
+        <DashboardKpi
+          label="Rata-rata Keranjang"
+          value={formatRp(averageTransaction)}
+          detail={averageTransaction === null ? 'Belum ada transaksi' : 'Nilai rata-rata 7 hari'}
+          icon={<Package size={17} />}
+          color="#fbbf24"
+          values={dailySales.map((sale) => sale.transaction_count > 0
+            ? Math.round(sale.total_revenue / sale.transaction_count)
+            : 0)}
+        />
       </div>
 
-      {/* KPI row */}
-      <div className="kpi-grid">
-        <KpiCard
-          label="Omzet Bulan Ini"
-          value={formatRp(cur.gross_revenue || 55000000)}
-          icon={<DollarSign size={15} />}
-          change={revenueChange}
-          changeLabel={`vs ${prev?.month || 'bulan lalu'}`}
-        />
-        <KpiCard
-          label="Laba Kotor"
-          value={formatRp(cur.gross_profit || 21000000)}
-          icon={<TrendingUp size={15} />}
-          change={profitChange}
-          changeLabel={`Margin ${cur.gross_revenue ? ((cur.gross_profit / cur.gross_revenue) * 100).toFixed(1) : '38.2'}%`}
-        />
-        <KpiCard
-          label="Skor Kesehatan"
-          value={`${overallScore}/100`}
-          icon={<Sparkles size={15} />}
-          change={undefined}
-          changeLabel={overallScore >= 70 ? 'Bisnis Sehat' : overallScore >= 40 ? 'Perlu Perhatian' : 'Status Kritis'}
-        />
-        <KpiCard
-          label="Piutang Belum Lunas"
-          value={formatRp(totalPendingReceivables || 4500000)}
-          icon={<CreditCard size={15} />}
-          change={undefined}
-          changeLabel="Perlu ditagih"
-        />
-      </div>
-
-      {/* Two columns */}
-      <div className="two-col" style={{ gap: 16 }}>
-        {/* Left column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Revenue bar chart */}
-          <SectionCard
-            title="Tren Omzet & Laba 6 Bulan"
-            action={
-              <div style={{ display: 'flex', gap: 14, fontSize: 11, color: 'var(--mute)', alignItems: 'center' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 3, background: 'var(--acc)', display: 'inline-block' }} />
-                  Omzet
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 3, background: 'var(--ok)', display: 'inline-block' }} />
-                  Laba Kotor
-                </span>
-              </div>
-            }
-          >
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={monthlyChartData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }} barGap={3}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--mute)' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: 'var(--mute)' }} axisLine={false} tickLine={false} tickFormatter={formatK} />
-                <Tooltip formatter={(v: any) => formatRp(v)} contentStyle={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 10, fontSize: 12 }} />
-                <Bar dataKey="Omzet" fill="var(--acc)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Laba Kotor" fill="var(--ok)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-
-            {/* Segment row */}
-            <div style={{ display: 'flex', gap: 12, marginTop: 14 }}>
-              {[
-                { label: 'Total Omzet', value: formatRp(cur.gross_revenue || 55000000), color: 'var(--acc)' },
-                { label: 'HPP', value: formatRp(cur.cogs || 34000000), color: 'var(--seg-orange)' },
-                { label: 'Laba Kotor', value: formatRp(cur.gross_profit || 21000000), color: 'var(--ok)' },
-              ].map(seg => (
-                <div key={seg.label} style={{ flex: 1, paddingTop: 10, borderTop: `3px solid ${seg.color}` }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>{seg.value}</div>
-                  <div style={{ fontSize: 11, color: 'var(--mute)', marginTop: 2 }}>{seg.label}</div>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-
-          {/* Health Scores */}
-          <SectionCard
-            title="Skor Kesehatan Bisnis"
-            action={
-              <Link href="/owner/rapor" className="btn btn-secondary btn-sm">
-                Lihat Rapor
-              </Link>
-            }
-          >
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              {HEALTH_SCORES.map(hs => (
-                <div key={hs.dimension} style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '10px', background: 'var(--bg)', borderRadius: 10
-                }}>
-                  <ScoreCircle score={hs.score} status={hs.status} />
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{hs.dimension}</div>
-                    <StatusTag status={hs.status} />
+      <div className="owner-dashboard-grid">
+        <main className="owner-dashboard-main">
+          <div className="owner-dashboard-feature-row">
+            <SectionCard title="Tren Omzet & Transaksi">
+              <p className="owner-panel-subtitle">Performa penjualan 7 hari terakhir</p>
+              {dailyChartData.length > 0 ? (
+                <>
+                  <div className="owner-chart-legend">
+                    <span><i className="owner-legend-revenue" /> Omzet</span>
+                    <span><i className="owner-legend-transactions" /> Transaksi</span>
                   </div>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-        </div>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <ComposedChart data={dailyChartData} margin={{ top: 12, right: 0, left: -10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 5" stroke="var(--line)" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--mute)' }} axisLine={false} tickLine={false} />
+                      <YAxis yAxisId="revenue" tick={{ fontSize: 9, fill: 'var(--mute)' }} axisLine={false} tickLine={false} tickFormatter={formatCompact} width={48} />
+                      <YAxis yAxisId="transactions" orientation="right" allowDecimals={false} hide />
+                      <Tooltip
+                        formatter={(value, name) => [
+                          name === 'revenue' ? formatRp(Number(value ?? 0)) : Number(value ?? 0).toLocaleString('id-ID'),
+                          name === 'revenue' ? 'Omzet' : 'Transaksi',
+                        ]}
+                        contentStyle={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 12, fontSize: 11 }}
+                      />
+                      <Bar yAxisId="revenue" dataKey="revenue" name="Omzet" fill="var(--acc)" radius={[5, 5, 0, 0]} isAnimationActive={!prefersReducedMotion} animationDuration={650} />
+                      <Line yAxisId="transactions" dataKey="transactions" name="Transaksi" type="monotone" stroke="#a78bfa" strokeWidth={2} dot={{ r: 3, fill: '#a78bfa', strokeWidth: 0 }} activeDot={{ r: 5 }} isAnimationActive={!prefersReducedMotion} animationDuration={750} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </>
+              ) : (
+                <div className="dashboard-empty-state">Belum ada transaksi pada 7 hari terakhir.</div>
+              )}
+            </SectionCard>
 
-        {/* Right column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Daily bar chart */}
-          <SectionCard title="Penjualan 7 Hari Terakhir">
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={daily} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
-                <XAxis dataKey="sale_date" tick={{ fontSize: 11, fill: 'var(--mute)' }} axisLine={false} tickLine={false}
-                  tickFormatter={(v: any) => typeof v === 'string' ? v.slice(-2) : v} />
-                <Tooltip formatter={(v: any) => formatRp(v)} contentStyle={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 10, fontSize: 12 }} />
-                <Bar dataKey="total_revenue" radius={[8, 8, 0, 0]}
-                  fill="var(--acc)"
-                  label={{ position: 'top', formatter: (v: any) => v === dailyMax ? formatK(v) : '', fontSize: 10, fill: 'var(--acc)' }}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </SectionCard>
-
-          {/* Business Health Gauge */}
-          <SectionCard title="Kesehatan Bisnis Keseluruhan">
-            <div style={{ textAlign: 'center', padding: '8px 0' }}>
-              <div style={{
-                width: 100, height: 100, borderRadius: '50%', margin: '0 auto 12px',
-                background: `conic-gradient(var(--ok) 0% ${overallScore}%, var(--line) ${overallScore}% 100%)`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <div style={{
-                  width: 76, height: 76, borderRadius: '50%', background: 'var(--panel)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexDirection: 'column'
-                }}>
-                  <span style={{ fontSize: 24, fontWeight: 700, color: overallScore >= 70 ? 'var(--ok)' : overallScore >= 40 ? 'var(--warn)' : 'var(--bad)' }}>
-                    {overallScore}
-                  </span>
-                  <span style={{ fontSize: 9, color: 'var(--mute)', fontWeight: 500 }}>/ 100</span>
-                </div>
-              </div>
-              <StatusTag status={overallScore >= 70 ? 'sehat' : overallScore >= 40 ? 'waspada' : 'kritis'} />
-              <p style={{ fontSize: 12, color: 'var(--mute)', marginTop: 8, lineHeight: 1.5 }}>
-                {overallScore >= 70
-                  ? 'Bisnis Anda dalam kondisi sehat. Pertahankan!'
-                  : overallScore >= 40
-                    ? 'Ada beberapa area yang perlu perhatian segera.'
-                    : 'Kondisi kritis! Tindakan segera diperlukan.'
-                }
-              </p>
-              <Link href="/owner/rapor" className="btn btn-primary" style={{ marginTop: 12, justifyContent: 'center', width: '100%', gap: 5 }}>
-                <Sparkles size={13} /> Lihat Diagnosis Lengkap
-              </Link>
-            </div>
-          </SectionCard>
-
-          {/* Quick alerts */}
-          <SectionCard title="Peringatan">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {lowStockCount > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'var(--warns)', borderRadius: 10 }}>
-                  <Package size={15} color="var(--warn)" />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--warn)' }}>Stok Menipis</div>
-                    <div style={{ fontSize: 11, color: 'var(--warn)' }}>{lowStockCount} produk di bawah minimum</div>
-                  </div>
-                  <Link href="/owner/stok" className="btn btn-sm" style={{ background: 'var(--warn)', color: '#fff', borderRadius: 7 }}>
-                    Cek
+            <SectionCard title="Insight AI">
+              <div className="owner-ai-insight">
+                <span className="owner-ai-icon"><Sparkles size={19} /></span>
+                <div>
+                  <span className="owner-ai-badge">BUSINESS HEALTH</span>
+                  <strong>{latestRecommendation ? 'Rekomendasi terakhir' : 'Insight belum tersedia'}</strong>
+                  <p>{latestRecommendation || 'Jalankan diagnosis Business Health untuk mendapatkan rekomendasi berdasarkan data bisnis Anda.'}</p>
+                  {latestCheckup && (
+                    <small className="owner-ai-date">
+                      Rapor {new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeZone: 'Asia/Jakarta' }).format(new Date(latestCheckup.created_at))}
+                    </small>
+                  )}
+                  <Link href="/owner/rapor" className="btn btn-secondary btn-sm">
+                    Lihat detail <ArrowUpRight size={13} />
                   </Link>
                 </div>
+              </div>
+            </SectionCard>
+          </div>
+
+          <div className="owner-dashboard-data-row">
+            <SectionCard
+              title="Produk Terlaris"
+              action={<span className="owner-panel-caption">7 hari terakhir</span>}
+            >
+              <p className="owner-panel-subtitle">Peringkat berdasarkan jumlah terjual</p>
+              {bestSellingProducts.length > 0 ? (
+                <div className="owner-best-sellers">
+                  {bestSellingProducts.map((product, index) => (
+                    <div className="owner-best-seller" key={product.id}>
+                      <span className={`owner-product-rank${index === 0 ? ' is-first' : ''}`}>{index + 1}</span>
+                      <div className="owner-product-mark"><Package size={15} /></div>
+                      <div className="owner-product-info">
+                        <strong>{product.name}</strong>
+                        <small>{formatRp(product.revenue)}</small>
+                      </div>
+                      <div className="owner-product-bar-track">
+                        <span style={{ width: `${(product.quantity / maximumProductQuantity) * 100}%` }} />
+                      </div>
+                      <span className="owner-product-percent">{product.quantity}x</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="dashboard-empty-state">Belum ada produk terjual pada 7 hari terakhir.</div>
               )}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'var(--bads)', borderRadius: 10 }}>
-                <CreditCard size={15} color="var(--bad)" />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bad)' }}>Piutang Tertunda</div>
-                  <div style={{ fontSize: 11, color: 'var(--bad)' }}>
-                    {formatRp(totalPendingReceivables || 4500000)} belum ditagih
+            </SectionCard>
+
+            <SectionCard
+              title="Kategori Penjualan"
+              action={<span className="owner-panel-caption">Berdasarkan omzet</span>}
+            >
+              <p className="owner-panel-subtitle">Distribusi penjualan per kategori</p>
+              {totalCategoryRevenue > 0 ? (
+                <div className="owner-category-chart">
+                  <div className="owner-category-donut">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={categorySales} dataKey="revenue" nameKey="name" innerRadius="66%" outerRadius="92%" paddingAngle={3} stroke="none" isAnimationActive={!prefersReducedMotion} animationDuration={700}>
+                          {categorySales.map((category, index) => (
+                            <Cell key={category.id} fill={CATEGORIES_PALETTE[index % CATEGORIES_PALETTE.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value) => [formatRp(Number(value ?? 0)), 'Omzet']}
+                          contentStyle={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 12, fontSize: 11 }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="owner-category-total"><span>Total</span><strong>{formatRp(totalCategoryRevenue)}</strong></div>
+                  </div>
+                  <div className="owner-category-legend">
+                    {categorySales.slice(0, 6).map((category, index) => (
+                      <div key={category.id}>
+                        <i style={{ background: CATEGORIES_PALETTE[index % CATEGORIES_PALETTE.length] }} />
+                        <span>{category.name}</span>
+                        <strong>{Math.round((category.revenue / totalCategoryRevenue) * 100)}%</strong>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <Link href="/owner/hutang-piutang" className="btn btn-sm" style={{ background: 'var(--bad)', color: '#fff', borderRadius: 7 }}>
-                  Cek
-                </Link>
+              ) : (
+                <div className="dashboard-empty-state">Belum ada data kategori penjualan pada 7 hari terakhir.</div>
+              )}
+            </SectionCard>
+          </div>
+
+          {monthlyChartData.length > 0 && (
+            <SectionCard title="Ringkasan Keuangan Bulanan">
+              <p className="owner-panel-subtitle">Perbandingan omzet dan laba kotor dari data transaksi</p>
+              <ResponsiveContainer width="100%" height={188}>
+                <BarChart data={monthlyChartData} margin={{ top: 8, right: 8, left: -8, bottom: 0 }} barGap={6}>
+                  <CartesianGrid strokeDasharray="3 5" stroke="var(--line)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--mute)' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 9, fill: 'var(--mute)' }} axisLine={false} tickLine={false} tickFormatter={formatCompact} width={48} />
+                  <Tooltip
+                    formatter={(value, name) => [formatRp(Number(value ?? 0)), name === 'revenue' ? 'Omzet' : 'Laba kotor']}
+                    contentStyle={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 12, fontSize: 11 }}
+                  />
+                  <Bar dataKey="revenue" name="Omzet" fill="var(--acc)" radius={[5, 5, 0, 0]} isAnimationActive={!prefersReducedMotion} animationDuration={650} />
+                  <Bar dataKey="profit" name="Laba kotor" fill="#22d3ee" radius={[5, 5, 0, 0]} isAnimationActive={!prefersReducedMotion} animationDuration={720} />
+                </BarChart>
+              </ResponsiveContainer>
+            </SectionCard>
+          )}
+        </main>
+
+        <aside className="owner-dashboard-rail">
+          <SectionCard title="Kesehatan Bisnis">
+            {overallScore === null || !latestCheckup ? (
+              <div className="dashboard-empty-state">
+                Belum ada hasil diagnosis tersimpan.
+                <Link href="/owner/rapor">Buat rapor kesehatan bisnis</Link>
               </div>
+            ) : (
+              <div className="owner-health-summary">
+                <div
+                  className="owner-health-gauge"
+                  style={{ background: `conic-gradient(${healthColor} 0% ${overallScore}%, var(--line) ${overallScore}% 100%)` }}
+                  role="img"
+                  aria-label={`Skor kesehatan bisnis ${overallScore} dari 100`}
+                >
+                  <div><strong>{overallScore}</strong><span>/100</span></div>
+                </div>
+                <StatusTag status={healthStatus ?? undefined} />
+                <p>Rapor terakhir {new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeZone: 'Asia/Jakarta' }).format(new Date(latestCheckup.created_at))}</p>
+                <Link href="/owner/rapor" className="btn btn-primary"><Sparkles size={14} /> Buka rapor lengkap</Link>
+              </div>
+            )}
+            {healthDimensions.length > 0 && (
+              <div className="owner-health-dimensions">
+                {healthDimensions.map((dimension) => (
+                  <div className="owner-health-dimension" key={dimension.dimension}>
+                    <div className="owner-health-dimension-heading">
+                      <span>{dimension.dimension}</span>
+                      <strong>{dimension.score}<small>/100</small></strong>
+                    </div>
+                    <div
+                      className="owner-health-track"
+                      role="meter"
+                      aria-label={`Skor ${dimension.dimension}`}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={dimension.score}
+                    >
+                      <span className={`owner-health-fill is-${dimension.status}`} style={{ width: `${dimension.score}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+
+          <SectionCard title="Aktivitas Terbaru" action={<span className="owner-panel-caption">Transaksi selesai</span>}>
+            {recentSales.length > 0 ? (
+              <div className="owner-recent-activity">
+                {recentSales.map((sale) => (
+                  <div className="owner-recent-activity-item" key={sale.id}>
+                    <span><CreditCard size={14} /></span>
+                    <div><strong>Transaksi baru</strong><small>{sale.invoice_number} · {formatTime(sale.created_at)}</small></div>
+                    <b>{formatRp(sale.final_amount)}</b>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="dashboard-empty-state">Belum ada transaksi terbaru.</div>
+            )}
+          </SectionCard>
+
+          <SectionCard title="Perhatian Operasional">
+            <div className="owner-dashboard-alerts">
+              {lowStockCount > 0 && (
+                <Link href="/owner/stok" className="owner-dashboard-alert is-warning">
+                  <Package size={17} />
+                  <span><strong>Stok menipis</strong><small>{lowStockCount} produk perlu diperiksa</small></span>
+                  <ArrowUpRight size={15} />
+                </Link>
+              )}
+              {totalPendingReceivables > 0 && (
+                <Link href="/owner/hutang-piutang" className="owner-dashboard-alert is-danger">
+                  <AlertCircle size={17} />
+                  <span><strong>Piutang tertunda</strong><small>{formatRp(totalPendingReceivables)} belum lunas</small></span>
+                  <ArrowUpRight size={15} />
+                </Link>
+              )}
+              {lowStockCount === 0 && totalPendingReceivables === 0 && (
+                <p className="owner-dashboard-clear">Tidak ada peringatan stok atau piutang saat ini.</p>
+              )}
             </div>
           </SectionCard>
 
-          {/* AI Advisor card */}
-          <div className="card" style={{ textAlign: 'center', padding: '20px 18px' }}>
-            <div className="ai-orb" style={{ margin: '0 auto 12px' }}>
-              <Sparkles size={28} color="#fff" />
+          <SectionCard title="Akses Cepat">
+            <div className="owner-quick-actions">
+              <Link href="/owner/stok"><Package size={16} /><span>Kelola stok</span><ArrowUpRight size={13} /></Link>
+              <Link href="/owner/rapor"><Sparkles size={16} /><span>Analisis bisnis</span><ArrowUpRight size={13} /></Link>
+              <Link href="/owner/cashflow"><TrendingUp size={16} /><span>Arus kas</span><ArrowUpRight size={13} /></Link>
+              <Link href="/owner/laporan"><FileText size={16} /><span>Laporan</span><ArrowUpRight size={13} /></Link>
             </div>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>Tanya AI Bisnis</div>
-            <p style={{ fontSize: 12, color: 'var(--mute)', lineHeight: 1.6, marginBottom: 14 }}>
-              &ldquo;Mengapa laba saya turun bulan ini? Apa yang harus dilakukan?&rdquo;
-            </p>
-            <Link href="/owner/rapor" className="btn btn-primary" style={{ justifyContent: 'center', gap: 5 }}>
-              <Sparkles size={13} /> Mulai Diagnosis AI
-            </Link>
-          </div>
-        </div>
+          </SectionCard>
+        </aside>
       </div>
     </div>
   )

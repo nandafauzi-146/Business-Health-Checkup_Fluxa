@@ -1,248 +1,491 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type RefObject } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import {
+  ArrowRight,
+  BarChart3,
+  Check,
+  Eye,
+  EyeOff,
+  LoaderCircle,
+  LockKeyhole,
+  Mail,
+  ShoppingCart,
+  Sparkles,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Eye, EyeOff, ShoppingCart, BarChart3, Sparkles } from 'lucide-react'
-import BrandLogo from '@/components/ui/BrandLogo'
 
-let hasPlayedLoginOpening = false
+const demoAccounts = [
+  { role: 'Owner', email: 'owner@demo.local', password: 'Owner123!', color: 'owner' },
+  { role: 'Admin', email: 'admin@demo.local', password: 'Admin123!', color: 'admin' },
+  { role: 'Kasir', email: 'kasir@demo.local', password: 'Kasir123!', color: 'kasir' },
+] as const
+
+const particles = [
+  { x: '12%', y: '23%', delay: '-2s', size: 4 },
+  { x: '21%', y: '69%', delay: '-7s', size: 3 },
+  { x: '32%', y: '15%', delay: '-4s', size: 2 },
+  { x: '38%', y: '83%', delay: '-9s', size: 4 },
+  { x: '62%', y: '12%', delay: '-5s', size: 3 },
+  { x: '72%', y: '79%', delay: '-3s', size: 2 },
+  { x: '84%', y: '25%', delay: '-8s', size: 4 },
+  { x: '91%', y: '59%', delay: '-6s', size: 3 },
+  { x: '8%', y: '52%', delay: '-1s', size: 2 },
+  { x: '78%', y: '47%', delay: '-10s', size: 2 },
+  { x: '53%', y: '91%', delay: '-4s', size: 3 },
+  { x: '94%', y: '82%', delay: '-7s', size: 2 },
+]
+
+function AnimatedBackground() {
+  return (
+    <div className="login-ambient" aria-hidden="true">
+      <div className="login-light login-light-cyan" />
+      <div className="login-light login-light-violet" />
+      <div className="login-orb login-orb-large" />
+      <div className="login-orb login-orb-left" />
+      <div className="login-orb login-orb-small" />
+      <div className="login-wave login-wave-back" />
+      <div className="login-wave login-wave-front" />
+      {particles.map((particle, index) => (
+        <span
+          className="login-particle"
+          key={index}
+          style={{
+            left: particle.x,
+            top: particle.y,
+            width: particle.size,
+            height: particle.size,
+            animationDelay: particle.delay,
+          }}
+        />
+      ))}
+      <svg className="login-orbit" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="fluxa-orbit-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#13dfff" stopOpacity=".08" />
+            <stop offset="48%" stopColor="#20bcff" stopOpacity=".7" />
+            <stop offset="100%" stopColor="#a855f7" stopOpacity=".45" />
+          </linearGradient>
+          <filter id="fluxa-orbit-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <path id="fluxa-orbit-path" d="M 284 520 C 390 250, 1038 190, 1164 380 C 1280 554, 608 759, 368 578 C 267 502, 359 387, 539 320" />
+        </defs>
+        <use href="#fluxa-orbit-path" fill="none" stroke="url(#fluxa-orbit-gradient)" strokeWidth="1.2" />
+        <circle r="5" fill="#62e9ff" filter="url(#fluxa-orbit-glow)">
+          <animateMotion dur="22s" repeatCount="indefinite" rotate="auto">
+            <mpath href="#fluxa-orbit-path" />
+          </animateMotion>
+        </circle>
+        <circle r="3" fill="#b98aff" opacity=".9" filter="url(#fluxa-orbit-glow)">
+          <animateMotion dur="22s" begin="-11s" repeatCount="indefinite" rotate="auto">
+            <mpath href="#fluxa-orbit-path" />
+          </animateMotion>
+        </circle>
+      </svg>
+    </div>
+  )
+}
+
+function LoginIntro({
+  phase,
+  symbolRef,
+  nameRef,
+}: {
+  phase: 'intro' | 'transition'
+  symbolRef: RefObject<HTMLDivElement | null>
+  nameRef: RefObject<HTMLParagraphElement | null>
+}) {
+  return (
+    <div className={`login-intro-overlay${phase === 'transition' ? ' is-transitioning' : ''}`} aria-hidden="true">
+      <div className="login-intro-particles">
+        {Array.from({ length: 8 }, (_, index) => (
+          <span
+            className="login-intro-particle"
+            key={index}
+            style={{ '--particle-index': index } as CSSProperties & { '--particle-index': number }}
+          />
+        ))}
+      </div>
+      <div className="login-intro-brand">
+        <div className="login-intro-mark">
+          <div className="login-intro-symbol" ref={symbolRef}>
+            <Image src="/fluxa-logo-glass.png" alt="" aria-hidden="true" width={140} height={140} priority />
+          </div>
+        </div>
+        <div className="login-intro-copy">
+          <p className="login-brand-name" ref={nameRef}>Fluxa</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DemoAccounts({
+  selectedDemo,
+  onSelect,
+}: {
+  selectedDemo: string
+  onSelect: (account: (typeof demoAccounts)[number]) => void
+}) {
+  return (
+    <section className="login-demo login-stagger" aria-label="Akun demo">
+      <div className="login-demo-heading">
+        <Sparkles size={13} aria-hidden="true" />
+        <span>AKUN DEMO</span>
+        <span className="login-demo-hint">— klik untuk mengisi otomatis</span>
+      </div>
+      <div className="login-demo-buttons">
+        {demoAccounts.map((account) => (
+          <button
+            className={`login-demo-button login-demo-${account.color}${selectedDemo === account.role ? ' is-selected' : ''}`}
+            key={account.role}
+            onClick={() => onSelect(account)}
+            type="button"
+            aria-pressed={selectedDemo === account.role}
+          >
+            {selectedDemo === account.role && <Check size={13} aria-hidden="true" />}
+            {account.role}
+          </button>
+        ))}
+      </div>
+      <p className="login-demo-passwords">
+        <span>Password:</span>
+        {demoAccounts.map((account) => (
+          <code key={account.role}>{account.password}</code>
+        ))}
+      </p>
+    </section>
+  )
+}
+
+function FeatureHighlights() {
+  const features = [
+    { icon: ShoppingCart, text: 'POS Kasir cepat' },
+    { icon: BarChart3, text: 'Business Health AI' },
+    { icon: Sparkles, text: 'Rekomendasi aktif' },
+  ]
+
+  return (
+    <div className="login-features login-stagger" aria-label="Fitur Fluxa">
+      {features.map(({ icon: Icon, text }) => (
+        <div className="login-feature" key={text}>
+          <Icon size={15} aria-hidden="true" />
+          <span>{text}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function LoginForm() {
-  const [openingPhase, setOpeningPhase] = useState<'opening' | 'transitioning' | 'ready'>(
-    () => hasPlayedLoginOpening ? 'ready' : 'opening'
-  )
-  const shouldPlayOpening = useRef(openingPhase === 'opening')
-  const openingLogoRef = useRef<HTMLDivElement>(null)
+  const [phase, setPhase] = useState<'intro' | 'transition' | 'login'>('intro')
+  const introSymbolRef = useRef<HTMLDivElement>(null)
+  const introNameRef = useRef<HTMLParagraphElement>(null)
   const loginLogoRef = useRef<HTMLDivElement>(null)
+  const loginNameRef = useRef<HTMLParagraphElement>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [showPass, setShowPass] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [errorField, setErrorField] = useState<'email' | 'password' | 'credentials' | null>(null)
+  const [success, setSuccess] = useState('')
+  const [selectedDemo, setSelectedDemo] = useState('')
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
-    if (!shouldPlayOpening.current) return
-    hasPlayedLoginOpening = true
-
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (prefersReducedMotion) {
-      const readyTimeout = window.setTimeout(() => setOpeningPhase('ready'), 0)
-      return () => window.clearTimeout(readyTimeout)
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const reducedMotionTimer = window.setTimeout(() => setPhase('login'), 0)
+      return () => window.clearTimeout(reducedMotionTimer)
     }
 
-    const transitionTimeout = window.setTimeout(() => {
-      const openingLogo = openingLogoRef.current
-      const loginLogo = loginLogoRef.current
-
-      setOpeningPhase('transitioning')
-
-      if (openingLogo && loginLogo) {
-        const openingRect = openingLogo.getBoundingClientRect()
-        const loginRect = loginLogo.getBoundingClientRect()
-        const deltaX = loginRect.left + loginRect.width / 2 - (openingRect.left + openingRect.width / 2)
-        const deltaY = loginRect.top + loginRect.height / 2 - (openingRect.top + openingRect.height / 2)
-        const scale = loginRect.width / openingRect.width
-
-        openingLogo.animate(
-          [
-            { transform: 'translate(0, 0) scale(1)' },
-            { transform: `translate(${deltaX}px, ${deltaY}px) scale(${scale})` },
-          ],
-          { duration: 560, easing: 'cubic-bezier(0.2, 0.75, 0.25, 1)', fill: 'forwards' }
-        )
-      }
-    }, 1120)
-    const finishTimeout = window.setTimeout(() => setOpeningPhase('ready'), 1740)
-
-    return () => {
-      window.clearTimeout(transitionTimeout)
-      window.clearTimeout(finishTimeout)
-    }
+    const introTimer = window.setTimeout(() => setPhase('transition'), 1950)
+    return () => window.clearTimeout(introTimer)
   }, [])
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+  useEffect(() => {
+    if (phase !== 'transition') return
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const introSymbol = introSymbolRef.current?.querySelector('img')
+    const introName = introNameRef.current
+    const loginLogo = loginLogoRef.current?.querySelector('img')
+    const loginName = loginNameRef.current
+    const loginBrand = loginLogo?.closest<HTMLElement>('.login-brand')
+    const card = loginLogo?.closest<HTMLElement>('.login-card')
+    const transitionAnimations: Animation[] = []
+    const finishTimer = window.setTimeout(() => setPhase('login'), 1050)
 
-    if (error) {
-      setError('Email atau kata sandi tidak valid. Coba lagi.')
-      setLoading(false)
+    if (introSymbol && introName && loginLogo && loginName && loginBrand && card) {
+      const frame = window.requestAnimationFrame(() => {
+        const cardStyles = getComputedStyle(card)
+        const transform = cardStyles.transform === 'none' ? new DOMMatrix() : new DOMMatrix(cardStyles.transform)
+        const transformOrigin = cardStyles.transformOrigin.split(' ')
+        const scaleOriginX = Number.parseFloat(transformOrigin[0])
+        const scaleOriginY = Number.parseFloat(transformOrigin[1])
+        const scaleX = Math.hypot(transform.a, transform.b)
+        const scaleY = Math.hypot(transform.c, transform.d)
+        const cardRect = card.getBoundingClientRect()
+        const layoutLeft = cardRect.left - scaleOriginX - transform.e + scaleX * scaleOriginX
+        const layoutTop = cardRect.top - scaleOriginY - transform.f + scaleY * scaleOriginY
+
+        const animateSymbolTo = (source: HTMLElement, target: HTMLElement) => {
+          const from = source.getBoundingClientRect()
+          const targetRect = target.getBoundingClientRect()
+          const targetX = layoutLeft + scaleOriginX
+            + (targetRect.left + targetRect.width / 2 - layoutLeft - scaleOriginX - transform.e) / scaleX
+          const targetY = layoutTop + scaleOriginY
+            + (targetRect.top + targetRect.height / 2 - layoutTop - scaleOriginY - transform.f) / scaleY
+          const targetScaleX = targetRect.width / scaleX / from.width
+          const targetScaleY = targetRect.height / scaleY / from.height
+          const x = targetX - (from.left + from.width / 2)
+          const y = targetY - (from.top + from.height / 2)
+          const destination = `translate(${x}px, ${y}px) scale(${targetScaleX}, ${targetScaleY})`
+
+          transitionAnimations.push(source.animate(
+            [
+              { transform: 'translate(0, 0) scale(1)', opacity: 1, offset: 0 },
+              { transform: destination, opacity: 1, offset: 0.82 },
+              { transform: destination, opacity: 0, offset: 1 },
+            ],
+            { duration: 1000, easing: 'cubic-bezier(.2, .75, .25, 1)', fill: 'forwards' },
+          ))
+        }
+
+        animateSymbolTo(introSymbol, loginLogo)
+        transitionAnimations.push(introName.animate(
+          [
+            { opacity: 1, transform: 'translateY(0)' },
+            { opacity: 0, transform: 'translateY(-4px)' },
+          ],
+          { duration: 320, easing: 'ease-out', fill: 'forwards' },
+        ))
+        transitionAnimations.push(loginLogo.animate(
+          [
+            { opacity: 0, offset: 0 },
+            { opacity: 0, offset: 0.8 },
+            { opacity: 1, offset: 1 },
+          ],
+          { duration: 1000, easing: 'ease-out', fill: 'forwards' },
+        ))
+      })
+
+      return () => {
+        window.cancelAnimationFrame(frame)
+        transitionAnimations.forEach((animation) => animation.cancel())
+        window.clearTimeout(finishTimer)
+      }
+    }
+
+    return () => window.clearTimeout(finishTimer)
+  }, [phase])
+
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const normalizedEmail = email.trim()
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setError('Masukkan alamat email yang valid.')
+      setErrorField('email')
+      setSuccess('')
+      return
+    }
+    if (!password) {
+      setError('Masukkan kata sandi Anda.')
+      setErrorField('password')
+      setSuccess('')
       return
     }
 
-    // Get role then redirect
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setLoading(false); return }
+    setLoading(true)
+    setError('')
+    setErrorField(null)
+    setSuccess('')
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      })
 
-    if (profile?.role === 'kasir') router.push('/kasir')
-    else if (profile?.role === 'admin') router.push('/admin')
-    else if (profile?.role === 'owner') router.push('/owner')
-    else router.push('/kasir')
+      if (signInError) {
+        setError('Email atau kata sandi tidak valid. Coba lagi.')
+        setErrorField('credentials')
+        return
+      }
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser()
+
+      if (userError || !user) {
+        setError('Sesi login tidak dapat diverifikasi. Silakan coba lagi.')
+        return
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError || !profile) {
+        await supabase.auth.signOut()
+        setError('Profil akses akun tidak ditemukan. Hubungi administrator.')
+        return
+      }
+
+      const destinations: Record<string, string> = {
+        kasir: '/kasir',
+        admin: '/admin',
+        owner: '/owner',
+      }
+      const destination = destinations[profile.role]
+
+      if (!destination) {
+        await supabase.auth.signOut()
+        setError('Peran akun belum dikenali. Hubungi administrator.')
+        return
+      }
+
+      setSuccess('Login berhasil. Mengarahkan Anda ke Fluxa...')
+      router.replace(destination)
+      router.refresh()
+    } catch {
+      setError('Terjadi kendala saat menghubungkan ke layanan login. Coba lagi.')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const demoAccounts = [
-    { role: 'Owner', email: 'owner@demo.local', color: '#1F9D63' },
-    { role: 'Admin', email: 'admin@demo.local', color: 'var(--acc)' },
-    { role: 'Kasir', email: 'kasir@demo.local', color: '#B26A00' },
-  ]
+  const selectDemoAccount = (account: (typeof demoAccounts)[number]) => {
+    setEmail(account.email)
+    setPassword(account.password)
+    setSelectedDemo(account.role)
+    setError('')
+    setErrorField(null)
+    setSuccess('')
+  }
 
   return (
-    <div className="login-bg">
-      {openingPhase !== 'ready' && (
-        <div
-          className={`login-intro${openingPhase === 'transitioning' ? ' login-intro-transitioning' : ''}`}
-          role="status"
-          aria-label="FLUXA"
-        >
-          <div className="login-intro-brand">
-            <div className="login-intro-logo" ref={openingLogoRef}>
-              <BrandLogo size={132} />
-            </div>
-            <span className="login-intro-name">FLUXA</span>
-          </div>
-        </div>
+    <main className="login-bg">
+      <AnimatedBackground />
+      {phase !== 'login' && (
+        <LoginIntro phase={phase} symbolRef={introSymbolRef} nameRef={introNameRef} />
       )}
-      <div
-        className={`login-card${openingPhase !== 'opening' ? ' login-card-enter' : ' login-card-opening'}`}
-        aria-hidden={openingPhase === 'opening'}
-        inert={openingPhase === 'opening'}
+      <section
+        className={`login-card is-${phase}`}
+        aria-labelledby="login-title"
+        aria-hidden={phase !== 'login'}
+        inert={phase !== 'login'}
       >
-        {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
-          <div className="login-card-logo" ref={loginLogoRef}>
-            <BrandLogo size={40} />
+        <header className="login-brand login-stagger">
+          <div className="login-brand-logo" ref={loginLogoRef}>
+            <Image src="/fluxa-logo-glass.png" alt="" aria-hidden="true" width={42} height={42} priority />
           </div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 20, color: 'var(--ink)' }}>Fluxa</div>
-            <div style={{ fontSize: 11, color: 'var(--mute)', marginTop: -2 }}>Kasir + Business Health AI</div>
+            <p className="login-brand-name" ref={loginNameRef}>Fluxa</p>
+            <p className="login-brand-tagline">Kasir + Business Health AI</p>
           </div>
+        </header>
+
+        <div className="login-welcome login-stagger">
+          <h1 id="login-title">Selamat datang <span aria-hidden="true">👋</span></h1>
+          <p>Masuk ke akun Anda untuk melanjutkan</p>
         </div>
 
-        <h1 className="login-stagger login-title" style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>
-          Selamat datang 👋
-        </h1>
-        <p className="login-stagger login-description" style={{ color: 'var(--mute)', fontSize: 13.5, marginBottom: 28 }}>
-          Masuk ke akun Anda untuk melanjutkan
-        </p>
-
-        <form className="login-stagger login-form" onSubmit={handleLogin}>
-          <div className="login-field login-field-email" style={{ marginBottom: 14 }}>
-            <label className="label" htmlFor="email-input">Alamat email</label>
-            <input
-              id="email-input"
-              type="email"
-              className="input"
-              placeholder="nama@email.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
-          </div>
-          <div className="login-field login-field-password" style={{ marginBottom: 20 }}>
-            <label className="label" htmlFor="password-input">Kata sandi</label>
-            <div style={{ position: 'relative' }}>
+        <form className="login-form" onSubmit={handleLogin} noValidate>
+          <div className="login-field login-stagger">
+            <label htmlFor="email-input">Alamat email</label>
+            <div className="login-input-wrap">
+              <Mail size={17} aria-hidden="true" />
               <input
-                id="password-input"
-                type={showPass ? 'text' : 'password'}
-                className="input"
-                placeholder="Kata sandi Anda"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
+                autoComplete="email"
+                id="email-input"
+                onChange={(event) => {
+                  setEmail(event.target.value)
+                  setSelectedDemo('')
+                  setError('')
+                  setErrorField(null)
+                  setSuccess('')
+                }}
+                placeholder="nama@email.com"
+                type="email"
+                value={email}
+                aria-describedby={error ? 'login-error' : undefined}
+                aria-invalid={errorField === 'email' || errorField === 'credentials'}
+              />
+            </div>
+          </div>
+
+          <div className="login-field login-stagger">
+            <label htmlFor="password-input">Kata sandi</label>
+            <div className="login-input-wrap">
+              <LockKeyhole size={17} aria-hidden="true" />
+              <input
                 autoComplete="current-password"
-                style={{ paddingRight: 44 }}
+                id="password-input"
+                onChange={(event) => {
+                  setPassword(event.target.value)
+                  setSelectedDemo('')
+                  setError('')
+                  setErrorField(null)
+                  setSuccess('')
+                }}
+                placeholder="Kata sandi Anda"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                aria-describedby={error ? 'login-error' : undefined}
+                aria-invalid={errorField === 'password' || errorField === 'credentials'}
               />
               <button
+                aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                className="login-password-toggle"
+                onClick={() => setShowPassword((visible) => !visible)}
                 type="button"
-                onClick={() => setShowPass(!showPass)}
-                style={{
-                  position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', cursor: 'pointer', color: 'var(--mute)',
-                  display: 'flex', alignItems: 'center'
-                }}
-                aria-label={showPass ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
               >
-                {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
             </div>
           </div>
 
           {error && (
-            <div style={{
-              background: 'var(--bads)', color: 'var(--bad)',
-              padding: '10px 14px', borderRadius: 10, marginBottom: 16,
-              fontSize: 13, fontWeight: 500
-            }}>
+            <p className="login-feedback login-feedback-error" id="login-error" role="alert">
               {error}
-            </div>
+            </p>
+          )}
+          {success && (
+            <p className="login-feedback login-feedback-success" role="status">
+              {success}
+            </p>
           )}
 
-          <button
-            id="login-btn"
-            type="submit"
-            className="btn btn-primary"
-            style={{ width: '100%', justifyContent: 'center', height: 44, fontSize: 14, animationDelay: '0.34s' }}
-            disabled={loading}
-          >
-            {loading ? 'Memproses...' : 'Masuk'}
+          <button className="login-submit login-stagger" disabled={loading} type="submit">
+            {loading ? (
+              <>
+                <LoaderCircle className="login-spinner" size={18} aria-hidden="true" />
+                Memproses...
+              </>
+            ) : (
+              <>
+                <ArrowRight size={18} aria-hidden="true" />
+                Masuk
+              </>
+            )}
           </button>
         </form>
 
-        {/* Demo accounts */}
-        <div className="login-stagger" style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #ECEEF4', animationDelay: '0.42s' }}>
-          <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--mute)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
-            <Sparkles size={12} />
-            AKUN DEMO — klik untuk mengisi otomatis
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {demoAccounts.map(acc => (
-              <button
-                key={acc.role}
-                id={`demo-${acc.role.toLowerCase()}`}
-                type="button"
-                onClick={() => { setEmail(acc.email); setPassword(acc.role + '123!') }}
-                style={{
-                  padding: '5px 12px', borderRadius: 8, border: '1px solid #ECEEF4',
-                  background: 'var(--bg)', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  color: acc.color, transition: 'all 0.15s'
-                }}
-              >
-                {acc.role}
-              </button>
-            ))}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--mute)', marginTop: 8 }}>
-            Password: <code style={{ background: 'var(--bg)', padding: '1px 5px', borderRadius: 4 }}>Owner123!</code> / <code style={{ background: 'var(--bg)', padding: '1px 5px', borderRadius: 4 }}>Admin123!</code> / <code style={{ background: 'var(--bg)', padding: '1px 5px', borderRadius: 4 }}>Kasir123!</code>
-          </div>
-        </div>
-
-        {/* Features */}
-        <div className="login-stagger" style={{ marginTop: 24, display: 'flex', gap: 16, flexWrap: 'wrap', animationDelay: '0.5s' }}>
-          {[
-            { icon: <ShoppingCart size={14} />, text: 'POS Kasir cepat' },
-            { icon: <BarChart3 size={14} />, text: 'Business Health AI' },
-            { icon: <Sparkles size={14} />, text: 'Rekomendasi aktif' },
-          ].map(f => (
-            <div key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: 'var(--mute)' }}>
-              <span style={{ color: 'var(--acc)' }}>{f.icon}</span>
-              {f.text}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+        <DemoAccounts selectedDemo={selectedDemo} onSelect={selectDemoAccount} />
+        <FeatureHighlights />
+      </section>
+    </main>
   )
 }

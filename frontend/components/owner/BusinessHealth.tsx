@@ -350,8 +350,7 @@ export default function BusinessHealthClient({
           }
         >
           {/* FluxAI Intro Banner */}
-          <div style={{
-            background: 'linear-gradient(135deg, #0f1a3e 0%, #1a2d6b 45%, #0d3b6e 100%)',
+          <div className="owner-ai-intro-banner" style={{
             borderRadius: 14, padding: '20px 24px', marginBottom: 18,
             display: 'flex', alignItems: 'center', gap: 18, position: 'relative', overflow: 'hidden'
           }}>
@@ -378,7 +377,7 @@ export default function BusinessHealthClient({
             {/* Text */}
             <div style={{ zIndex: 1 }}>
               <div style={{
-                fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: '-0.3px',
+                fontSize: 18, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-0.3px',
                 display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap'
               }}>
                 Halo, saya{' '}
@@ -389,11 +388,11 @@ export default function BusinessHealthClient({
                 }}>
                   FluxAI
                 </span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.55)', letterSpacing: 0 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--mute)', letterSpacing: 0 }}>
                   — AI Business Health Checkup
                 </span>
               </div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', marginTop: 4, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 13, color: 'var(--mute)', marginTop: 4, lineHeight: 1.5 }}>
                 Saya menganalisis data keuangan toko Anda secara real-time dari database
                 dan menyajikan diagnosis bisnis yang terukur, konkret, dan bebas rekayasa.
               </div>
