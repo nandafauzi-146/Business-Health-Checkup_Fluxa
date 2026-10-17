@@ -3689,6 +3689,7 @@ tr:hover td,
   letter-spacing: .08em;
 }
 .owner-ai-insight p {
+  line-clamp: 6;
   -webkit-line-clamp: 6;
 }
 .owner-ai-date {
@@ -4133,6 +4134,7 @@ tr:hover td,
   font-size: 11px;
   line-height: 1.55;
   -webkit-box-orient: vertical;
+  line-clamp: 4;
   -webkit-line-clamp: 4;
 }
 .owner-ai-insight a {
