@@ -57,7 +57,7 @@ async function AdminDashboardData() {
   const recentSales = recentSalesResult.data
   const totalProducts = productsResult.count
   const voidedSales = voidedSalesResult.data
-  const todayDate = new Date().toISOString().slice(0, 10)
+  const todayDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date())
   const todaySummary = dailySales?.find((sale) => sale.sale_date === todayDate) ?? null
 
   return (
