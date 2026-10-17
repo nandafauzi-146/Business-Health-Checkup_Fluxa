@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import Script from "next/script";
 import "./globals.css";
 
 const inter = Inter({
@@ -9,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Fluxa — Kasir & Diagnosis Kesehatan Bisnis UMKM",
+  title: "Fluxa \u2014 Kasir & Diagnosis Kesehatan Bisnis UMKM",
   description: "Sistem kasir (POS) terintegrasi dengan diagnosis kesehatan bisnis berbasis AI untuk UMKM. Setiap transaksi otomatis membentuk rapor finansial yang actionable.",
 };
 
@@ -21,7 +22,9 @@ export default function RootLayout({
   return (
     <html lang="id" className={inter.variable} suppressHydrationWarning>
       <head>
-        <script
+        <Script
+          id="fluxa-theme-init"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `try {
               var accountId = localStorage.getItem('fluxa-theme-active-user');
