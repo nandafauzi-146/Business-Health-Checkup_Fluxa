@@ -137,7 +137,7 @@ export default function POSClient({ products: initialProducts, customers, active
           setPromotions(JSON.parse(cached))
           return
         }
-      } catch {}
+      } catch { }
       // Demo data hardcode
       setPromotions([
         { id: 'p-1', code: 'HEMAT10', name: 'Diskon Belanja 10%', type: 'percentage', value: 10, min_purchase: 50000, max_discount: 25000, is_active: true },
@@ -153,7 +153,7 @@ export default function POSClient({ products: initialProducts, customers, active
       if (cached) {
         setPromotions(JSON.parse(cached))
       }
-    } catch {}
+    } catch { }
     fetchPromos()
 
     // Listen perubahan dari admin (localStorage event lintas tab)
@@ -161,7 +161,7 @@ export default function POSClient({ products: initialProducts, customers, active
       if (e.key === 'fluxa_active_promotions' && e.newValue) {
         try {
           setPromotions(JSON.parse(e.newValue))
-        } catch {}
+        } catch { }
       }
     }
 
