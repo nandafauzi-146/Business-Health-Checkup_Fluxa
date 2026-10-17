@@ -1,6 +1,6 @@
 import {
   Activity, BarChart3, Building2, ClipboardList, CreditCard, DollarSign, FileText,
-  Layers, LayoutDashboard, Package, ShoppingCart, Sparkles, Tag, TrendingUp, Users
+  Layers, LayoutDashboard, Package, Scale, ShoppingCart, Sparkles, Tag, TrendingUp, Users
 } from 'lucide-react'
 
 export type UserRole = 'kasir' | 'admin' | 'owner'
@@ -49,7 +49,7 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
       items: [
         { icon: <Tag size={16} />, label: 'Diskon & Promo', href: '/admin/diskon' },
         { icon: <DollarSign size={16} />, label: 'Biaya Operasional', href: '/admin/biaya' },
-        { icon: <Building2 size={16} />, label: 'Hutang Supplier', href: '/admin/hutang-supplier' },
+        { icon: <Scale size={16} />, label: 'Hutang & Piutang', href: '/admin/hutang-piutang' },
       ]
     },
     {
@@ -72,7 +72,7 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
       items: [
         { icon: <TrendingUp size={16} />, label: 'Cashflow', href: '/owner/cashflow' },
         { icon: <BarChart3 size={16} />, label: 'Laporan Bulanan', href: '/owner/laporan' },
-        { icon: <Building2 size={16} />, label: 'Hutang Supplier', href: '/owner/hutang-supplier' },
+        { icon: <Scale size={16} />, label: 'Hutang & Piutang', href: '/owner/hutang-piutang' },
       ]
     },
     {

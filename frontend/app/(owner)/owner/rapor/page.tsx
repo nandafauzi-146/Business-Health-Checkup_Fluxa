@@ -92,9 +92,9 @@ export default async function RaporPage() {
   // 2. Hitung Beban Operasional Riil
   const operating_expenses = expenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
 
-  // 3. Rincian Hutang Supplier (Bahan Baku / Vendor)
+  // 3. Rincian Hutang Operasional, Sewa & Supplier
   const payable_details = (receivablesRes.data || []).map((p: any) => ({
-    customer_name: p.supplier_name || 'Supplier Mitra',
+    customer_name: p.party_name || p.supplier_name || 'Mitra Usaha',
     total_amount: p.total_amount || 0,
     paid_amount: p.paid_amount || 0,
     remaining_amount: (p.total_amount || 0) - (p.paid_amount || 0),

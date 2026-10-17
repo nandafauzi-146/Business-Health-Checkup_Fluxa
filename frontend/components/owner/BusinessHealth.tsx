@@ -410,19 +410,19 @@ export default function BusinessHealthClient({
 
       {/* Audit Data Konkret dari Database (Bukti Transparansi) */}
       <div style={{ marginBottom: 20 }}>
-        <SectionCard title="Audit Bukti Database: Rincian Hutang Supplier & Beban Riil yang Dianalisis AI">
+        <SectionCard title="Audit Bukti Database: Rincian Hutang Operasional, Supplier & Beban Riil yang Dianalisis AI">
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 20, marginTop: 10 }}>
-            {/* Tabel Hutang Supplier Riil */}
+            {/* Tabel Hutang Operasional & Supplier Riil */}
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Building2 size={15} color="var(--warn)" />
-                Hutang ke Supplier / Vendor ({input.receivable_details?.length || 0})
+                Hutang Operasional, Sewa & Supplier ({input.receivable_details?.length || 0})
               </div>
               <div className="table-container">
                 <table className="data-table" style={{ fontSize: 12 }}>
                   <thead>
                     <tr>
-                      <th>Supplier</th>
+                      <th>Pihak / Mitra</th>
                       <th>Tgl Buat</th>
                       <th>Jatuh Tempo</th>
                       <th>Sisa Tagihan</th>
