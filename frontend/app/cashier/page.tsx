@@ -27,14 +27,14 @@ export default async function CashierPage() {
   type Profile = Pick<Database["public"]["Tables"]["profiles"]["Row"], "full_name" | "role">;
   type Product = Pick<
     Database["public"]["Tables"]["products"]["Row"],
-    "id" | "name" | "sku" | "sell_price" | "stock" | "unit" | "category_id"
+    "id" | "name" | "sku" | "sell_price" | "stock" | "unit" | "category_id" | "image_url"
   >;
   type Customer = Pick<Database["public"]["Tables"]["customers"]["Row"], "id" | "name" | "phone">;
   type Shift = Pick<Database["public"]["Tables"]["shifts"]["Row"], "id" | "opened_at" | "initial_cash">;
 
   const [productsResult, customersResult, shiftResult] = await Promise.all([
     supabase.from("products")
-      .select("id, name, sku, sell_price, stock, unit, category_id")
+      .select("id, name, sku, sell_price, stock, unit, category_id, image_url")
       .eq("is_active", true)
       .order("name"),
     supabase.from("customers").select("id, name, phone").order("name"),
@@ -68,6 +68,7 @@ export default async function CashierPage() {
     price: product.sell_price,
     stock: product.stock,
     unit: product.unit,
+    image_url: product.image_url,
     category: product.category_id ? categoryNames.get(product.category_id) ?? "Lainnya" : "Lainnya",
   }));
   const cashierCustomers: CashierCustomer[] = (customersResult.data as unknown as Customer[]).map((customer) => ({
