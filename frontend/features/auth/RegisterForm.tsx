@@ -55,7 +55,7 @@ export default function RegisterForm() {
         >
           <header className="login-brand login-stagger">
             <div className="login-brand-logo" ref={brandLogoRef}>
-              <Image src="/fluxa-logo-glass.png" alt="" aria-hidden="true" width={42} height={42} priority />
+              <Image src="/Fluxa-Logo.webp" alt="" aria-hidden="true" width={42} height={42} priority />
             </div>
             <div>
               <p className="login-brand-name" ref={brandNameRef}>Fluxa</p>
@@ -84,7 +84,7 @@ export default function RegisterForm() {
         >
           <header className="login-brand login-stagger">
             <div className="login-brand-logo" ref={brandLogoRef}>
-              <Image src="/fluxa-logo-glass.png" alt="" aria-hidden="true" width={42} height={42} priority />
+              <Image src="/Fluxa-Logo.webp" alt="" aria-hidden="true" width={42} height={42} priority />
             </div>
             <div>
               <p className="login-brand-name" ref={brandNameRef}>Fluxa</p>

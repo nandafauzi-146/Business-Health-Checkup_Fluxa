@@ -124,7 +124,7 @@ function LoginIntro({
       <div className="login-intro-brand">
         <div className="login-intro-mark">
           <div className="login-intro-symbol" ref={symbolRef}>
-            <Image src="/fluxa-logo-glass.png" alt="" aria-hidden="true" width={140} height={140} priority />
+            <Image src="/Fluxa-Logo.webp" alt="" aria-hidden="true" width={140} height={140} priority />
           </div>
         </div>
         <div className="login-intro-copy">
@@ -439,7 +439,7 @@ export default function LoginForm({ registrationStatus }: { registrationStatus?:
       >
         <header className="login-brand login-stagger">
           <div className="login-brand-logo" ref={loginLogoRef}>
-            <Image src="/fluxa-logo-glass.png" alt="" aria-hidden="true" width={42} height={42} priority />
+            <Image src="/Fluxa-Logo.webp" alt="" aria-hidden="true" width={42} height={42} priority />
           </div>
           <div>
             <p className="login-brand-name" ref={loginNameRef}>Fluxa</p>
