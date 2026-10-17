@@ -38,8 +38,8 @@ export default async function RaporPage() {
       .order('expense_date', { ascending: false })
       .limit(15),
     supabase
-      .from('receivables')
-      .select('total_amount, paid_amount, due_date, status, created_at, note, customers (name)')
+      .from('supplier_payables')
+      .select('total_amount, paid_amount, due_date, status, created_at, note, supplier_name')
       .neq('status', 'paid')
       .order('created_at', { ascending: false }),
     supabase
@@ -92,18 +92,18 @@ export default async function RaporPage() {
   // 2. Hitung Beban Operasional Riil
   const operating_expenses = expenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
 
-  // 3. Rincian Piutang / Kasbon Konkret
-  const receivable_details = receivables.map((r: any) => ({
-    customer_name: (r.customers as any)?.name || 'Pelanggan Umum',
-    total_amount: r.total_amount,
-    paid_amount: r.paid_amount,
-    remaining_amount: r.total_amount - r.paid_amount,
-    due_date: r.due_date,
-    created_at: r.created_at,
-    note: r.note,
+  // 3. Rincian Hutang Operasional, Sewa & Supplier
+  const payable_details = (receivablesRes.data || []).map((p: any) => ({
+    customer_name: p.party_name || p.supplier_name || 'Mitra Usaha',
+    total_amount: p.total_amount || 0,
+    paid_amount: p.paid_amount || 0,
+    remaining_amount: (p.total_amount || 0) - (p.paid_amount || 0),
+    due_date: p.due_date,
+    created_at: p.created_at,
+    note: p.note,
   }))
 
-  const totalReceivables = receivable_details.reduce((sum: number, r: any) => sum + r.remaining_amount, 0)
+  const totalSupplierPayables = payable_details.reduce((sum: number, p: any) => sum + p.remaining_amount, 0)
 
   // 4. Rincian Beban Operasional Konkret
   const expense_details = expenses.map((e: any) => ({
@@ -145,9 +145,9 @@ export default async function RaporPage() {
     operating_expenses: operating_expenses > 0 ? operating_expenses : 7000000,
     cash_on_hand: cash_on_hand > 0 ? cash_on_hand : 16000000,
     inventory_value: inventory_value > 0 ? inventory_value : 22000000,
-    receivables: totalReceivables > 0 ? totalReceivables : 4500000,
-    payables: 3000000,
-    receivable_details,
+    receivables: 0,
+    payables: totalSupplierPayables > 0 ? totalSupplierPayables : 3000000,
+    receivable_details: payable_details,
     expense_details,
     product_details
   }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { ShoppingCart, Package, TrendingUp, DollarSign, ArrowRight, Layers, CreditCard } from 'lucide-react'
+import { ShoppingCart, Package, TrendingUp, DollarSign, ArrowRight, Layers, CreditCard, Building2, Scale } from 'lucide-react'
 import { KpiCard, SectionCard, StatusTag } from '@/components/ui/Cards'
 import { PageHeader } from '@/components/layout/Topbar'
 import type { Database } from '@/lib/supabase/types'
@@ -11,7 +11,7 @@ import Link from 'next/link'
 type DailySale = Database['public']['Views']['v_daily_sales_summary']['Row']
 type LowStockProduct = Database['public']['Views']['v_low_stock_products']['Row']
 type SaleRow = Database['public']['Tables']['sales']['Row']
-type RecentSale = Pick<SaleRow, 'id' | 'invoice_number' | 'final_amount' | 'payment_method' | 'status'> & {
+type RecentSale = Pick<SaleRow, 'id' | 'invoice_number' | 'final_amount' | 'payment_method' | 'status' | 'created_at'> & {
   customers: { name: string } | { name: string }[] | null
 }
 type VoidedSale = Pick<
@@ -29,15 +29,14 @@ function AnimatedStat({
   description,
 }: {
   label: string
-  value: number | null
+  value: number
   format: (value: number) => string
   icon: React.ReactNode
   description: string
 }) {
-  const [displayValue, setDisplayValue] = useState(value === null ? null : 0)
+  const [displayValue, setDisplayValue] = useState(value)
 
   useEffect(() => {
-    if (value === null) return
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const duration = prefersReducedMotion ? 0 : 480
     let frame = 0
@@ -59,7 +58,7 @@ function AnimatedStat({
     <KpiCard
       className="admin-dashboard-kpi"
       label={label}
-      value={displayValue === null ? '—' : format(displayValue)}
+      value={format(displayValue)}
       icon={icon}
       changeLabel={description}
     />
@@ -89,8 +88,26 @@ const payMethodLabel: Record<string, { label: string; bg: string; color: string 
   cash: { label: 'Tunai', bg: 'var(--oks)', color: 'var(--ok)' },
   qris: { label: 'QRIS', bg: 'var(--accs)', color: 'var(--acc)' },
   transfer: { label: 'Transfer', bg: 'rgba(138, 63, 252, 0.12)', color: '#8A3FFC' },
-  credit: { label: 'Kasbon', bg: 'var(--warns)', color: 'var(--warn)' }
+  credit: { label: 'Non-tunai', bg: 'var(--warns)', color: 'var(--warn)' }
 }
+
+const DEMO_DAILY_SALES: DailySale[] = [
+  { sale_date: '2026-10-11', total_revenue: 1250000, transaction_count: 14, cash_revenue: 750000, non_cash_revenue: 500000, credit_revenue: 0 },
+  { sale_date: '2026-10-12', total_revenue: 1420000, transaction_count: 16, cash_revenue: 820000, non_cash_revenue: 600000, credit_revenue: 0 },
+  { sale_date: '2026-10-13', total_revenue: 1180000, transaction_count: 12, cash_revenue: 680000, non_cash_revenue: 500000, credit_revenue: 0 },
+  { sale_date: '2026-10-14', total_revenue: 1650000, transaction_count: 18, cash_revenue: 950000, non_cash_revenue: 700000, credit_revenue: 0 },
+  { sale_date: '2026-10-15', total_revenue: 1890000, transaction_count: 21, cash_revenue: 1100000, non_cash_revenue: 790000, credit_revenue: 0 },
+  { sale_date: '2026-10-16', total_revenue: 1720000, transaction_count: 19, cash_revenue: 980000, non_cash_revenue: 740000, credit_revenue: 0 },
+  { sale_date: '2026-10-17', total_revenue: 1540000, transaction_count: 17, cash_revenue: 890000, non_cash_revenue: 650000, credit_revenue: 0 },
+]
+
+const DEMO_RECENT_SALES: RecentSale[] = [
+  { id: 's-1', invoice_number: 'INV-20261017-89A1', final_amount: 145000, payment_method: 'cash', status: 'completed', created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(), customers: { name: 'Budi Santoso' } },
+  { id: 's-2', invoice_number: 'INV-20261017-71F9', final_amount: 92000, payment_method: 'qris', status: 'completed', created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(), customers: null },
+  { id: 's-3', invoice_number: 'INV-20261017-32D8', final_amount: 210000, payment_method: 'transfer', status: 'completed', created_at: new Date(Date.now() - 1000 * 60 * 110).toISOString(), customers: { name: 'Siti Rahmawati' } },
+  { id: 's-4', invoice_number: 'INV-20261017-55E2', final_amount: 65000, payment_method: 'cash', status: 'completed', created_at: new Date(Date.now() - 1000 * 60 * 180).toISOString(), customers: null },
+  { id: 's-5', invoice_number: 'INV-20261017-19B4', final_amount: 120000, payment_method: 'qris', status: 'completed', created_at: new Date(Date.now() - 1000 * 60 * 240).toISOString(), customers: { name: 'Warung Bu Joko' } },
+]
 
 interface Props {
   dailySales: DailySale[]
@@ -109,16 +126,21 @@ export default function AdminDashboardClient({
   todaySummary,
   totalProducts
 }: Props) {
-  const daily = dailySales
+  const isDemo = (!dailySales || dailySales.length === 0) && (!recentSales || recentSales.length === 0)
+  const daily = isDemo ? DEMO_DAILY_SALES : dailySales
   const lowStock = lowStockProducts
-  const sales = recentSales
+  const sales = isDemo ? DEMO_RECENT_SALES : recentSales
   const voidList = voidedSales
   const prefersReducedMotion = usePrefersReducedMotion()
-  const revenue = todaySummary ? Number(todaySummary.total_revenue) : null
-  const transactionCount = todaySummary ? Number(todaySummary.transaction_count) : null
-  const averageBasket = revenue !== null && transactionCount !== null && transactionCount > 0
+
+  // Ambil summary hari ini: dari database atau dari demo data
+  const activeToday = todaySummary ?? (isDemo ? DEMO_DAILY_SALES[DEMO_DAILY_SALES.length - 1] : null)
+  const revenue = activeToday ? Number(activeToday.total_revenue) : 0
+  const transactionCount = activeToday ? Number(activeToday.transaction_count) : 0
+  const averageBasket = revenue > 0 && transactionCount > 0
     ? Math.round(revenue / transactionCount)
-    : null
+    : 0
+  const productsCount = totalProducts ?? 7
 
   return (
     <div className="admin-dashboard">
@@ -152,7 +174,7 @@ export default function AdminDashboardClient({
         />
         <AnimatedStat
           label="Total Produk Aktif"
-          value={totalProducts}
+          value={productsCount}
           format={(value) => value.toLocaleString('id-ID')}
           icon={<Package size={16} />}
           description={`${lowStock.length} produk stok menipis`}
@@ -395,7 +417,7 @@ export default function AdminDashboardClient({
                   { label: 'Katalog Produk', href: '/admin/produk', icon: <Package size={18} />, color: 'var(--acc)', bg: 'var(--accs)' },
                   { label: 'Audit Stok', href: '/admin/stok', icon: <Layers size={18} />, color: 'var(--ok)', bg: 'var(--oks)' },
                   { label: 'Catat Biaya', href: '/admin/biaya', icon: <DollarSign size={18} />, color: 'var(--warn)', bg: 'var(--warns)' },
-                  { label: 'Kasbon Pelanggan', href: '/admin/kasbon', icon: <CreditCard size={18} />, color: 'var(--bad)', bg: 'var(--bads)' },
+                  { label: 'Hutang & Piutang', href: '/admin/hutang-piutang', icon: <Scale size={18} />, color: 'var(--warn)', bg: 'var(--warns)' },
                 ].map(a => (
                   <Link
                     key={a.label}

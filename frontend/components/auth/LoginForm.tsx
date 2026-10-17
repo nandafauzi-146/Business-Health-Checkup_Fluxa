@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type RefObject } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   ArrowRight,
+  ArrowLeft,
   BarChart3,
   Check,
   Eye,
@@ -12,16 +14,22 @@ import {
   LoaderCircle,
   LockKeyhole,
   Mail,
+  ShieldCheck,
   ShoppingCart,
   Sparkles,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import type { UserRole } from '@/lib/supabase/types'
 
 const demoAccounts = [
   { role: 'Owner', email: 'owner@demo.local', password: 'Owner123!', color: 'owner' },
   { role: 'Admin', email: 'admin@demo.local', password: 'Admin123!', color: 'admin' },
   { role: 'Kasir', email: 'kasir@demo.local', password: 'Kasir123!', color: 'kasir' },
 ] as const
+
+function isUserRole(role: unknown): role is UserRole {
+  return role === 'kasir' || role === 'admin' || role === 'owner' || role === 'super_admin'
+}
 
 const particles = [
   { x: '12%', y: '23%', delay: '-2s', size: 4 },
@@ -130,16 +138,18 @@ function LoginIntro({
 function DemoAccounts({
   selectedDemo,
   onSelect,
+  onSelectSuperAdmin,
 }: {
   selectedDemo: string
   onSelect: (account: (typeof demoAccounts)[number]) => void
+  onSelectSuperAdmin: () => void
 }) {
   return (
     <section className="login-demo login-stagger" aria-label="Akun demo">
       <div className="login-demo-heading">
         <Sparkles size={13} aria-hidden="true" />
         <span>AKUN DEMO</span>
-        <span className="login-demo-hint">— klik untuk mengisi otomatis</span>
+        <span className="login-demo-hint">— pilih akun</span>
       </div>
       <div className="login-demo-buttons">
         {demoAccounts.map((account) => (
@@ -154,7 +164,21 @@ function DemoAccounts({
             {account.role}
           </button>
         ))}
+        <button
+          className={`login-demo-button login-demo-super-admin${selectedDemo === 'Super Admin' ? ' is-selected' : ''}`}
+          onClick={onSelectSuperAdmin}
+          type="button"
+          aria-pressed={selectedDemo === 'Super Admin'}
+        >
+          {selectedDemo === 'Super Admin' ? <Check size={13} aria-hidden="true" /> : <ShieldCheck size={13} aria-hidden="true" />}
+          Super Admin
+        </button>
       </div>
+      {selectedDemo === 'Super Admin' && (
+        <p className="login-demo-super-admin-hint" role="status">
+          Masukkan email dan kata sandi akun Super Admin yang sudah terdaftar.
+        </p>
+      )}
       <p className="login-demo-passwords">
         <span>Password:</span>
         {demoAccounts.map((account) => (
@@ -184,7 +208,7 @@ function FeatureHighlights() {
   )
 }
 
-export default function LoginForm() {
+export default function LoginForm({ registrationStatus }: { registrationStatus?: 'pending' | 'rejected' | null }) {
   const [phase, setPhase] = useState<'intro' | 'transition' | 'login'>('intro')
   const introSymbolRef = useRef<HTMLDivElement>(null)
   const introNameRef = useRef<HTMLParagraphElement>(null)
@@ -333,29 +357,46 @@ export default function LoginForm() {
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, approval_status')
         .eq('id', user.id)
         .single()
 
       if (profileError || !profile) {
-        await supabase.auth.signOut()
-        setError('Profil akses akun tidak ditemukan. Hubungi administrator.')
+        const { error: signOutError } = await supabase.auth.signOut()
+        if (signOutError) console.error('Unable to sign out an account without a readable profile.', signOutError)
+
+        if (profileError?.message.includes('approval_status')) {
+          setError('Sistem persetujuan belum siap. Minta administrator menerapkan migrasi database terbaru, lalu coba masuk kembali.')
+        } else {
+          setError('Profil akses akun tidak dapat dibaca. Pastikan profil akun tersedia dan hubungi administrator.')
+        }
         return
       }
 
-      const destinations: Record<string, string> = {
+      if (profile.approval_status === 'pending' || profile.approval_status === 'rejected') {
+        const { error: signOutError } = await supabase.auth.signOut()
+        if (signOutError) console.error('Unable to sign out an unapproved account.', signOutError)
+        setError(profile.approval_status === 'pending'
+          ? 'Pendaftaran Anda masih menunggu persetujuan Super Admin. Trial 7 hari dimulai setelah akun disetujui.'
+          : 'Pendaftaran Anda belum disetujui. Hubungi tim Fluxa untuk informasi lebih lanjut.')
+        return
+      }
+
+      const destinations: Record<UserRole, string> = {
         kasir: '/kasir',
         admin: '/admin',
         owner: '/owner',
+        super_admin: '/super-admin',
       }
-      const destination = destinations[profile.role]
 
-      if (!destination) {
-        await supabase.auth.signOut()
+      if (!isUserRole(profile.role)) {
+        const { error: signOutError } = await supabase.auth.signOut()
+        if (signOutError) console.error('Unable to sign out an account with an unsupported role.', signOutError)
         setError('Peran akun belum dikenali. Hubungi administrator.')
         return
       }
 
+      const destination = destinations[profile.role]
       setSuccess('Login berhasil. Mengarahkan Anda ke Fluxa...')
       router.replace(destination)
       router.refresh()
@@ -370,6 +411,15 @@ export default function LoginForm() {
     setEmail(account.email)
     setPassword(account.password)
     setSelectedDemo(account.role)
+    setError('')
+    setErrorField(null)
+    setSuccess('')
+  }
+
+  const selectSuperAdmin = () => {
+    setEmail('')
+    setPassword('')
+    setSelectedDemo('Super Admin')
     setError('')
     setErrorField(null)
     setSuccess('')
@@ -401,6 +451,14 @@ export default function LoginForm() {
           <h1 id="login-title">Selamat datang <span aria-hidden="true">👋</span></h1>
           <p>Masuk ke akun Anda untuk melanjutkan</p>
         </div>
+
+        {registrationStatus && (
+          <p className={`login-feedback ${registrationStatus === 'pending' ? 'login-feedback-success' : 'login-feedback-error'}`} role="status">
+            {registrationStatus === 'pending'
+              ? 'Pendaftaran menunggu persetujuan Super Admin. Trial 7 hari dimulai setelah akun disetujui.'
+              : 'Pendaftaran belum disetujui. Hubungi tim Fluxa untuk informasi lebih lanjut.'}
+          </p>
+        )}
 
         <form className="login-form" onSubmit={handleLogin} noValidate>
           <div className="login-field login-stagger">
@@ -483,7 +541,16 @@ export default function LoginForm() {
           </button>
         </form>
 
-        <DemoAccounts selectedDemo={selectedDemo} onSelect={selectDemoAccount} />
+        <p className="login-register-prompt">Belum punya akun? <Link href="/register">Daftar & ajukan trial 7 hari</Link></p>
+        <Link className="auth-back-link" href="/landingpage">
+          <ArrowLeft size={15} aria-hidden="true" />
+          Kembali ke landing page
+        </Link>
+        <DemoAccounts
+          selectedDemo={selectedDemo}
+          onSelect={selectDemoAccount}
+          onSelectSuperAdmin={selectSuperAdmin}
+        />
         <FeatureHighlights />
       </section>
     </main>

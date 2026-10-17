@@ -12,6 +12,7 @@ export type CashierProduct = {
   stock: number;
   unit: string;
   category: string;
+  image_url?: string | null;
 };
 
 export type CashierCustomer = {
@@ -41,7 +42,6 @@ const paymentOptions = [
   { id: "cash", label: "Tunai", mark: "Rp" },
   { id: "qris", label: "QRIS", mark: "Q" },
   { id: "transfer", label: "Transfer", mark: "↗" },
-  { id: "credit", label: "Kasbon", mark: "K" },
 ] as const;
 
 export default function CashierRegister({
@@ -144,10 +144,6 @@ export default function CashierRegister({
 
   async function checkout() {
     if (!activeShift || cart.length === 0) return;
-    if (paymentMethod === "credit" && !customerId) {
-      setErrorMessage("Pilih pelanggan untuk transaksi kasbon.");
-      return;
-    }
 
     setErrorMessage("");
     setSuccessMessage("");
@@ -236,7 +232,20 @@ export default function CashierRegister({
               const isOutOfStock = product.stock < 1;
               return (
                 <button className="cashier-product-card" type="button" key={product.id} disabled={isOutOfStock} onClick={() => addProduct(product)}>
-                  <span className="cashier-product-art"><CashierIcon name="box" /></span>
+                  {product.image_url ? (
+                    <span className="cashier-product-art" style={{ overflow: 'hidden', padding: 0 }}>
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    </span>
+                  ) : (
+                    <span className="cashier-product-art"><CashierIcon name="box" /></span>
+                  )}
                   <span className="cashier-product-name">{product.name}</span>
                   <span className="cashier-product-sku">{product.sku ?? product.category}</span>
                   <span className="cashier-product-card-bottom"><strong>{formatRupiah(product.price)}</strong><small className={isOutOfStock ? "is-out" : ""}>{isOutOfStock ? "Habis" : `Stok ${product.stock}`}</small></span>
@@ -253,7 +262,13 @@ export default function CashierRegister({
           <div className="cashier-cart-lines">
             {cart.map(({ product, quantity }) => (
               <article className="cashier-cart-line" key={product.id}>
-                <span className="cashier-cart-product-icon"><CashierIcon name="box" /></span>
+                {product.image_url ? (
+                  <span className="cashier-cart-product-icon" style={{ overflow: 'hidden', padding: 0 }}>
+                    <img src={product.image_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </span>
+                ) : (
+                  <span className="cashier-cart-product-icon"><CashierIcon name="box" /></span>
+                )}
                 <div className="cashier-cart-product"><strong>{product.name}</strong><span>{formatRupiah(product.price)}</span></div>
                 <div className="cashier-quantity-control"><button type="button" aria-label={`Kurangi ${product.name}`} onClick={() => changeQuantity(product.id, -1)}>−</button><span>{quantity}</span><button type="button" aria-label={`Tambah ${product.name}`} onClick={() => changeQuantity(product.id, 1)}>+</button></div>
               </article>
@@ -265,7 +280,6 @@ export default function CashierRegister({
             <div className="cashier-payment-options">
               {paymentOptions.map((option) => <button key={option.id} type="button" className={paymentMethod === option.id ? "is-selected" : ""} onClick={() => setPaymentMethod(option.id)}><span>{option.mark}</span>{option.label}</button>)}
             </div>
-            {paymentMethod === "credit" && !customerId && <p className="cashier-inline-hint">Pilih pelanggan untuk pembayaran kasbon.</p>}
           </div>
           <div className="cashier-total">
             <div><span>Subtotal</span><strong>{formatRupiah(totalAmount)}</strong></div>
@@ -274,7 +288,7 @@ export default function CashierRegister({
           </div>
           {errorMessage && <p className="cashier-alert cashier-alert-error" role="alert">{errorMessage}</p>}
           {successMessage && <p className="cashier-alert cashier-alert-success" role="status">{successMessage}</p>}
-          <button className="cashier-primary-button cashier-checkout" type="button" disabled={!cart.length || isCheckingOut || (paymentMethod === "credit" && !selectedCustomer)} onClick={checkout}>
+          <button className="cashier-primary-button cashier-checkout" type="button" disabled={!cart.length || isCheckingOut} onClick={checkout}>
             <span>{isCheckingOut ? "Memproses transaksi..." : "Proses pembayaran"}</span><strong>{formatRupiah(totalAmount)}</strong>
           </button>
           <p className="cashier-security-note"><CashierIcon name="lock" />Stok diperbarui otomatis setelah transaksi berhasil.</p>
