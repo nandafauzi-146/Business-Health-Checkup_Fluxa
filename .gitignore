@@ -44,3 +44,9 @@ next-env.d.ts
 # local agent instructions
 AGENTS.md
 CLAUDE.md
+
+# scratch & debug scripts
+scratch/
+
+# macOS
+**/.DS_Store

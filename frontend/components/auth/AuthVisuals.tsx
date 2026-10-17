@@ -98,7 +98,7 @@ export function AuthIntro({
       <div className="login-intro-brand">
         <div className="login-intro-mark">
           <div className="login-intro-symbol" ref={symbolRef}>
-            <Image src="/fluxa-logo-glass.png" alt="" aria-hidden="true" width={140} height={140} priority />
+            <Image src="/Fluxa-Logo.webp" alt="" aria-hidden="true" width={140} height={140} priority />
           </div>
         </div>
         <div className="login-intro-copy">

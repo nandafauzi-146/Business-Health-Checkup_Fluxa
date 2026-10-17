@@ -145,7 +145,7 @@ export default function LandingPage() {
           <div className={styles.introContent}>
             <span className={styles.introOrbit} />
             <span className={styles.introGlow} />
-            <Image className={styles.introLogo} src="/fluxa-logo-glass.png" alt="" width={144} height={144} priority />
+            <Image className={styles.introLogo} src="/Fluxa-Logo.webp" alt="" width={144} height={144} priority />
             <span className={styles.introWordmark}>fluxa<span>.</span></span>
             <span className={styles.introCaption}>Membuka ruang untuk bisnis bertumbuh</span>
           </div>
@@ -153,7 +153,7 @@ export default function LandingPage() {
       )}
       <header className={styles.header}>
         <div className={styles.navWrap}>
-          <Link className={styles.brand} href="/landingpage" aria-label="Fluxa, beranda"><Image src="/fluxa-logo.png" alt="" width={42} height={42} priority /><span>fluxa<span className={styles.brandDot}>.</span></span></Link>
+          <Link className={styles.brand} href="/landingpage" aria-label="Fluxa, beranda"><Image src="/Fluxa-Logo.webp" alt="" width={42} height={42} priority /><span>fluxa<span className={styles.brandDot}>.</span></span></Link>
           <nav className={styles.desktopNav} aria-label="Navigasi utama"><a href="#fitur">Fitur</a><a href="#cara-kerja">Cara kerja</a><a href="#kontak">Kontak</a><a href="#paket">Subscribe</a></nav>
           <div className={styles.navActions}>
             <button className={styles.themeToggle} type="button" onClick={() => setPreference(isDark ? 'light' : 'dark')} aria-label={`Aktifkan mode ${isDark ? 'terang' : 'gelap'}`} title={`Mode ${isDark ? 'terang' : 'gelap'}`}>
@@ -229,7 +229,7 @@ export default function LandingPage() {
         <div className={styles.faqList}>{faqs.map((faq) => <details className={styles.faqItem} key={faq.question}><summary>{faq.question}<ChevronDown size={18} /></summary><p>{faq.answer}</p></details>)}</div>
       </div></section>
 
-      <footer className={styles.footer}><div className={styles.footerInner}><Link className={styles.brand} href="/landingpage"><Image src="/fluxa-logo.png" alt="" width={34} height={34} /><span>fluxa<span className={styles.brandDot}>.</span></span></Link><p>Kelola hari ini. Tumbuh untuk esok.</p><div><a href="#fitur">Fitur</a><a href="#kontak">Kontak</a><Link href="/login">Login</Link></div></div><span className={styles.copyright}>© {new Date().getFullYear()} Fluxa. Semua hak dilindungi.</span></footer>
+      <footer className={styles.footer}><div className={styles.footerInner}><Link className={styles.brand} href="/landingpage"><Image src="/Fluxa-Logo.webp" alt="" width={34} height={34} /><span>fluxa<span className={styles.brandDot}>.</span></span></Link><p>Kelola hari ini. Tumbuh untuk esok.</p><div><a href="#fitur">Fitur</a><a href="#kontak">Kontak</a><Link href="/login">Login</Link></div></div><span className={styles.copyright}>© {new Date().getFullYear()} Fluxa. Semua hak dilindungi.</span></footer>
     </main>
   )
 }
