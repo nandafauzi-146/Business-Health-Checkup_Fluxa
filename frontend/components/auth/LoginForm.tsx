@@ -542,7 +542,7 @@ export default function LoginForm({ registrationStatus }: { registrationStatus?:
         </form>
 
         <p className="login-register-prompt">Belum punya akun? <Link href="/register">Daftar & ajukan trial 7 hari</Link></p>
-        <Link className="auth-back-link" href="/landingpage">
+        <Link className="auth-back-link" href="/">
           <ArrowLeft size={15} aria-hidden="true" />
           Kembali ke landing page
         </Link>

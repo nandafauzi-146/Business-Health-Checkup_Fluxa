@@ -1,12 +1,13 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import LandingPage from './landingpage/page'
 
 export default async function RootPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/landingpage')
+    return <LandingPage />
   }
 
   const { data: profile } = await supabase
@@ -22,5 +23,5 @@ export default async function RootPage() {
   if (profile?.role === 'admin') redirect('/admin')
   if (profile?.role === 'owner') redirect('/owner')
 
-  redirect('/landingpage')
+  redirect('/login')
 }
