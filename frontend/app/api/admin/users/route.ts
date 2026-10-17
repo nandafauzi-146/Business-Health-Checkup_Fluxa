@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/supabase/types'
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
+}
 
 function getAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
@@ -30,11 +35,11 @@ export async function POST(req: Request) {
 
     const { data: callerProfile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, approval_status')
       .eq('id', user.id)
       .single()
 
-    if (!callerProfile || !['admin', 'owner'].includes(callerProfile.role)) {
+    if (!callerProfile || callerProfile.approval_status !== 'approved' || !['admin', 'owner'].includes(callerProfile.role)) {
       return NextResponse.json({ error: 'Forbidden: Hanya Admin atau Owner yang dapat membuat pengguna.' }, { status: 403 })
     }
 
@@ -76,20 +81,25 @@ export async function POST(req: Request) {
     const createdUser = authData.user
 
     // 2. Pastikan tabel profiles terisi / terupdate
-    const { data: profileData, error: profileError } = await adminClient
+    const { error: profileError } = await adminClient
       .from('profiles')
       .upsert({
         id: createdUser.id,
         full_name: full_name.trim(),
         role: targetRole,
         phone: phone?.trim() || null,
+        email: email.trim().toLowerCase(),
+        approval_status: 'approved',
         updated_at: new Date().toISOString()
       })
       .select()
       .single()
 
     if (profileError) {
-      console.warn('Upsert profile notice:', profileError)
+      const { error: cleanupError } = await adminClient.auth.admin.deleteUser(createdUser.id)
+      if (cleanupError) console.error('Unable to remove user after profile upsert failed.', cleanupError)
+      console.error('Unable to save staff profile.', profileError)
+      return NextResponse.json({ error: 'Profil pengguna belum dapat disimpan.' }, { status: 500 })
     }
 
     return NextResponse.json({
@@ -103,9 +113,9 @@ export async function POST(req: Request) {
         created_at: new Date().toISOString()
       }
     })
-  } catch (err: any) {
-    console.error('API Error create user:', err)
-    return NextResponse.json({ error: err.message || 'Terjadi kesalahan server.' }, { status: 500 })
+  } catch (error: unknown) {
+    console.error('API Error create user:', error)
+    return NextResponse.json({ error: getErrorMessage(error, 'Terjadi kesalahan server.') }, { status: 500 })
   }
 }
 
@@ -121,11 +131,11 @@ export async function PUT(req: Request) {
 
     const { data: callerProfile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, approval_status')
       .eq('id', user.id)
       .single()
 
-    if (!callerProfile || !['admin', 'owner'].includes(callerProfile.role)) {
+    if (!callerProfile || callerProfile.approval_status !== 'approved' || !['admin', 'owner'].includes(callerProfile.role)) {
       return NextResponse.json({ error: 'Forbidden: Hak akses ditolak.' }, { status: 403 })
     }
 
@@ -149,13 +159,17 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'Pengguna tidak ditemukan.' }, { status: 404 })
     }
 
+    if (targetProfile.approval_status !== 'approved' || targetProfile.role === 'super_admin') {
+      return NextResponse.json({ error: 'Akun ini hanya dapat dikelola melalui proses Super Admin.' }, { status: 403 })
+    }
+
     // Guard: Admin HANYA boleh edit akun kasir
     if (callerProfile.role === 'admin' && targetProfile.role !== 'kasir') {
       return NextResponse.json({ error: 'Akses ditolak: Admin hanya berwenang mengelola akun kasir.' }, { status: 403 })
     }
 
     // Update profile
-    const updateProfileData: any = {
+    const updateProfileData: Database['public']['Tables']['profiles']['Update'] = {
       full_name: full_name.trim(),
       phone: phone?.trim() || null,
       updated_at: new Date().toISOString()
@@ -177,7 +191,7 @@ export async function PUT(req: Request) {
     }
 
     // Update auth metadata & password
-    const authUpdatePayload: any = {
+    const authUpdatePayload: { user_metadata: Record<string, unknown>; password?: string } = {
       user_metadata: {
         full_name: full_name.trim(),
         phone: phone?.trim() || null,
@@ -199,9 +213,9 @@ export async function PUT(req: Request) {
         role: nextRole
       }
     })
-  } catch (err: any) {
-    console.error('API Error update user:', err)
-    return NextResponse.json({ error: err.message || 'Terjadi kesalahan server.' }, { status: 500 })
+  } catch (error: unknown) {
+    console.error('API Error update user:', error)
+    return NextResponse.json({ error: getErrorMessage(error, 'Terjadi kesalahan server.') }, { status: 500 })
   }
 }
 
@@ -217,11 +231,11 @@ export async function DELETE(req: Request) {
 
     const { data: callerProfile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, approval_status')
       .eq('id', user.id)
       .single()
 
-    if (!callerProfile || !['admin', 'owner'].includes(callerProfile.role)) {
+    if (!callerProfile || callerProfile.approval_status !== 'approved' || !['admin', 'owner'].includes(callerProfile.role)) {
       return NextResponse.json({ error: 'Forbidden: Hak akses ditolak.' }, { status: 403 })
     }
 
@@ -249,6 +263,10 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'Pengguna tidak ditemukan.' }, { status: 404 })
     }
 
+    if (targetProfile.approval_status !== 'approved' || targetProfile.role === 'super_admin') {
+      return NextResponse.json({ error: 'Akun ini hanya dapat dikelola melalui proses Super Admin.' }, { status: 403 })
+    }
+
     // Guard: Admin HANYA boleh hapus akun kasir
     if (callerProfile.role === 'admin' && targetProfile.role !== 'kasir') {
       return NextResponse.json({ error: 'Akses ditolak: Admin hanya berwenang menghapus akun kasir.' }, { status: 403 })
@@ -262,8 +280,8 @@ export async function DELETE(req: Request) {
     }
 
     return NextResponse.json({ success: true, message: `Akun kasir ${targetProfile.full_name} berhasil dihapus.` })
-  } catch (err: any) {
-    console.error('API Error delete user:', err)
-    return NextResponse.json({ error: err.message || 'Terjadi kesalahan server.' }, { status: 500 })
+  } catch (error: unknown) {
+    console.error('API Error delete user:', error)
+    return NextResponse.json({ error: getErrorMessage(error, 'Terjadi kesalahan server.') }, { status: 500 })
   }
 }

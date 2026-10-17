@@ -2877,6 +2877,140 @@ tr:hover td,
   background: rgba(16, 126, 91, .18);
   color: #80ebc2;
 }
+.login-register-prompt {
+  margin-top: 16px;
+  color: #a7b6d3;
+  font-size: 12px;
+  text-align: center;
+}
+.login-register-prompt a {
+  color: #8fb7ff;
+  font-weight: 700;
+  text-decoration: none;
+}
+.login-register-prompt a:hover {
+  color: #c0d5ff;
+}
+.auth-back-link {
+  display: flex;
+  width: fit-content;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 12px auto 0;
+  padding: 0 12px;
+  border: 1px solid rgba(137, 165, 215, .2);
+  border-radius: 9px;
+  color: #a7b6d3;
+  font-size: 11px;
+  font-weight: 550;
+  text-decoration: none;
+  transition: border-color 180ms ease, background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+.auth-back-link:hover {
+  transform: translateY(-1px);
+  border-color: rgba(101, 201, 255, .48);
+  background: rgba(70, 127, 197, .12);
+  color: #e2f5ff;
+}
+.auth-back-link svg {
+  color: #78dfff;
+}
+.login-card.is-transition .auth-back-link {
+  animation: login-element-reveal 450ms cubic-bezier(.2, .75, .25, 1) 540ms both;
+}
+.register-page {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.register-card {
+  width: min(100%, 456px);
+  margin: auto;
+}
+.register-card.is-transition .login-field:nth-child(3) {
+  animation: login-element-reveal 450ms cubic-bezier(.2, .75, .25, 1) 420ms both;
+}
+.register-card.is-transition .login-field:nth-child(4) {
+  animation: login-element-reveal 450ms cubic-bezier(.2, .75, .25, 1) 470ms both;
+}
+.register-card.is-transition .register-notice {
+  animation: login-element-reveal 450ms cubic-bezier(.2, .75, .25, 1) 500ms both;
+}
+.register-card.is-transition .login-register-prompt {
+  animation: login-element-reveal 450ms cubic-bezier(.2, .75, .25, 1) 540ms both;
+}
+.register-welcome {
+  margin-bottom: 21px;
+}
+.register-welcome h1 {
+  margin-top: 5px;
+}
+.register-welcome p {
+  margin-top: 5px;
+  color: #a7b6d3;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.register-eyebrow {
+  color: #69dfff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+}
+.register-optional {
+  color: #8798b8;
+  font-weight: 400;
+}
+.register-form {
+  gap: 12px;
+}
+.register-submit {
+  text-decoration: none;
+}
+.register-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 17px;
+  padding: 12px;
+  border: 1px solid rgba(116, 151, 226, .18);
+  border-radius: 10px;
+  background: rgba(24, 38, 64, .76);
+  color: #b3c2d9;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.register-notice svg {
+  flex: 0 0 auto;
+  color: #69dfff;
+}
+.register-notice strong {
+  color: #e7efff;
+  overflow-wrap: anywhere;
+}
+.register-legal {
+  position: absolute;
+  z-index: 1;
+  right: 20px;
+  bottom: 14px;
+  left: 20px;
+  color: #8798b8;
+  font-size: 10px;
+  opacity: 0;
+  text-align: center;
+  transition: opacity 320ms ease;
+}
+.register-card.is-transition ~ .register-legal {
+  animation: login-element-reveal 450ms cubic-bezier(.2, .75, .25, 1) 570ms both;
+}
+.register-card.is-login ~ .register-legal,
+.register-legal.is-visible {
+  opacity: 1;
+}
+.register-back-link {
+  margin-top: 21px;
+}
 .login-submit {
   position: relative;
   display: flex;
@@ -2951,7 +3085,7 @@ tr:hover td,
 }
 .login-demo-buttons {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 9px;
 }
 .login-demo-button {
@@ -2996,6 +3130,20 @@ tr:hover td,
 .login-demo-kasir.is-selected {
   background: rgba(190, 112, 26, .16);
   box-shadow: 0 0 17px rgba(255, 164, 48, .15);
+}
+.login-demo-super-admin {
+  color: #b99bff;
+}
+.login-demo-super-admin:hover,
+.login-demo-super-admin.is-selected {
+  background: rgba(130, 86, 215, .17);
+  box-shadow: 0 0 17px rgba(155, 111, 255, .18);
+}
+.login-demo-super-admin-hint {
+  margin-top: 9px;
+  color: #c1cdea;
+  font-size: 10.5px;
+  line-height: 1.45;
 }
 .login-demo-passwords {
   display: flex;
@@ -3135,6 +3283,9 @@ tr:hover td,
     width: 150%;
     max-width: none;
     left: -25%;
+  }
+  .login-demo-buttons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 360px) {
