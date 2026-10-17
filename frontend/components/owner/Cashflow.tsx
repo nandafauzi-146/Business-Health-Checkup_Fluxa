@@ -52,7 +52,7 @@ export default function CashflowClient({
           <div className="kpi-value" style={{ color: 'var(--ok)' }}>
             <FormatRupiah amount={totalIn} />
           </div>
-          <div className="kpi-sub">Dari transaksi POS & pelunasan kasbon</div>
+          <div className="kpi-sub">Dari transaksi penjualan POS langsung</div>
         </div>
 
         <div className="kpi-card">

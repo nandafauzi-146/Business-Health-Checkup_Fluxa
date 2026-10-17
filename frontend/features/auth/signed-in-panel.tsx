@@ -10,6 +10,7 @@ const roleLabels: Record<UserRole, string> = {
   kasir: "Kasir",
   admin: "Admin",
   owner: "Owner",
+  super_admin: "Super Admin",
 };
 
 type SignedInPanelProps = {
