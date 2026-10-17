@@ -71,7 +71,7 @@ export default function RegisterForm() {
             <ShieldCheck size={17} aria-hidden="true" />
             <span>Kami akan mengirimkan informasi persetujuan ke <strong>{email}</strong>.</span>
           </div>
-          <Link className="login-submit register-back-link login-stagger" href="/landingpage">
+          <Link className="login-submit register-back-link login-stagger" href="/">
             Kembali ke landing page <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </section>
@@ -143,7 +143,7 @@ export default function RegisterForm() {
             <p>Akun ditinjau Super Admin. Trial 7 hari dimulai setelah persetujuan.</p>
           </div>
           <p className="login-register-prompt login-stagger">Sudah punya akun? <Link href="/login">Masuk di sini</Link></p>
-          <Link className="auth-back-link login-stagger" href="/landingpage">
+          <Link className="auth-back-link login-stagger" href="/">
             <ArrowLeft size={15} aria-hidden="true" />
             Kembali ke landing page
           </Link>
