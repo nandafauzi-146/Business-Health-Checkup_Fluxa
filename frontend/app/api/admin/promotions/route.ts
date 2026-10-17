@@ -20,7 +20,17 @@ function getAdminClient() {
   })
 }
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'promotions.json')
+function getPromotionsFilePath(): string {
+  const rootFrontendPath = path.join(process.cwd(), 'frontend', 'data', 'promotions.json')
+  if (fs.existsSync(rootFrontendPath)) return rootFrontendPath
+
+  const directPath = path.join(process.cwd(), 'data', 'promotions.json')
+  if (fs.existsSync(directPath)) return directPath
+
+  return fs.existsSync(path.join(process.cwd(), 'frontend'))
+    ? rootFrontendPath
+    : directPath
+}
 
 // Data default jika file belum ada
 const DEFAULT_PROMOTIONS = [
@@ -80,8 +90,9 @@ const DEFAULT_PROMOTIONS = [
 
 function readLocalPromotions(): any[] {
   try {
-    if (fs.existsSync(DATA_FILE)) {
-      const content = fs.readFileSync(DATA_FILE, 'utf8')
+    const filePath = getPromotionsFilePath()
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf8')
       const parsed = JSON.parse(content)
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed
@@ -95,11 +106,12 @@ function readLocalPromotions(): any[] {
 
 function writeLocalPromotions(data: any[]): void {
   try {
-    const dir = path.dirname(DATA_FILE)
+    const filePath = getPromotionsFilePath()
+    const dir = path.dirname(filePath)
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true })
     }
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8')
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8')
   } catch (err) {
     console.error('Error writing local promotions:', err)
   }
