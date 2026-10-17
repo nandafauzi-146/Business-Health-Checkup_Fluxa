@@ -10,7 +10,7 @@ export default async function OwnerPenggunaPage() {
   // Owner dapat melihat dan mengelola seluruh staf (kasir, admin, owner)
   const { data: users } = await supabase
     .from('profiles')
-    .select('id, full_name, role, phone, created_at')
+    .select('id, full_name, role, phone, email, created_at')
     .order('created_at', { ascending: false })
 
   return <UsersManagementClient initialUsers={users || []} roleScope="all" currentUserId={user?.id} />

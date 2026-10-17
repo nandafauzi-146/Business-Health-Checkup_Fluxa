@@ -83,6 +83,7 @@ export async function POST(req: Request) {
         full_name: full_name.trim(),
         role: targetRole,
         phone: phone?.trim() || null,
+        email: email.trim().toLowerCase(),
         updated_at: new Date().toISOString()
       })
       .select()
