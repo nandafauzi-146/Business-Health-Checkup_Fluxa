@@ -46,7 +46,7 @@ export default async function OwnerDashboardPage() {
       .eq('is_low_stock', true),
     supabase
       .from('receivables')
-      .select('total_amount, paid_amount')
+      .select('remaining_amount')
       .in('status', ['unpaid', 'partial']),
     supabase
       .from('sales')
@@ -101,10 +101,7 @@ export default async function OwnerDashboardPage() {
 
   const monthlySummary = monthlySummaryResult.data
   const dailySales = dailySalesResult.data
-  const totalPendingReceivables = receivablesResult.data.reduce(
-    (sum, receivable) => sum + (receivable.total_amount - receivable.paid_amount),
-    0
-  )
+  const totalPendingReceivables = receivablesResult.data.reduce((sum, receivable) => sum + receivable.remaining_amount, 0)
   const productsById = new Map(products.map((product) => [product.id, product]))
   const categoriesById = new Map(categoryResults.flatMap((result) => result.data ?? []).map((category) => [category.id, category.name]))
   const productTotals = new Map<string, { name: string; quantity: number; revenue: number }>()
