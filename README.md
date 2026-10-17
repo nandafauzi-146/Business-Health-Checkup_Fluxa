@@ -11,37 +11,38 @@ Proyek ini disusun secara terorganisir ke dalam 3 pilar utama:
 ```
 fluxa/
 ├── frontend/                     # Pilar 1: Aplikasi Web Next.js (App Router + Tailwind)
-│   ├── app/                      # Halaman, layouts, dan API route handlers
-│   │   ├── api/business-health/  # Endpoint evaluasi kesehatan bisnis via Intelligence
-│   │   ├── dashboard/            # Dashboard operasional setelah login
-│   │   ├── cashier/              # Halaman POS kasir
-│   │   ├── admin/transactions/   # Riwayat transaksi Admin dan Owner
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   └── globals.css
-│   ├── components/               # Komponen UI & Layout
-│   │   ├── ui/                   # Button, Card, Dialog, Badge, Input, dll.
-│   │   └── layout/               # AppShell untuk sidebar dan header bersama
-│   ├── features/                 # Logika antarmuka per modul fungsional
-│   │   ├── cashier/              # Terminal POS, keranjang, checkout melalui RPC
-│   │   ├── products/             # Manajemen katalog produk & stok
-│   │   ├── owner/                # Dashboard eksekutif & rapor finansial owner
-│   │   ├── auth/                 # Form login & penanganan sesi
-│   │   └── reports/              # Laporan penjualan, kasbon, dan laba kotor
-│   ├── lib/                      # Helper library & Supabase SSR client
+│   ├── app/                      # Route groups Next.js App Router & API handlers
+│   │   ├── (admin)/admin/        # Modul operasional toko Admin (produk, stok, transaksi, biaya, dll.)
+│   │   ├── (kasir)/kasir/        # Antarmuka kasir POS cepat & responsif
+│   │   ├── (owner)/owner/        # Dashboard eksekutif Owner, cashflow, laporan, & rapor kesehatan AI
+│   │   ├── (auth)/               # Halaman login & pendaftaran owner (trial 7 hari)
+│   │   ├── (super-admin)/        # Panel super-admin untuk verifikasi & persetujuan registrasi
+│   │   ├── api/                  # Route handlers: AI chat, business health, promotions, users, kasir
+│   │   ├── landingpage/          # Landing page modern & interaktif
+│   │   ├── layout.tsx            # Root layout dengan Inter font & ThemeProvider
+│   │   └── page.tsx              # Root URL controller (landing page tamu / redirect dashboard)
+│   ├── components/               # Komponen antarmuka modular
+│   │   ├── admin/                # Komponen fitur Admin (Produk, Stok, Diskon, Kategori, Transaksi)
+│   │   ├── auth/                 # Form login, registrasi, visual otentikasi, approval registrasi
+│   │   ├── layout/               # Sidebar, Topbar, ThemeProvider, role-navigation
+│   │   ├── owner/                # Dashboard finansial, grafik performa, AI chat, audit log
+│   │   ├── pos/                  # Terminal POS, modal kas masuk, riwayat penjualan, shift
+│   │   └── ui/                   # Komponen sistem desain (Cards, BrandLogo, StatusTag)
+│   ├── data/                     # Fallback data lokal terstruktur (promotions.json)
+│   ├── lib/                      # Helper & Supabase SSR Client (@supabase/ssr)
 │   │   ├── supabase/             # client.ts, server.ts, middleware.ts, types.ts
-│   │   └── utils.ts              # Format mata uang Rupiah, classnames merge
-│   ├── public/                   # Static assets & icons
-│   └── middleware.ts             # Middleware proteksi route & refresh sesi JWT Supabase
+│   │   └── utils.ts              # Format mata uang Rupiah & utilitas
+│   ├── public/                   # Aset produksi statis (Fluxa-Logo.webp)
+│   └── proxy.ts                  # Next.js 16 session proxy / refresh handler
 │
 ├── backend/                      # Pilar 2: Database Supabase & Data Engine
 │   ├── supabase/
-│   │   ├── migrations/           # File migrasi terurut (0001_... s/d 0009_...)
-│   │   ├── seed.sql              # Data dummy produk, kategori, pelanggan
+│   │   ├── migrations/           # File migrasi terurut (0001_... s/d 0018_...)
+│   │   ├── seed.sql              # Data dummy produk, kategori, pelanggan, transaksi
 │   │   ├── combined_setup.sql    # Skrip inisialisasi menyeluruh
 │   │   └── types.ts              # TypeScript Database Schema Types
 │   └── scripts/
-│       └── seed-demo-accounts.mjs# Script inisialisasi akun demo (Owner, Admin, Kasir)
+│       └── seed-demo-accounts.mjs# Script inisialisasi 3 akun demo (Owner, Admin, Kasir)
 │
 └── intelligence/                 # Pilar 3: Mesin Diagnosis Kesehatan Bisnis & AI Advisor
     ├── services/business-health/

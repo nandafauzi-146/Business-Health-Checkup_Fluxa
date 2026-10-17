@@ -1,4 +1,4 @@
-import RegistrationApprovals from '@/features/auth/RegistrationApprovals'
+import RegistrationApprovals from '@/components/auth/RegistrationApprovals'
 
 export default function SuperAdminPage() {
   return <RegistrationApprovals />
