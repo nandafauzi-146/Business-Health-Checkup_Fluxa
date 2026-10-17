@@ -190,12 +190,7 @@ export default function ExpensesClient({
       )}
 
       {/* KPI Cards Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: 14,
-        marginBottom: 20
-      }}>
+      <div className="responsive-kpi">
         <div className="kpi-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span className="kpi-label">Total Biaya Bulan Ini</span>
@@ -225,7 +220,7 @@ export default function ExpensesClient({
 
       <SectionCard title={`Riwayat Pengeluaran (${filtered.length})`}>
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-          <div className="search-bar" style={{ flex: 1, minWidth: 260 }}>
+          <div className="search-bar" style={{ flex: 1, minWidth: 'min(260px, 100%)' }}>
             <Search size={15} color="var(--mute)" />
             <input
               type="text"
@@ -270,7 +265,7 @@ export default function ExpensesClient({
               <tr>
                 <th>Tanggal</th>
                 <th>Deskripsi Pengeluaran</th>
-                <th>Kategori</th>
+                <th className="hide-sm">Kategori</th>
                 <th>Nominal</th>
                 <th style={{ textAlign: 'right' }}>Aksi</th>
               </tr>
@@ -292,7 +287,7 @@ export default function ExpensesClient({
                       </div>
                     </td>
                     <td style={{ fontWeight: 600 }}>{exp.description}</td>
-                    <td>
+                    <td className="hide-sm">
                       <span style={{
                         padding: '3px 9px',
                         borderRadius: 6,

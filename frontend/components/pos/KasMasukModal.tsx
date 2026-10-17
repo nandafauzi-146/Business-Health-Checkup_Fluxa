@@ -120,9 +120,11 @@ export function BukaShiftModal({ userId, onSuccess, onCancel }: BukaShiftModalPr
         background: 'var(--panel)',
         border: '1px solid var(--line)',
         borderRadius: 24,
-        padding: '36px 32px',
+        padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 32px)',
         width: '100%',
         maxWidth: 480,
+        maxHeight: 'calc(100dvh - 32px)',
+        overflowY: 'auto',
         boxShadow: '0 24px 64px -12px rgba(18, 20, 28, 0.25), 0 0 0 1px var(--line)',
         position: 'relative',
         animation: 'slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -263,7 +265,7 @@ export function BukaShiftModal({ userId, onSuccess, onCancel }: BukaShiftModalPr
         </div>
 
         {/* Quick Amount Chips */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(64px, 1fr))', gap: 8, marginBottom: 18 }}>
           {QUICK_AMOUNTS.map(amt => {
             const isSelected = kasAwal === String(amt)
             return (
@@ -562,9 +564,11 @@ export function TutupShiftModal({ activeShift, userId, onSuccess, onCancel }: Tu
         background: 'var(--panel)',
         border: '1px solid var(--line)',
         borderRadius: 24,
-        padding: '36px 32px',
+        padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 32px)',
         width: '100%',
         maxWidth: 480,
+        maxHeight: 'calc(100dvh - 32px)',
+        overflowY: 'auto',
         boxShadow: '0 24px 64px -12px rgba(18, 20, 28, 0.25), 0 0 0 1px var(--line)',
         position: 'relative',
         animation: 'slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -630,7 +634,7 @@ export function TutupShiftModal({ activeShift, userId, onSuccess, onCancel }: Tu
           padding: '14px 16px',
           marginBottom: 18,
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
           gap: 12
         }}>
           <div>

@@ -140,8 +140,9 @@ export default function ChatAI() {
     setInput('')
   }
 
-  const chatWidth = expanded ? 520 : 380
-  const chatHeight = expanded ? 640 : 520
+  // Ukuran jendela chat selalu muat di layar sekecil apa pun.
+  const chatWidth = expanded ? 'min(520px, calc(100vw - 24px))' : 'min(380px, calc(100vw - 24px))'
+  const chatHeight = expanded ? 'min(640px, calc(100dvh - 150px))' : 'min(520px, calc(100dvh - 150px))'
 
   return (
     <>
@@ -169,10 +170,9 @@ export default function ChatAI() {
       {/* Floating Action Button */}
       <button
         id="fluxai-chat-fab"
-        className="chat-bubble-fab"
+        className="chat-bubble-fab fluxai-fab"
         onClick={() => setOpen(o => !o)}
         style={{
-          position: 'fixed', bottom: 28, right: 28, zIndex: 9999,
           width: 58, height: 58, borderRadius: '50%', border: 'none', cursor: 'pointer',
           background: 'linear-gradient(135deg, var(--acc) 0%, #4338ca 100%)',
           color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -197,8 +197,8 @@ export default function ChatAI() {
       {open && (
         <div
           id="fluxai-chat-window"
+          className="fluxai-window"
           style={{
-            position: 'fixed', bottom: 98, right: 28, zIndex: 9998,
             width: chatWidth, height: chatHeight,
             background: 'var(--panel)', borderRadius: 20,
             boxShadow: '0 24px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)',

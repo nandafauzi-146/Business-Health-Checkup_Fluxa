@@ -214,7 +214,7 @@ export default function ShiftClient({
   }, [recentShifts, filterTab, searchCashier])
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1400, margin: '0 auto' }}>
+    <div>
       {/* Header Utama dengan Badge Subtitle */}
       <div style={{
         display: 'flex',
@@ -268,7 +268,7 @@ export default function ShiftClient({
       {/* 4 Kartu KPI Interaktif */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))',
         gap: 16,
         marginBottom: 28
       }}>
@@ -435,7 +435,7 @@ export default function ShiftClient({
         ) : (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(360px, 100%), 1fr))',
             gap: 16
           }}>
             {allActive.map(shift => {
@@ -496,7 +496,7 @@ export default function ShiftClient({
                   {/* Middle: Cash Details Grid */}
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
                     gap: 10,
                     padding: '12px 14px',
                     background: 'var(--bg)',
@@ -594,7 +594,7 @@ export default function ShiftClient({
             </div>
 
             {/* Search Pill */}
-            <div className="search-pill" style={{ width: 220, padding: '5px 12px' }}>
+            <div className="search-pill" style={{ width: 'min(220px, 100%)', padding: '5px 12px' }}>
               <Search size={14} color="var(--mute)" />
               <input
                 placeholder="Cari kasir / catatan..."
@@ -754,9 +754,11 @@ export default function ShiftClient({
             background: 'var(--panel)',
             border: '1px solid var(--line)',
             borderRadius: 20,
-            padding: '28px 26px',
+            padding: 'clamp(18px, 4vw, 28px) clamp(16px, 4vw, 26px)',
             width: '100%',
             maxWidth: 480,
+            maxHeight: 'calc(100dvh - 32px)',
+            overflowY: 'auto',
             boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
             position: 'relative'
           }}>
