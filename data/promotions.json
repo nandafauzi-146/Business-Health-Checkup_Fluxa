@@ -44,15 +44,15 @@
   {
     "id": "p-4",
     "code": "PROMOFLASH",
-    "name": "Flash Sale 25%",
+    "name": "Flash Sale 99%",
     "type": "percentage",
-    "value": 25,
+    "value": 99,
     "min_purchase": 75000,
-    "max_discount": 50000,
+    "max_discount": null,
     "start_date": "2026-10-05",
     "end_date": "2026-10-31",
     "is_active": true,
     "description": "Flash sale spesial diskon 25%",
-    "updated_at": "2026-10-08T07:33:56.206Z"
+    "updated_at": "2026-10-14T05:01:41.500Z"
   }
 ]

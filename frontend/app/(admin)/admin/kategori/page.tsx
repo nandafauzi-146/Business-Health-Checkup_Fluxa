@@ -12,4 +12,9 @@ export default async function AdminKategoriPage() {
     .order('name')
 
   return <CategoriesClient initialCategories={categories || []} />
+
+
+  
+
+
 }
