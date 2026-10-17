@@ -12,11 +12,11 @@ export default async function OwnerLayout({ children }: { children: React.ReactN
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role')
+    .select('full_name, role, approval_status')
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'owner') redirect('/login')
+  if (profile?.approval_status !== 'approved' || profile?.role !== 'owner') redirect('/login')
 
   return (
     <div className="app-layout" data-role="owner">

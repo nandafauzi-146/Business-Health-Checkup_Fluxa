@@ -82,6 +82,17 @@ npm run seed:accounts
 | **Admin** | `admin@demo.local` | `Admin123!` |
 | **Kasir** | `kasir@demo.local` | `Kasir123!` |
 
+### Registrasi, Persetujuan, dan Trial
+Jalankan migrasi `backend/supabase/migrations/0013_registration_approval_trials.sql` pada proyek Supabase. Pendaftaran publik membuat akun Owner berstatus menunggu persetujuan; trial 7 hari mulai dihitung ketika Super Admin menyetujui akun di `/super-admin`.
+
+Untuk bootstrap Super Admin pertama, buat atau gunakan akun operator di Supabase Auth, lalu jalankan sekali di SQL Editor dengan email akun tersebut:
+```sql
+update public.profiles
+set role = 'super_admin', approval_status = 'approved'
+where email = 'operator@example.com';
+```
+Simpan `SUPABASE_SERVICE_ROLE_KEY` hanya di environment server aplikasi. Jangan pernah mengeksposnya sebagai variabel `NEXT_PUBLIC_*`.
+
 ---
 
 ## Aturan Utama Pengembangan
