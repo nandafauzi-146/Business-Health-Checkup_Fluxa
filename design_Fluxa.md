@@ -29,7 +29,7 @@ Panduan desain UI untuk semua peran (Admin, Kasir, Owner), diturunkan dari refer
 
 Warna pendukung untuk segmen data (bar bawah kartu): biru `#5887FF`, hijau `#34D399`, oranye `#F08A2B`.
 
-Gradien hanya dipakai di dua tempat: kartu promo sidebar (`#2451D6` → `#0B1330`, 160°) dan area di bawah grafik garis (aksen dengan opasitas 30% → 0%).
+Gradien dipakai secara terbatas untuk area di bawah grafik garis (aksen dengan opasitas 30% → 0%) serta konteks Business Health AI milik Owner.
 
 ## 3. Tipografi
 
@@ -84,7 +84,7 @@ Gradien hanya dipakai di dua tempat: kartu promo sidebar (`#2451D6` → `#0B1330
 - **Aktif:** latar `#1D3155`, ikon `#8DABFF`, dan indikator 3 px di tepi kiri pada dark Midnight; Light memakai token `--accs` dan `--acc`.
 - **Sidebar dark:** latar `#111827`, border `#293548`, hover `#222F42`, ikon idle `#A5B4C8`.
 - **Badge jumlah** (mis. stok menipis): pil merah, teks putih 11 px, rata kanan.
-- Kartu promo di bawah: gradien biru gelap, judul putih 14 px, satu tombol biru penuh.
+- Fitur Business Health AI hanya ditampilkan pada navigasi dan halaman yang dapat diakses Owner; sidebar Admin dan Kasir tidak menampilkan kartu promosinya.
 
 ### Top bar
 - Kolom pencarian berbentuk pil (maks. 340 px) dengan pintasan `⌘K` di kanan.

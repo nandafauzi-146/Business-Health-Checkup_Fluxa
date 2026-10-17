@@ -18,7 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!profile || !['admin', 'owner'].includes(profile.role)) redirect('/login')
 
   return (
-    <div className="app-layout">
+    <div className="app-layout" data-role="admin">
       <Sidebar role="admin" userName={profile.full_name || 'Admin'} />
       <div className="main-area">
         <Topbar title="" role="admin" />
