@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -21,8 +21,29 @@ export default function AppShell({ adminName, role, pageTitle, children }: AppSh
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const [signOutError, setSignOutError] = useState("");
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const sidebarToggleRef = useRef<HTMLButtonElement>(null);
   const canViewTransactions = role === "admin" || role === "owner";
   const sidebarExpanded = sidebarPinned || sidebarHovered;
+
+  useEffect(() => {
+    if (!sidebarExpanded) return;
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setSidebarPinned(false);
+      setSidebarHovered(false);
+      sidebarToggleRef.current?.focus();
+    }
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [sidebarExpanded]);
+
+  function closeSidebarAfterNavigation() {
+    if (!window.matchMedia("(max-width: 720px)").matches) return;
+    setSidebarPinned(false);
+    setSidebarHovered(false);
+  }
 
   async function handleSignOut() {
     setIsSigningOut(true);
@@ -60,14 +81,14 @@ export default function AppShell({ adminName, role, pageTitle, children }: AppSh
         </Link>
         <p className="transaction-nav-label">MENU UTAMA</p>
         <nav className="transaction-nav" aria-label="Navigasi utama">
-          <Link className={pathname === "/dashboard" ? "is-active" : ""} href="/dashboard" aria-current={pathname === "/dashboard" ? "page" : undefined}>
+          <Link className={pathname === "/dashboard" ? "is-active" : ""} href="/dashboard" aria-current={pathname === "/dashboard" ? "page" : undefined} onClick={closeSidebarAfterNavigation}>
             <AppIcon name="grid" />Dashboard
           </Link>
-          <Link className={pathname.startsWith("/cashier") ? "is-active" : ""} href="/cashier" aria-current={pathname.startsWith("/cashier") ? "page" : undefined}>
+          <Link className={pathname.startsWith("/cashier") ? "is-active" : ""} href="/cashier" aria-current={pathname.startsWith("/cashier") ? "page" : undefined} onClick={closeSidebarAfterNavigation}>
             <AppIcon name="cashier" />Kasir
           </Link>
           {canViewTransactions && (
-            <Link className={pathname.startsWith("/admin/transactions") ? "is-active" : ""} href="/admin/transactions" aria-current={pathname.startsWith("/admin/transactions") ? "page" : undefined}>
+            <Link className={pathname.startsWith("/admin/transactions") ? "is-active" : ""} href="/admin/transactions" aria-current={pathname.startsWith("/admin/transactions") ? "page" : undefined} onClick={closeSidebarAfterNavigation}>
               <AppIcon name="receipt" />Transaksi
             </Link>
           )}
@@ -83,14 +104,26 @@ export default function AppShell({ adminName, role, pageTitle, children }: AppSh
           {signOutError && <p className="transaction-signout-error" role="alert">{signOutError}</p>}
         </div>
       </aside>
+      {sidebarExpanded && (
+        <button
+          className="transaction-sidebar-backdrop"
+          type="button"
+          aria-label="Tutup navigasi"
+          onClick={() => {
+            setSidebarPinned(false);
+            setSidebarHovered(false);
+          }}
+        />
+      )}
 
       <section className="transaction-main">
         <header className="transaction-topbar">
           <div className="transaction-topbar-leading">
             <button
               className="transaction-sidebar-toggle"
+              ref={sidebarToggleRef}
               type="button"
-              aria-label={sidebarPinned ? "Ciutkan sidebar" : "Tampilkan menu lengkap"}
+              aria-label={sidebarExpanded ? "Tutup menu navigasi" : "Buka menu navigasi"}
               aria-expanded={sidebarExpanded}
               onClick={() => {
                 setSidebarHovered(false);

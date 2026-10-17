@@ -293,7 +293,7 @@ export default function BusinessHealthClient({
       </div>
 
       {/* Skor Keseluruhan & Radar Chart 6 Dimensi */}
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16, marginBottom: 20 }}>
+      <div className="hb-score-grid">
         {/* Gauge Score */}
         <div className="card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--mute)' }}>Skor Kesehatan Komposit</div>
@@ -411,7 +411,7 @@ export default function BusinessHealthClient({
       {/* Audit Data Konkret dari Database (Bukti Transparansi) */}
       <div style={{ marginBottom: 20 }}>
         <SectionCard title="Audit Bukti Database: Rincian Piutang / Kasbon & Beban Riil yang Dianalisis AI">
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 20, marginTop: 10 }}>
+          <div className="hb-audit-grid">
             {/* Tabel Piutang Riil */}
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -492,7 +492,7 @@ export default function BusinessHealthClient({
 
       {/* Rincian Evaluasi 6 Dimensi */}
       <SectionCard title="Evaluasi Dimensi & Rencana Aksi Prioritas">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
+        <div className="hb-dimension-grid">
           {dimensions.map(dim => (
             <div
               key={dim.dimension}

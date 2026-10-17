@@ -53,7 +53,7 @@ export default function StockValuationClient({
       />
 
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 20 }}>
+      <div className="responsive-kpi">
         <div className="kpi-card">
           <div className="kpi-icon" style={{ background: 'var(--accs)', color: 'var(--acc)' }}>
             <Layers size={20} />
@@ -103,7 +103,7 @@ export default function StockValuationClient({
 
       <SectionCard>
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-          <div className="search-bar" style={{ flex: 1, minWidth: 240 }}>
+          <div className="search-bar" style={{ flex: 1, minWidth: 'min(240px, 100%)' }}>
             <Search size={15} color="var(--mute)" />
             <input
               type="text"

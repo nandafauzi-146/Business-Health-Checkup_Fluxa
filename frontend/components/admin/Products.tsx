@@ -242,7 +242,7 @@ export default function ProductsClient({ products: initialProducts, categories }
 
       {/* Filter & Search Bar */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', gap: 10, flex: 1, minWidth: 280, maxWidth: 640 }}>
+        <div style={{ display: 'flex', gap: 10, flex: 1, flexWrap: 'wrap', minWidth: 'min(280px, 100%)', maxWidth: 640 }}>
           <div className="search-bar" style={{ flex: 1 }}>
             <Search size={15} color="var(--mute)" />
             <input
@@ -312,13 +312,13 @@ export default function ProductsClient({ products: initialProducts, categories }
             <thead>
               <tr>
                 <th>Produk</th>
-                <th>SKU</th>
-                <th>Kategori</th>
-                <th>Harga Modal</th>
+                <th className="hide-sm">SKU</th>
+                <th className="hide-sm">Kategori</th>
+                <th className="hide-md">Harga Modal</th>
                 <th>Harga Jual</th>
-                <th>Margin</th>
+                <th className="hide-sm">Margin</th>
                 <th>Stok</th>
-                <th>Status</th>
+                <th className="hide-sm">Status</th>
                 <th style={{ textAlign: 'right' }}>Aksi</th>
               </tr>
             </thead>
@@ -361,10 +361,10 @@ export default function ProductsClient({ products: initialProducts, categories }
                           </div>
                         </div>
                       </td>
-                      <td style={{ fontSize: 12, color: 'var(--mute)', fontFamily: 'monospace' }}>
+                      <td className="hide-sm" style={{ fontSize: 12, color: 'var(--mute)', fontFamily: 'monospace' }}>
                         {p.sku || '—'}
                       </td>
-                      <td>
+                      <td className="hide-sm">
                         <span style={{
                           padding: '3px 8px',
                           borderRadius: 6,
@@ -376,13 +376,13 @@ export default function ProductsClient({ products: initialProducts, categories }
                           {p.categories?.name || 'Umum'}
                         </span>
                       </td>
-                      <td style={{ fontSize: 13, color: 'var(--mute)' }}>
+                      <td className="hide-md" style={{ fontSize: 13, color: 'var(--mute)' }}>
                         {formatRp(p.buy_price)}
                       </td>
                       <td style={{ fontWeight: 700, fontSize: 13 }}>
                         {formatRp(p.sell_price)}
                       </td>
-                      <td>
+                      <td className="hide-sm">
                         <span style={{
                           padding: '2px 8px',
                           borderRadius: 6,
@@ -401,7 +401,7 @@ export default function ProductsClient({ products: initialProducts, categories }
                           <StatusTag status={stockStatus} />
                         </div>
                       </td>
-                      <td>
+                      <td className="hide-sm">
                         <StatusTag status={p.is_active ? 'ok' : 'void'} label={p.is_active ? 'Aktif' : 'Nonaktif'} />
                       </td>
                       <td style={{ textAlign: 'right' }}>
@@ -469,7 +469,7 @@ export default function ProductsClient({ products: initialProducts, categories }
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 10 }}>
+                <div className="form-grid-2">
                   <div>
                     <label className="label" htmlFor="prod-cat">Kategori</label>
                     <select
@@ -497,7 +497,7 @@ export default function ProductsClient({ products: initialProducts, categories }
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
                   <div>
                     <label className="label" htmlFor="prod-buy">Harga Modal (Rp) *</label>
                     <input
@@ -524,7 +524,7 @@ export default function ProductsClient({ products: initialProducts, categories }
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
                   {!editingProduct && (
                     <div>
                       <label className="label" htmlFor="prod-stock">Stok Awal</label>

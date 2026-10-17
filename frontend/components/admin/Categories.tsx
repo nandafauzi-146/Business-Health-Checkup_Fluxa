@@ -167,7 +167,7 @@ export default function CategoriesClient({ initialCategories }: { initialCategor
       )}
 
       <SectionCard title={`Daftar Kategori (${categories.length})`}>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        <div className="toolbar-row">
           <div className="search-bar" style={{ flex: 1, maxWidth: 380 }}>
             <Search size={15} color="var(--mute)" />
             <input

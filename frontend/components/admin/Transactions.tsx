@@ -121,12 +121,7 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
       )}
 
       {/* KPI Ringkasan Transaksi & Laporan Refund */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: 14,
-        marginBottom: 18
-      }}>
+      <div className="responsive-kpi">
         <div className="card" style={{ padding: '14px 16px', borderLeft: '4px solid var(--ok)' }}>
           <div style={{ fontSize: 12, color: 'var(--mute)', fontWeight: 600 }}>Total Transaksi Selesai</div>
           <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink)', marginTop: 4 }}>
@@ -159,18 +154,13 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
       </div>
 
       {/* Main Grid: Responsive 2 Columns */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: selectedSale ? 'minmax(0, 1fr) 390px' : '1fr',
-        gap: 18,
-        alignItems: 'start'
-      }}>
+      <div className={`detail-grid${selectedSale ? ' has-aside' : ''}`}>
         {/* Left: Table */}
         <div style={{ minWidth: 0 }}>
           <SectionCard title={`Semua Transaksi (${filteredSales.length})`}>
             {/* Filters */}
             <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div className="search-bar" style={{ flex: 1, minWidth: 260 }}>
+              <div className="search-bar" style={{ flex: 1, minWidth: 'min(260px, 100%)' }}>
                 <Search size={15} color="var(--mute)" />
                 <input
                   type="text"
@@ -220,9 +210,9 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
                 <thead>
                   <tr>
                     <th>No. Invoice</th>
-                    <th>Waktu</th>
-                    <th>Pelanggan</th>
-                    <th>Metode</th>
+                    <th className="hide-sm">Waktu</th>
+                    <th className="hide-md">Pelanggan</th>
+                    <th className="hide-sm">Metode</th>
                     <th>Total Belanja</th>
                     <th>Status</th>
                     <th style={{ textAlign: 'right' }}>Aksi</th>
@@ -261,17 +251,17 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
                               </div>
                             )}
                           </td>
-                          <td style={{ fontSize: 12, color: 'var(--mute)', whiteSpace: 'nowrap' }}>
+                          <td className="hide-sm" style={{ fontSize: 12, color: 'var(--mute)', whiteSpace: 'nowrap' }}>
                             {new Date(sale.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
                           </td>
-                          <td style={{ fontSize: 13 }}>
+                          <td className="hide-md" style={{ fontSize: 13 }}>
                             {sale.customer_name ? (
                               <span style={{ fontWeight: 500 }}>{sale.customer_name}</span>
                             ) : (
                               <span style={{ color: 'var(--mute)', fontStyle: 'italic' }}>Umum</span>
                             )}
                           </td>
-                          <td>
+                          <td className="hide-sm">
                             <span style={{
                               padding: '2px 8px',
                               borderRadius: 6,

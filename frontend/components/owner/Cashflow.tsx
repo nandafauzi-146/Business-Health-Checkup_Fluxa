@@ -43,7 +43,7 @@ export default function CashflowClient({
       />
 
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 20 }}>
+      <div className="responsive-kpi">
         <div className="kpi-card">
           <div className="kpi-icon" style={{ background: 'var(--oks)', color: 'var(--ok)' }}>
             <ArrowDownLeft size={20} />

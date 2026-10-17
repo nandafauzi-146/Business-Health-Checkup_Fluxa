@@ -269,12 +269,7 @@ export default function ReceivablesClient({
       )}
 
       {/* KPI Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: 14,
-        marginBottom: 20
-      }}>
+      <div className="responsive-kpi">
         <div className="kpi-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span className="kpi-label">Sisa Piutang Belum Lunas</span>
@@ -318,7 +313,7 @@ export default function ReceivablesClient({
       <SectionCard title={`Daftar Kasbon (${filtered.length})`}>
         {/* Filters */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div className="search-bar" style={{ flex: 1, minWidth: 260 }}>
+          <div className="search-bar" style={{ flex: 1, minWidth: 'min(260px, 100%)' }}>
             <Search size={15} color="var(--mute)" />
             <input
               type="text"
@@ -369,10 +364,10 @@ export default function ReceivablesClient({
             <thead>
               <tr>
                 <th>Nama Pelanggan</th>
-                <th>Tanggal Buat</th>
-                <th>Jatuh Tempo</th>
-                <th>Total Kasbon</th>
-                <th>Sudah Dibayar</th>
+                <th className="hide-md">Tanggal Buat</th>
+                <th className="hide-sm">Jatuh Tempo</th>
+                <th className="hide-sm">Total Kasbon</th>
+                <th className="hide-md">Sudah Dibayar</th>
                 <th>Sisa Tagihan</th>
                 <th>Status</th>
                 <th style={{ textAlign: 'right' }}>Aksi</th>
@@ -413,10 +408,10 @@ export default function ReceivablesClient({
                           </div>
                         </div>
                       </td>
-                      <td style={{ fontSize: 12.5, color: 'var(--mute)', whiteSpace: 'nowrap' }}>
+                      <td className="hide-md" style={{ fontSize: 12.5, color: 'var(--mute)', whiteSpace: 'nowrap' }}>
                         {new Date(r.created_at).toLocaleDateString('id-ID', { dateStyle: 'medium' })}
                       </td>
-                      <td style={{ fontSize: 12.5, whiteSpace: 'nowrap' }}>
+                      <td className="hide-sm" style={{ fontSize: 12.5, whiteSpace: 'nowrap' }}>
                         {r.due_date ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                             <span style={{ color: isOverdue ? 'var(--bad)' : 'var(--ink)', fontWeight: isOverdue ? 700 : 400 }}>
@@ -439,10 +434,10 @@ export default function ReceivablesClient({
                           <span style={{ color: 'var(--mute)' }}>—</span>
                         )}
                       </td>
-                      <td style={{ fontWeight: 600, fontSize: 13 }}>
+                      <td className="hide-sm" style={{ fontWeight: 600, fontSize: 13 }}>
                         <FormatRupiah amount={r.total_amount} />
                       </td>
-                      <td style={{ color: 'var(--ok)', fontWeight: 600, fontSize: 13 }}>
+                      <td className="hide-md" style={{ color: 'var(--ok)', fontWeight: 600, fontSize: 13 }}>
                         <FormatRupiah amount={r.paid_amount} />
                       </td>
                       <td style={{ color: remaining > 0 ? 'var(--warn)' : 'var(--mute)', fontWeight: 700, fontSize: 13 }}>
@@ -560,7 +555,7 @@ export default function ReceivablesClient({
 
                 <div>
                   <label className="label">Metode Pembayaran</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 8 }}>
                     {(['cash', 'qris', 'transfer'] as const).map(m => (
                       <button
                         key={m}

@@ -41,7 +41,7 @@ export default function ReceivablesAnalysisClient({
       />
 
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 20 }}>
+      <div className="responsive-kpi">
         <div className="kpi-card">
           <div className="kpi-icon" style={{ background: 'var(--warns)', color: 'var(--warn)' }}>
             <DollarSign size={20} />
@@ -79,7 +79,7 @@ export default function ReceivablesAnalysisClient({
       {/* Aging Schedule Piutang */}
       <div style={{ marginBottom: 20 }}>
         <SectionCard title="Aging Schedule Piutang (Kategori Usia Tunggakan)">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginTop: 10 }}>
+          <div className="responsive-kpi" style={{ marginTop: 10, marginBottom: 0 }}>
             <div style={{ padding: '14px', borderRadius: 10, background: 'var(--bg)', borderLeft: '4px solid var(--ok)' }}>
               <div style={{ fontSize: 12, color: 'var(--mute)', fontWeight: 600 }}>Belum Jatuh Tempo / Lancar</div>
               <div style={{ fontSize: 18, fontWeight: 800, marginTop: 4, color: 'var(--ok)' }}>

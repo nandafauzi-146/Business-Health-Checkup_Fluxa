@@ -254,7 +254,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
 
       <SectionCard title={isKasirOnly ? `Daftar Staf Kasir (${filtered.length})` : `Daftar Seluruh Pengguna & Staf (${filtered.length})`}>
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div className="search-bar" style={{ flex: 1, minWidth: 260 }}>
+          <div className="search-bar" style={{ flex: 1, minWidth: 'min(260px, 100%)' }}>
             <Search size={15} color="var(--mute)" />
             <input
               type="text"
@@ -293,9 +293,9 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
               <tr>
                 <th>Pengguna</th>
                 <th>Peran / Role</th>
-                <th>No. Telepon</th>
-                <th>Terdaftar Sejak</th>
-                <th>Status Akses</th>
+                <th className="hide-sm">No. Telepon</th>
+                <th className="hide-md">Terdaftar Sejak</th>
+                <th className="hide-sm">Status Akses</th>
                 <th style={{ textAlign: 'right' }}>Aksi Kelola</th>
               </tr>
             </thead>
@@ -362,7 +362,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
                           {roleCfg.label}
                         </span>
                       </td>
-                      <td style={{ fontSize: 13, color: 'var(--mute)' }}>
+                      <td className="hide-sm" style={{ fontSize: 13, color: 'var(--mute)' }}>
                         {u.phone ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--ink)' }}>
                             <Phone size={13} color="var(--mute)" />
@@ -372,10 +372,10 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
                           <span style={{ color: 'var(--mute)' }}>—</span>
                         )}
                       </td>
-                      <td style={{ fontSize: 12.5, color: 'var(--mute)' }}>
+                      <td className="hide-md" style={{ fontSize: 12.5, color: 'var(--mute)' }}>
                         {new Date(u.created_at).toLocaleDateString('id-ID', { dateStyle: 'medium' })}
                       </td>
-                      <td>
+                      <td className="hide-sm">
                         <StatusTag type="ok" label="Aktif" />
                       </td>
 
