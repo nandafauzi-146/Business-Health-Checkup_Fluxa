@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { ShoppingCart, Package, TrendingUp, DollarSign, ArrowRight, Layers, CreditCard, Building2 } from 'lucide-react'
+import { ShoppingCart, Package, TrendingUp, DollarSign, ArrowRight, Layers, CreditCard, Building2, Scale } from 'lucide-react'
 import { KpiCard, SectionCard, StatusTag } from '@/components/ui/Cards'
 import { PageHeader } from '@/components/layout/Topbar'
 import type { Database } from '@/lib/supabase/types'
@@ -395,7 +395,7 @@ export default function AdminDashboardClient({
                   { label: 'Katalog Produk', href: '/admin/produk', icon: <Package size={18} />, color: 'var(--acc)', bg: 'var(--accs)' },
                   { label: 'Audit Stok', href: '/admin/stok', icon: <Layers size={18} />, color: 'var(--ok)', bg: 'var(--oks)' },
                   { label: 'Catat Biaya', href: '/admin/biaya', icon: <DollarSign size={18} />, color: 'var(--warn)', bg: 'var(--warns)' },
-                  { label: 'Hutang Supplier', href: '/admin/hutang-supplier', icon: <Building2 size={18} />, color: 'var(--warn)', bg: 'var(--warns)' },
+                  { label: 'Hutang & Piutang', href: '/admin/hutang-piutang', icon: <Scale size={18} />, color: 'var(--warn)', bg: 'var(--warns)' },
                 ].map(a => (
                   <Link
                     key={a.label}

@@ -536,14 +536,14 @@ export default function OwnerDashboardClient({
                 </Link>
               )}
               {totalPendingReceivables > 0 && (
-                <Link href="/owner/hutang-supplier" className="owner-dashboard-alert is-danger">
+                <Link href="/owner/hutang-piutang" className="owner-dashboard-alert is-danger">
                   <AlertCircle size={17} />
-                  <span><strong>Hutang supplier</strong><small>{formatRp(totalPendingReceivables)} belum dibayar</small></span>
+                  <span><strong>Hutang operasional & usaha</strong><small>{formatRp(totalPendingReceivables)} belum dibayar</small></span>
                   <ArrowUpRight size={15} />
                 </Link>
               )}
               {lowStockCount === 0 && totalPendingReceivables === 0 && (
-                <p className="owner-dashboard-clear">Tidak ada peringatan stok atau hutang supplier saat ini.</p>
+                <p className="owner-dashboard-clear">Tidak ada peringatan stok atau hutang usaha saat ini.</p>
               )}
             </div>
           </SectionCard>
