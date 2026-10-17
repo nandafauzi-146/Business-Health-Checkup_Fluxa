@@ -1,77 +1,38 @@
 import { createClient } from '@/lib/supabase/server'
-import ReceivablesAnalysisClient from '@/components/owner/ReceivablesAnalysis'
+import DebtReceivablesClient, { DebtReceivableItem } from '@/components/admin/DebtReceivables'
 
-export const metadata = { title: 'Monitoring Piutang — Fluxa Owner' }
+export const metadata = { title: 'Monitoring Hutang & Piutang Bisnis — Fluxa Owner' }
 
 export default async function OwnerHutangPiutangPage() {
   const supabase = await createClient()
 
-  const { data: rawReceivables } = await supabase
-    .from('receivables')
-    .select(`
-      id,
-      total_amount,
-      paid_amount,
-      due_date,
-      status,
-      created_at,
-      customers (name, phone)
-    `)
-    .neq('status', 'paid')
-    .order('total_amount', { ascending: false })
+  let items: DebtReceivableItem[] = []
+  try {
+    const { data, error } = await supabase
+      .from('supplier_payables')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100)
 
-  const now = new Date()
-  let totalOutstanding = 0
-  let agingCurrent = 0
-  let aging1to30 = 0
-  let aging30plus = 0
-
-  const customerSet = new Set<string>()
-
-  const formatted = (rawReceivables || []).map((r: any) => {
-    const remaining = r.total_amount - r.paid_amount
-    totalOutstanding += remaining
-    if (r.customers?.name) customerSet.add(r.customers.name)
-
-    let daysOverdue = 0
-    if (r.due_date) {
-      const dueDate = new Date(r.due_date)
-      if (now > dueDate) {
-        daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
-      }
+    if (!error && data) {
+      items = data.map((d: any) => ({
+        id: d.id,
+        type: (d.type || 'payable') as 'payable' | 'receivable',
+        party_name: d.party_name || d.supplier_name || 'Mitra Usaha',
+        category: d.category || 'Supplier / Bahan Baku',
+        description: d.description || '',
+        total_amount: d.total_amount || 0,
+        paid_amount: d.paid_amount || 0,
+        remaining_amount: (d.total_amount || 0) - (d.paid_amount || 0),
+        due_date: d.due_date || null,
+        status: (d.status || 'unpaid') as 'unpaid' | 'partial' | 'paid',
+        note: d.note || null,
+        created_at: d.created_at
+      }))
     }
+  } catch {
+    // Demo fallback inside component
+  }
 
-    if (daysOverdue > 30) {
-      aging30plus += remaining
-    } else if (daysOverdue > 0) {
-      aging1to30 += remaining
-    } else {
-      agingCurrent += remaining
-    }
-
-    return {
-      id: r.id,
-      customer_name: r.customers?.name || 'Pelanggan Umum',
-      customer_phone: r.customers?.phone || null,
-      total_amount: r.total_amount,
-      paid_amount: r.paid_amount,
-      remaining,
-      due_date: r.due_date,
-      status: r.status,
-      days_overdue: daysOverdue
-    }
-  })
-
-  return (
-    <ReceivablesAnalysisClient
-      totalOutstanding={totalOutstanding}
-      totalCustomersWithDebt={customerSet.size}
-      aging={{
-        current: agingCurrent,
-        overdue1to30: aging1to30,
-        overdue30plus: aging30plus
-      }}
-      receivables={formatted}
-    />
-  )
+  return <DebtReceivablesClient initialData={items} />
 }

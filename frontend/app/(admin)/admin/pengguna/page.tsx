@@ -10,7 +10,7 @@ export default async function AdminPenggunaPage() {
   // Sesuai aturan: Admin HANYA bisa melihat dan mengelola akun kasir
   const { data: users } = await supabase
     .from('profiles')
-    .select('id, full_name, role, phone, created_at')
+    .select('id, full_name, role, phone, email, created_at')
     .eq('role', 'kasir')
     .order('created_at', { ascending: false })
 

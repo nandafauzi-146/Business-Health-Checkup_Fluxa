@@ -24,7 +24,7 @@ export default async function OwnerDashboardPage() {
   const day = Number(jakartaDateParts.find((part) => part.type === 'day')?.value)
   const sevenDayStart = new Date(Date.UTC(year, month - 1, day - 6, -7)).toISOString()
 
-  const [monthlySummaryResult, dailySalesResult, checkupsResult, lowStockResult, receivablesResult, completedSalesResult] = await Promise.all([
+  const [monthlySummaryResult, dailySalesResult, checkupsResult, lowStockResult, supplierPayablesResult, completedSalesResult] = await Promise.all([
     supabase
       .from('v_monthly_revenue_cogs')
       .select('*')
@@ -45,8 +45,8 @@ export default async function OwnerDashboardPage() {
       .select('*', { count: 'exact', head: true })
       .eq('is_low_stock', true),
     supabase
-      .from('receivables')
-      .select('total_amount, paid_amount')
+      .from('supplier_payables')
+      .select('remaining_amount')
       .in('status', ['unpaid', 'partial']),
     supabase
       .from('sales')
@@ -59,7 +59,6 @@ export default async function OwnerDashboardPage() {
   if (dailySalesResult.error) throw new Error(`Gagal memuat penjualan harian: ${dailySalesResult.error.message}`)
   if (checkupsResult.error) throw new Error(`Gagal memuat rapor kesehatan bisnis: ${checkupsResult.error.message}`)
   if (lowStockResult.error) throw new Error(`Gagal memuat peringatan stok: ${lowStockResult.error.message}`)
-  if (receivablesResult.error) throw new Error(`Gagal memuat piutang tertunda: ${receivablesResult.error.message}`)
   if (completedSalesResult.error) throw new Error(`Gagal memuat transaksi tujuh hari terakhir: ${completedSalesResult.error.message}`)
 
   const saleIds = completedSalesResult.data.map((sale) => sale.id)
@@ -101,10 +100,7 @@ export default async function OwnerDashboardPage() {
 
   const monthlySummary = monthlySummaryResult.data
   const dailySales = dailySalesResult.data
-  const totalPendingReceivables = receivablesResult.data.reduce(
-    (sum, receivable) => sum + (receivable.total_amount - receivable.paid_amount),
-    0
-  )
+  const totalPendingPayables = (supplierPayablesResult.data ?? []).reduce((sum, item: any) => sum + (item.remaining_amount || 0), 0)
   const productsById = new Map(products.map((product) => [product.id, product]))
   const categoriesById = new Map(categoryResults.flatMap((result) => result.data ?? []).map((category) => [category.id, category.name]))
   const productTotals = new Map<string, { name: string; quantity: number; revenue: number }>()
@@ -144,7 +140,7 @@ export default async function OwnerDashboardPage() {
       dailySales={[...dailySales].reverse()}
       latestCheckup={checkupsResult.data[0] ?? null}
       lowStockCount={lowStockResult.count ?? 0}
-      totalPendingReceivables={totalPendingReceivables}
+      totalPendingReceivables={totalPendingPayables}
       bestSellingProducts={bestSellingProducts}
       categorySales={categorySales}
       recentSales={[...completedSalesResult.data]
