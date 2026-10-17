@@ -41,7 +41,6 @@ const paymentOptions = [
   { id: "cash", label: "Tunai", mark: "Rp" },
   { id: "qris", label: "QRIS", mark: "Q" },
   { id: "transfer", label: "Transfer", mark: "↗" },
-  { id: "credit", label: "Kasbon", mark: "K" },
 ] as const;
 
 export default function CashierRegister({
@@ -144,10 +143,6 @@ export default function CashierRegister({
 
   async function checkout() {
     if (!activeShift || cart.length === 0) return;
-    if (paymentMethod === "credit" && !customerId) {
-      setErrorMessage("Pilih pelanggan untuk transaksi kasbon.");
-      return;
-    }
 
     setErrorMessage("");
     setSuccessMessage("");
@@ -265,7 +260,6 @@ export default function CashierRegister({
             <div className="cashier-payment-options">
               {paymentOptions.map((option) => <button key={option.id} type="button" className={paymentMethod === option.id ? "is-selected" : ""} onClick={() => setPaymentMethod(option.id)}><span>{option.mark}</span>{option.label}</button>)}
             </div>
-            {paymentMethod === "credit" && !customerId && <p className="cashier-inline-hint">Pilih pelanggan untuk pembayaran kasbon.</p>}
           </div>
           <div className="cashier-total">
             <div><span>Subtotal</span><strong>{formatRupiah(totalAmount)}</strong></div>
@@ -274,7 +268,7 @@ export default function CashierRegister({
           </div>
           {errorMessage && <p className="cashier-alert cashier-alert-error" role="alert">{errorMessage}</p>}
           {successMessage && <p className="cashier-alert cashier-alert-success" role="status">{successMessage}</p>}
-          <button className="cashier-primary-button cashier-checkout" type="button" disabled={!cart.length || isCheckingOut || (paymentMethod === "credit" && !selectedCustomer)} onClick={checkout}>
+          <button className="cashier-primary-button cashier-checkout" type="button" disabled={!cart.length || isCheckingOut} onClick={checkout}>
             <span>{isCheckingOut ? "Memproses transaksi..." : "Proses pembayaran"}</span><strong>{formatRupiah(totalAmount)}</strong>
           </button>
           <p className="cashier-security-note"><CashierIcon name="lock" />Stok diperbarui otomatis setelah transaksi berhasil.</p>

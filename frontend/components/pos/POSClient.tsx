@@ -24,7 +24,7 @@ const EMOJI_MAP: Record<string, string> = {
   'Minuman': '☕', 'Bahan Baku': '🧂', 'Makanan': '🍞', 'Lainnya': '📦'
 }
 
-type PayMethod = 'cash' | 'qris' | 'transfer' | 'credit'
+type PayMethod = 'cash' | 'qris' | 'transfer'
 
 interface CartItem {
   product_id: string
@@ -284,7 +284,6 @@ export default function POSClient({ products: initialProducts, customers, active
 
   const handleCheckout = async () => {
     if (cart.length === 0) { showToast('Keranjang kosong!'); return }
-    if (payMethod === 'credit' && !customerId) { showToast('Pilih pelanggan untuk kasbon!'); return }
     if (!activeShift) { showToast('Buka shift terlebih dahulu!'); return }
 
     setProcessing(true)
@@ -324,7 +323,6 @@ export default function POSClient({ products: initialProducts, customers, active
     { key: 'cash', label: 'Tunai', icon: <Wallet size={15} /> },
     { key: 'qris', label: 'QRIS', icon: <Smartphone size={15} /> },
     { key: 'transfer', label: 'Transfer', icon: <ArrowRight size={15} /> },
-    { key: 'credit', label: 'Kasbon', icon: <CreditCard size={15} /> },
   ]
 
   // Jika belum ada shift aktif, tampilkan modal Buka Shift (blocking fullscreen)
@@ -844,18 +842,15 @@ export default function POSClient({ products: initialProducts, customers, active
               </div>
             </div>
 
-            {payMethod === 'credit' && (
-              <div style={{ marginBottom: 14 }}>
-                <label className="label" htmlFor="customer-select">Pelanggan (wajib untuk kasbon)</label>
-                <select id="customer-select" className="input" value={customerId} onChange={e => setCustomerId(e.target.value)}>
-                  <option value="">Pilih pelanggan...</option>
-                  {customers.map((c: any) => (
-                    <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
-                  ))}
-                  <option value="demo-cust">Demo: Budi Santoso</option>
-                </select>
-              </div>
-            )}
+            <div style={{ marginBottom: 14 }}>
+              <label className="label" htmlFor="customer-select">Pelanggan / Member (Opsional)</label>
+              <select id="customer-select" className="input" value={customerId} onChange={e => setCustomerId(e.target.value)}>
+                <option value="">Pelanggan Umum (Tanpa Member)</option>
+                {customers.map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
+                ))}
+              </select>
+            </div>
 
             {payMethod === 'cash' && (
               <div style={{ marginBottom: 14 }}>

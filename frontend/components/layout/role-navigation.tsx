@@ -49,7 +49,6 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
       items: [
         { icon: <Tag size={16} />, label: 'Diskon & Promo', href: '/admin/diskon' },
         { icon: <DollarSign size={16} />, label: 'Biaya Operasional', href: '/admin/biaya' },
-        { icon: <CreditCard size={16} />, label: 'Kasbon Pelanggan', href: '/admin/kasbon' },
         { icon: <Building2 size={16} />, label: 'Hutang Supplier', href: '/admin/hutang-supplier' },
       ]
     },
@@ -73,7 +72,7 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
       items: [
         { icon: <TrendingUp size={16} />, label: 'Cashflow', href: '/owner/cashflow' },
         { icon: <BarChart3 size={16} />, label: 'Laporan Bulanan', href: '/owner/laporan' },
-        { icon: <CreditCard size={16} />, label: 'Hutang & Piutang', href: '/owner/hutang-piutang' },
+        { icon: <Building2 size={16} />, label: 'Hutang Supplier', href: '/owner/hutang-supplier' },
       ]
     },
     {
