@@ -91,8 +91,8 @@ const DEFAULT_PROMOTIONS = [
 function readLocalPromotions(): any[] {
   try {
     const filePath = getPromotionsFilePath()
-    if (fs.existsSync(filePath)) {
-      const content = fs.readFileSync(filePath, 'utf8')
+    if (fs.existsSync(/*turbopackIgnore: true*/ filePath)) {
+      const content = fs.readFileSync(/*turbopackIgnore: true*/ filePath, 'utf8')
       const parsed = JSON.parse(content)
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed
@@ -108,10 +108,10 @@ function writeLocalPromotions(data: any[]): void {
   try {
     const filePath = getPromotionsFilePath()
     const dir = path.dirname(filePath)
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true })
+    if (!fs.existsSync(/*turbopackIgnore: true*/ dir)) {
+      fs.mkdirSync(/*turbopackIgnore: true*/ dir, { recursive: true })
     }
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8')
+    fs.writeFileSync(/*turbopackIgnore: true*/ filePath, JSON.stringify(data, null, 2), 'utf8')
   } catch (err) {
     console.error('Error writing local promotions:', err)
   }
