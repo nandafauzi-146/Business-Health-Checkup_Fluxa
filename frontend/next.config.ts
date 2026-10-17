@@ -22,6 +22,15 @@ const nextConfig: NextConfig = {
 
   // Strict mode for catching bugs early
   reactStrictMode: true,
+
+  async rewrites() {
+    return [
+      {
+        source: "/favicon.ico",
+        destination: "/Fluxa-Logo.webp",
+      },
+    ];
+  },
 };
 
 export default nextConfig;
