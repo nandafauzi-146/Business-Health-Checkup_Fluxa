@@ -41,9 +41,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local agent instructions
-AGENTS.md
-CLAUDE.md
+# ignore all markdown files except README
+*.md
+**/*.md
+!README.md
+!**/README.md
 
 # scratch & debug scripts
 scratch/
