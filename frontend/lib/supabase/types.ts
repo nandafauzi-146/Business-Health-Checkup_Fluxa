@@ -9,7 +9,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type UserRole = 'kasir' | 'admin' | 'owner'
+export type UserRole = 'kasir' | 'admin' | 'owner' | 'super_admin'
 
 type WithTableRelationships<T> = {
   [Name in keyof T]: T[Name] extends {
@@ -36,6 +36,13 @@ export interface Database {
           full_name: string
           role: UserRole
           phone: string | null
+          email: string | null
+          approval_status: 'pending' | 'approved' | 'rejected'
+          approved_at: string | null
+          reviewed_by: string | null
+          reviewed_at: string | null
+          trial_started_at: string | null
+          trial_ends_at: string | null
           created_at: string
           updated_at: string
         }
@@ -44,6 +51,13 @@ export interface Database {
           full_name: string
           role?: UserRole
           phone?: string | null
+          email?: string | null
+          approval_status?: 'pending' | 'approved' | 'rejected'
+          approved_at?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          trial_started_at?: string | null
+          trial_ends_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -52,6 +66,13 @@ export interface Database {
           full_name?: string
           role?: UserRole
           phone?: string | null
+          email?: string | null
+          approval_status?: 'pending' | 'approved' | 'rejected'
+          approved_at?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          trial_started_at?: string | null
+          trial_ends_at?: string | null
           created_at?: string
           updated_at?: string
         }

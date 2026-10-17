@@ -11,11 +11,11 @@ export default async function KasirLayout({ children }: { children: React.ReactN
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role')
+    .select('full_name, role, approval_status')
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/login')
+  if (!profile || profile.approval_status !== 'approved' || profile.role !== 'kasir') redirect('/login')
 
   // Cek shift aktif kasir — diteruskan ke Sidebar untuk kontrol tombol logout
   const { data: shifts } = await supabase

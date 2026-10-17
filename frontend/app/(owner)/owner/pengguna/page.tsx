@@ -11,6 +11,7 @@ export default async function OwnerPenggunaPage() {
   const { data: users } = await supabase
     .from('profiles')
     .select('id, full_name, role, phone, created_at')
+    .eq('approval_status', 'approved')
     .order('created_at', { ascending: false })
 
   return <UsersManagementClient initialUsers={users || []} roleScope="all" currentUserId={user?.id} />
