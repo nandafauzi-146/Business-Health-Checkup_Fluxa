@@ -105,6 +105,15 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
   const [toast, setToast] = useState<{ text: string; type: 'ok' | 'bad' } | null>(null)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
+  // Sinkronisasi promo aktif ke localStorage & event real-time → langsung aktif di POS Kasir
+  const syncToLocalStorage = (updated: Promotion[]) => {
+    try {
+      const active = updated.filter(p => p.is_active)
+      localStorage.setItem('fluxa_active_promotions', JSON.stringify(active))
+      window.dispatchEvent(new CustomEvent('fluxa_promotions_updated', { detail: active }))
+    } catch {}
+  }
+
   // Ambil promo terbaru dari server saat halaman dibuka
   useEffect(() => {
     const loadPromotions = async () => {
@@ -123,15 +132,6 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
   const showToast = (text: string, type: 'ok' | 'bad' = 'ok') => {
     setToast({ text, type })
     setTimeout(() => setToast(null), 3000)
-  }
-
-  // Sinkronisasi promo aktif ke localStorage & event real-time → langsung aktif di POS Kasir
-  const syncToLocalStorage = (updated: Promotion[]) => {
-    try {
-      const active = updated.filter(p => p.is_active)
-      localStorage.setItem('fluxa_active_promotions', JSON.stringify(active))
-      window.dispatchEvent(new CustomEvent('fluxa_promotions_updated', { detail: active }))
-    } catch {}
   }
 
   const handleCopyCode = (code: string) => {
