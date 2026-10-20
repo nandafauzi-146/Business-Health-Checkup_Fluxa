@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Output directory: arahkan ke root .next agar sesuai ekspektasi Vercel
+  distDir: '../.next',
+
   // Security: hide framework fingerprint
   poweredByHeader: false,
 

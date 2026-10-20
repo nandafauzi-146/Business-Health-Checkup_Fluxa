@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,9 +23,15 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"],
-      "@intelligence/*": ["../intelligence/*"],
-      "@backend/*": ["../backend/*"]
+      "@/*": [
+        "./*"
+      ],
+      "@intelligence/*": [
+        "../intelligence/*"
+      ],
+      "@backend/*": [
+        "../backend/*"
+      ]
     }
   },
   "include": [
@@ -31,7 +41,12 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts",
-    "../intelligence/**/*.ts"
+    "../intelligence/**/*.ts",
+    "../.next/types/**/*.ts",
+    "../.next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "../node_modules"]
+  "exclude": [
+    "node_modules",
+    "../node_modules"
+  ]
 }
