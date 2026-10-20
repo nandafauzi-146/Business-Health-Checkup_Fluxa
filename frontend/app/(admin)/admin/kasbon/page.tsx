@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
 export default function AdminKasbonPage() {
-  redirect('/admin/hutang-supplier')
+  redirect('/admin/hutang-piutang')
 }

@@ -72,7 +72,7 @@ export default function RegisterForm() {
             <span>Kami akan mengirimkan informasi persetujuan ke <strong>{email}</strong>.</span>
           </div>
           <Link className="login-submit register-back-link login-stagger" href="/">
-            Kembali ke landing page <ArrowRight size={16} aria-hidden="true" />
+            Kembali ke Beranda <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </section>
       ) : (

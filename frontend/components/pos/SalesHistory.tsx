@@ -62,9 +62,11 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
   const [isSubmittingVoid, setIsSubmittingVoid] = useState(false)
   const [toast, setToast] = useState<{ text: string; type: 'ok' | 'bad' } | null>(null)
 
-  useEffect(() => {
+  const [prevInitialSales, setPrevInitialSales] = useState(initialSales)
+  if (initialSales !== prevInitialSales) {
+    setPrevInitialSales(initialSales)
     setSales(initialSales)
-  }, [initialSales])
+  }
 
   const showToast = (text: string, type: 'ok' | 'bad' = 'ok') => {
     setToast({ text, type })

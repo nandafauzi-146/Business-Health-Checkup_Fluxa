@@ -21,14 +21,15 @@ export default async function OwnerStokPage() {
     .eq('is_active', true)
     .order('name')
 
+  const productList = (rawProducts || []) as any[]
   let totalAssetValue = 0
   let totalPotentialRevenue = 0
   let totalPotentialProfit = 0
   let lowStockCount = 0
 
-  const products = (rawProducts || []).map((p: any) => {
-    const asset_value = p.stock * p.buy_price
-    const potential_revenue = p.stock * p.sell_price
+  for (const p of productList) {
+    const asset_value = (p.stock || 0) * (p.buy_price || 0)
+    const potential_revenue = (p.stock || 0) * (p.sell_price || 0)
     const potential_profit = potential_revenue - asset_value
 
     totalAssetValue += asset_value
@@ -36,6 +37,12 @@ export default async function OwnerStokPage() {
     totalPotentialProfit += potential_profit
 
     if (p.stock <= p.min_stock) lowStockCount++
+  }
+
+  const products = productList.map((p: any) => {
+    const asset_value = (p.stock || 0) * (p.buy_price || 0)
+    const potential_revenue = (p.stock || 0) * (p.sell_price || 0)
+    const potential_profit = potential_revenue - asset_value
 
     return {
       id: p.id,

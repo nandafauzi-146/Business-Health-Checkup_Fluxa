@@ -84,7 +84,7 @@ npm run seed:accounts
 | **Kasir** | `kasir@demo.local` | `Kasir123!` |
 
 ### Registrasi, Persetujuan, dan Trial
-Jalankan migrasi `backend/supabase/migrations/0013_registration_approval_trials.sql` pada proyek Supabase. Pendaftaran publik membuat akun Owner berstatus menunggu persetujuan; trial 7 hari mulai dihitung ketika Super Admin menyetujui akun di `/super-admin`.
+Jalankan migrasi `backend/supabase/migrations/0018_registration_approval_trials.sql` pada proyek Supabase. Pendaftaran publik membuat akun Owner berstatus menunggu persetujuan; trial 7 hari mulai dihitung ketika Super Admin menyetujui akun di `/super-admin`.
 
 Untuk bootstrap Super Admin pertama, buat atau gunakan akun operator di Supabase Auth, lalu jalankan sekali di SQL Editor dengan email akun tersebut:
 ```sql
@@ -100,5 +100,5 @@ Simpan `SUPABASE_SERVICE_ROLE_KEY` hanya di environment server aplikasi. Jangan 
 - **Mata Uang:** Seluruh kolom uang di database dan kalkulator bisnis menggunakan tipe `integer` rupiah utuh (bukan desimal/float).
 - **Integritas Transaksi:** Mutasi penjualan dan stok wajib melalui RPC Supabase (`create_sale`, `close_shift`, `void_sale`, `adjust_stock`).
 - **Akses Role:** Dibagi secara ketat menggunakan Row Level Security (RLS) pada tingkat database Supabase.
-- **Alur Aplikasi:** Pengguna diarahkan ke `/dashboard` setelah login; halaman operasional memakai `components/layout/app-shell.tsx` untuk navigasi bersama, dan akses transaksi dibatasi untuk Admin dan Owner.
+- **Alur Aplikasi:** Pengguna diarahkan ke dashboard sesuai role (`/owner`, `/admin`, `/kasir`, `/super-admin`) setelah login; navigasi operasional menggunakan `Sidebar.tsx` dan `Topbar.tsx`.
 - **Checkout Kasir:** Pembukaan shift dan checkout menggunakan RPC Supabase (`open_shift`, `create_sale`); jangan mengubah stok atau membuat transaksi langsung dari frontend.

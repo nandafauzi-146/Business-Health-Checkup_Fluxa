@@ -9,15 +9,17 @@
     "dev": "next dev frontend",
     "build": "next build frontend",
     "start": "next start frontend",
-    "lint": "eslint frontend",
+    "lint": "npm run --prefix frontend lint",
     "seed:accounts": "node backend/scripts/seed-demo-accounts.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",
+    "lucide-react": "^1.52.0",
     "next": "16.3.6",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
