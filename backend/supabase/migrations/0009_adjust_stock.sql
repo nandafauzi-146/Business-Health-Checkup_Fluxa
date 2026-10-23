@@ -127,3 +127,7 @@ begin
   return v_new_stock;
 end;
 $$;
+
+grant execute on function public.adjust_stock(uuid, text, integer, text) to authenticated;
+
+notify pgrst, 'reload schema';

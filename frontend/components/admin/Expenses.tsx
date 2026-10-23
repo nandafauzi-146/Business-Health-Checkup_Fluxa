@@ -5,6 +5,7 @@ import { Plus, Search, DollarSign, Calendar, Trash2, Tag, ArrowUpRight, X, Check
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, FormatRupiah } from '@/components/ui/Cards'
 import { createClient } from '@/lib/supabase/client'
+import { getUserFacingError } from '@/lib/user-facing-error'
 
 interface ExpenseCategory {
   id: string
@@ -117,22 +118,9 @@ export default function ExpensesClient({
       setExpenses(prev => [newExpense, ...prev])
       showNotification(`Biaya operasional sebesar Rp ${amountNum.toLocaleString('id-ID')} berhasil dicatat.`, 'ok')
       setModalOpen(false)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving expense:', err)
-      // Demo fallback
-      const catObj = categories.find(c => c.id === formData.category_id)
-      const dummy: Expense = {
-        id: Math.random().toString(),
-        amount: amountNum,
-        description: formData.description.trim(),
-        expense_date: formData.expense_date,
-        created_at: new Date().toISOString(),
-        category_id: formData.category_id || null,
-        category_name: catObj?.name || 'Umum'
-      }
-      setExpenses(prev => [dummy, ...prev])
-      showNotification(`Biaya operasional sebesar Rp ${amountNum.toLocaleString('id-ID')} dicatat (simulasi mode).`, 'ok')
-      setModalOpen(false)
+      showNotification(getUserFacingError(err, 'Biaya operasional belum dapat disimpan. Silakan coba lagi.'), 'bad')
     } finally {
       setIsSubmitting(false)
     }
@@ -151,10 +139,9 @@ export default function ExpensesClient({
 
       setExpenses(prev => prev.filter(e => e.id !== exp.id))
       showNotification('Catatan biaya berhasil dihapus.', 'ok')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting expense:', err)
-      setExpenses(prev => prev.filter(e => e.id !== exp.id))
-      showNotification('Catatan biaya dihapus (simulasi mode).', 'ok')
+      showNotification(getUserFacingError(err, 'Catatan biaya belum dapat dihapus. Silakan coba lagi.'), 'bad')
     }
   }
 

@@ -210,7 +210,6 @@ begin
   foreach table_name in array array[
     'categories',
     'products',
-    'customers',
     'shifts',
     'sales',
     'sale_items',

@@ -6,15 +6,19 @@ export const metadata = { title: 'Kelola Produk — Fluxa' }
 export default async function ProdukPage() {
   const supabase = await createClient()
 
-  const { data: products } = await supabase
+  const { data: products, error: productsError } = await supabase
     .from('products')
     .select('*, categories(name)')
     .order('name')
 
-  const { data: categories } = await supabase
+  const { data: categories, error: categoriesError } = await supabase
     .from('categories')
     .select('id, name')
     .order('name')
 
-  return <ProductsClient products={products || []} categories={categories || []} />
+  const loadError = productsError || categoriesError
+    ? 'Data produk belum dapat dimuat. Silakan coba lagi.'
+    : null
+
+  return <ProductsClient products={products || []} categories={categories || []} loadError={loadError} />
 }

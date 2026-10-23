@@ -25,10 +25,36 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
   const [pinnedOpen, setPinnedOpen] = useState(false)
   const [hoverOpen, setHoverOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [pendingRefundCount, setPendingRefundCount] = useState(0)
   const mobileTriggerRef = useRef<HTMLButtonElement>(null)
   const hoverCloseTimer = useRef<number | null>(null)
   const keyboardNavigationRef = useRef(false)
   const isExpanded = pinnedOpen || hoverOpen
+
+  useEffect(() => {
+    if (role !== 'admin') return
+
+    let active = true
+    const loadPendingRefundCount = async () => {
+      try {
+        const response = await fetch('/api/admin/refund-requests', { cache: 'no-store' })
+        const result: { requests?: { status: string }[] } = await response.json()
+        if (!response.ok || !Array.isArray(result.requests) || !active) return
+        setPendingRefundCount(result.requests.filter(request => request.status === 'pending').length)
+      } catch (error) {
+        console.error('Unable to refresh pending refund count in sidebar:', error)
+      }
+    }
+
+    void loadPendingRefundCount()
+    const intervalId = window.setInterval(() => void loadPendingRefundCount(), 30_000)
+    window.addEventListener('focus', loadPendingRefundCount)
+    return () => {
+      active = false
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', loadPendingRefundCount)
+    }
+  }, [role])
 
   useEffect(() => () => {
     if (hoverCloseTimer.current !== null) window.clearTimeout(hoverCloseTimer.current)
@@ -284,6 +310,9 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
             <div className="sidebar-nav-group" key={group.label}>
               <div className="nav-group-label sidebar-label">{group.label}</div>
               {group.items.map(item => {
+                const badge = role === 'admin' && item.href === '/admin/transaksi'
+                  ? pendingRefundCount
+                  : item.badge
                 const isActive = pathname === item.href || (item.href !== '/' + role && pathname.startsWith(item.href))
                 return (
                   <Link
@@ -299,8 +328,10 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
                       {item.icon}
                     </span>
                     <span className="sidebar-label sidebar-link-label">{item.label}</span>
-                    {item.badge !== undefined && (
-                      <span className="nav-badge sidebar-label">{item.badge}</span>
+                    {badge !== undefined && badge > 0 && (
+                      <span className="nav-badge sidebar-label" aria-label={`${badge} pengajuan refund menunggu persetujuan`}>
+                        {badge}
+                      </span>
                     )}
                     {isActive && <ChevronRight className="sidebar-active-chevron sidebar-label" size={13} style={{ marginLeft: 'auto', color: 'var(--acc)' }} />}
                   </Link>

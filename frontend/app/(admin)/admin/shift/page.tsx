@@ -17,6 +17,9 @@ export default async function AdminShiftPage() {
       .from('profiles')
       .select('id, full_name, role')
   ])
+  const loadError = shiftsRes.error || profilesRes.error
+    ? 'Data shift belum dapat dimuat. Silakan coba lagi.'
+    : null
 
   const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p.full_name]))
 
@@ -45,6 +48,7 @@ export default async function AdminShiftPage() {
       recentShifts={recentShifts}
       userId={user?.id || ''}
       role="admin"
+      loadError={loadError || null}
     />
   )
 }

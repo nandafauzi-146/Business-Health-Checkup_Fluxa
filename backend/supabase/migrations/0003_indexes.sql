@@ -12,7 +12,6 @@ create index if not exists idx_shifts_status on public.shifts(status);
 
 create index if not exists idx_sales_cashier on public.sales(cashier_id);
 create index if not exists idx_sales_shift on public.sales(shift_id);
-create index if not exists idx_sales_customer on public.sales(customer_id);
 create index if not exists idx_sales_status on public.sales(status);
 create index if not exists idx_sales_created_at on public.sales(created_at desc);
 
@@ -25,7 +24,6 @@ create index if not exists idx_stock_movements_created_at on public.stock_moveme
 create index if not exists idx_expenses_category on public.expenses(category_id);
 create index if not exists idx_expenses_date on public.expenses(expense_date desc);
 
-create index if not exists idx_receivables_customer on public.receivables(customer_id);
 create index if not exists idx_receivables_status on public.receivables(status);
 
 create index if not exists idx_receivable_payments_receivable on public.receivable_payments(receivable_id);

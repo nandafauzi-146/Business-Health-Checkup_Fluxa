@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Users, Search, Shield, Phone, Mail, UserCheck, ShieldCheck, UserCog, Plus, Edit, Trash2, X, Check, Lock, AlertTriangle } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag } from '@/components/ui/Cards'
+import { getUserFacingError } from '@/lib/user-facing-error'
 
 interface Profile {
   id: string
@@ -117,7 +118,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
       setAddModalOpen(false)
     } catch (err: any) {
       console.error('Error create user:', err)
-      showNotification(err.message || 'Gagal menambahkan pengguna.', 'bad')
+      showNotification(getUserFacingError(err, 'Akun belum dapat dibuat. Periksa kembali data dan coba lagi.'), 'bad')
     } finally {
       setIsSubmitting(false)
     }
@@ -173,7 +174,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
       setEditModalOpen(false)
     } catch (err: any) {
       console.error('Error update user:', err)
-      showNotification(err.message || 'Gagal memperbarui data pengguna.', 'bad')
+      showNotification(getUserFacingError(err, 'Data akun belum dapat diperbarui. Silakan coba lagi.'), 'bad')
     } finally {
       setIsSubmitting(false)
     }
@@ -212,7 +213,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
       setDeleteModalOpen(false)
     } catch (err: any) {
       console.error('Error delete user:', err)
-      showNotification(err.message || 'Gagal menghapus akun.', 'bad')
+      showNotification(getUserFacingError(err, 'Akun belum dapat dihapus. Silakan coba lagi.'), 'bad')
     } finally {
       setIsSubmitting(false)
     }

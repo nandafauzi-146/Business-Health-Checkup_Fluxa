@@ -2,7 +2,7 @@
 -- 0014_disable_customer_receivables.sql
 -- Menghapus seluruh kasbon & piutang pelanggan.
 -- Hutang/piutang dalam sistem ini khusus untuk supplier / bahan baku (0013_supplier_payables).
--- Transaksi kasir hanya menerima pembayaran langsung: cash, qris, transfer.
+-- Transaksi kasir hanya menerima pembayaran langsung: cash atau non_cash.
 -- ==============================================================================
 
 -- 1. Bersihkan seluruh data piutang pelanggan
@@ -11,7 +11,6 @@ delete from public.receivables;
 -- 2. Update fungsi create_sale: tolak metode 'credit' (kasbon pelanggan)
 create or replace function public.create_sale(
   p_shift_id uuid,
-  p_customer_id uuid,
   p_payment_method text,
   p_discount integer,
   p_items jsonb
@@ -48,20 +47,19 @@ begin
     raise exception 'Keranjang belanja tidak boleh kosong.';
   end if;
 
-  -- Kasbon pelanggan dinonaktifkan: hanya tunai, QRIS, atau transfer
-  if p_payment_method not in ('cash', 'qris', 'transfer') then
-    raise exception 'Kasbon pelanggan tidak diizinkan. Pembayaran kasir harus lunas via cash, qris, atau transfer.';
+  -- Kasbon pelanggan dinonaktifkan: hanya tunai atau non-tunai
+  if p_payment_method not in ('cash', 'non_cash') then
+    raise exception 'Kasbon pelanggan tidak diizinkan. Pembayaran kasir harus lunas via cash atau non_cash.';
   end if;
 
-  -- Buat invoice number: INV-YYYYMMDD-XXXXX
-  v_invoice_number := 'INV-' || to_char(now(), 'YYYYMMDD') || '-' || upper(substr(md5(random()::text), 1, 6));
+  -- Buat nomor transaksi: TRKFLX-YYYYMMDD-XXXXX
+  v_invoice_number := 'TRKFLX-' || to_char(now(), 'YYYYMMDD') || '-' || upper(substr(md5(random()::text), 1, 6));
 
   -- Buat header sales terlebih dahulu (total diupdate setelah hitung item)
   insert into public.sales (
     invoice_number,
     shift_id,
     cashier_id,
-    customer_id,
     total_amount,
     discount,
     final_amount,
@@ -71,7 +69,6 @@ begin
     v_invoice_number,
     p_shift_id,
     v_cashier_id,
-    p_customer_id,
     0,
     v_discount,
     0,

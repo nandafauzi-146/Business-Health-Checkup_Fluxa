@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
-import fs from 'fs'
-import path from 'path'
 
 function getAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
@@ -20,130 +18,54 @@ function getAdminClient() {
   })
 }
 
-function getPromotionsFilePath(): string {
-  const rootFrontendPath = path.join(process.cwd(), 'frontend', 'data', 'promotions.json')
-  if (fs.existsSync(rootFrontendPath)) return rootFrontendPath
-
-  const directPath = path.join(process.cwd(), 'data', 'promotions.json')
-  if (fs.existsSync(directPath)) return directPath
-
-  return fs.existsSync(path.join(process.cwd(), 'frontend'))
-    ? rootFrontendPath
-    : directPath
-}
-
-// Data default jika file belum ada
-const DEFAULT_PROMOTIONS = [
-  {
-    id: 'p-1',
-    code: 'HEMAT10',
-    name: 'Diskon Belanja 10%',
-    type: 'percentage',
-    value: 10,
-    min_purchase: 50000,
-    max_discount: 25000,
-    start_date: '2026-10-01',
-    end_date: null,
-    is_active: true,
-    description: 'Diskon 10% minimal belanja Rp50.000, maksimal potongan Rp25.000'
-  },
-  {
-    id: 'p-2',
-    code: 'FLUXA20K',
-    name: 'Potongan Langsung Rp20.000',
-    type: 'fixed',
-    value: 20000,
-    min_purchase: 100000,
-    max_discount: null,
-    start_date: '2026-10-01',
-    end_date: null,
-    is_active: true,
-    description: 'Potongan langsung Rp20.000 untuk belanja di atas Rp100.000'
-  },
-  {
-    id: 'p-3',
-    code: 'MEMBER5K',
-    name: 'Spesial Member Baru',
-    type: 'fixed',
-    value: 5000,
-    min_purchase: 25000,
-    max_discount: null,
-    start_date: '2026-09-01',
-    end_date: null,
-    is_active: true,
-    description: 'Potongan Rp5.000 tanpa syarat khusus untuk pelanggan terdaftar'
-  },
-  {
-    id: 'p-4',
-    code: 'PROMOFLASH',
-    name: 'Flash Sale 25%',
-    type: 'percentage',
-    value: 25,
-    min_purchase: 75000,
-    max_discount: 50000,
-    start_date: '2026-10-05',
-    end_date: '2026-10-31',
-    is_active: true,
-    description: 'Flash sale spesial diskon 25%'
-  }
-]
-
-function readLocalPromotions(): any[] {
-  try {
-    const filePath = getPromotionsFilePath()
-    if (fs.existsSync(/*turbopackIgnore: true*/ filePath)) {
-      const content = fs.readFileSync(/*turbopackIgnore: true*/ filePath, 'utf8')
-      const parsed = JSON.parse(content)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed
-      }
-    }
-  } catch (err) {
-    console.error('Error reading local promotions:', err)
-  }
-  return DEFAULT_PROMOTIONS
-}
-
-function writeLocalPromotions(data: any[]): void {
-  try {
-    const filePath = getPromotionsFilePath()
-    const dir = path.dirname(filePath)
-    if (!fs.existsSync(/*turbopackIgnore: true*/ dir)) {
-      fs.mkdirSync(/*turbopackIgnore: true*/ dir, { recursive: true })
-    }
-    fs.writeFileSync(/*turbopackIgnore: true*/ filePath, JSON.stringify(data, null, 2), 'utf8')
-  } catch (err) {
-    console.error('Error writing local promotions:', err)
-  }
-}
-
 // GET: Ambil daftar promosi
 export async function GET(req: Request) {
   try {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Silakan login.' }, { status: 401 })
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, approval_status')
+      .eq('id', user.id)
+      .single()
+    if (profile?.approval_status !== 'approved' || !['kasir', 'admin', 'owner'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 })
+    }
+
     const { searchParams } = new URL(req.url)
     const activeOnly = searchParams.get('active') === 'true'
 
-    // 1. Coba baca dari database Supabase terlebih dahulu
-    try {
-      const { data: promotions, error } = await supabase
-        .from('promotions')
-        .select('*')
-        .order('created_at', { ascending: false })
+    const { data: promotions, error } = await supabase
+      .from('promotions')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (error) throw error
 
-      if (!error && promotions && promotions.length > 0) {
-        const result = activeOnly ? promotions.filter((p: any) => p.is_active) : promotions
-        return NextResponse.json({ success: true, data: result })
-      }
-    } catch {}
-
-    // 2. Fallback ke file JSON persisten server
-    const local = readLocalPromotions()
-    const result = activeOnly ? local.filter((p: any) => p.is_active) : local
-    return NextResponse.json({ success: true, data: result, source: 'local' })
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date())
+    const result = activeOnly
+      ? (promotions || []).filter((promotion: any) =>
+          promotion.is_active &&
+          promotion.start_date <= today &&
+          (!promotion.end_date || promotion.end_date >= today))
+      : promotions || []
+    return NextResponse.json(
+      { success: true, data: result },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } }
+    )
   } catch (error: any) {
-    const local = readLocalPromotions()
-    return NextResponse.json({ success: true, data: local, source: 'fallback' })
+    console.error('Error loading promotions:', error)
+    if (error?.code === 'PGRST205') {
+      return NextResponse.json(
+        { error: 'Layanan promo belum tersedia saat ini. Silakan coba lagi atau hubungi Admin.' },
+        { status: 503 },
+      )
+    }
+    return NextResponse.json(
+      { error: 'Promo belum dapat dimuat. Silakan coba lagi.' },
+      { status: 500 },
+    )
   }
 }
 
@@ -159,11 +81,11 @@ export async function POST(req: Request) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, approval_status')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !['admin', 'owner'].includes(profile.role)) {
+    if (profile?.approval_status !== 'approved' || !['admin', 'owner'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden: Hanya Admin atau Owner yang dapat mengelola promo.' }, { status: 403 })
     }
 
@@ -175,7 +97,7 @@ export async function POST(req: Request) {
       value,
       min_purchase = 0,
       max_discount = null,
-      start_date = new Date().toISOString().split('T')[0],
+      start_date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()),
       end_date = null,
       is_active = true,
       description = ''
@@ -198,70 +120,38 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Diskon persentase tidak boleh melebihi 100%.' }, { status: 400 })
     }
 
-    const newPromoItem = {
-      id: `promo-${Date.now()}`,
-      code: cleanCode,
-      name: name.trim(),
-      type,
-      value: numValue,
-      min_purchase: numMin,
-      max_discount: numMax,
-      start_date,
-      end_date: end_date || null,
-      is_active: Boolean(is_active),
-      description: description?.trim() || null,
-      created_by: user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+    const adminClient = getAdminClient() || supabase
+    const { data: newPromoItem, error: insertError } = await adminClient
+      .from('promotions')
+      .insert({
+        code: cleanCode,
+        name: name.trim(),
+        type,
+        value: numValue,
+        min_purchase: numMin,
+        max_discount: numMax,
+        start_date,
+        end_date: end_date || null,
+        is_active: Boolean(is_active),
+        description: description?.trim() || null,
+        created_by: user.id
+      })
+      .select()
+      .single()
+
+    if (insertError) {
+      console.error('Error saving promotion to database:', insertError)
+      return NextResponse.json({ error: 'Promo belum dapat disimpan. Silakan coba lagi.' }, { status: 500 })
     }
-
-    // 1. Coba simpan ke Supabase
-    let savedToDb = false
-    try {
-      const adminClient = getAdminClient() || supabase
-      const { data: created, error } = await adminClient
-        .from('promotions')
-        .insert({
-          code: cleanCode,
-          name: name.trim(),
-          type,
-          value: numValue,
-          min_purchase: numMin,
-          max_discount: numMax,
-          start_date,
-          end_date: end_date || null,
-          is_active: Boolean(is_active),
-          description: description?.trim() || null,
-          created_by: user.id
-        })
-        .select()
-        .single()
-
-      if (!error && created) {
-        newPromoItem.id = created.id
-        savedToDb = true
-      }
-    } catch {}
-
-    // 2. Simpan juga ke file JSON persisten agar Kasir selalu mendapatkan data yang sama
-    const local = readLocalPromotions()
-    const existingIndex = local.findIndex((p: any) => p.code === cleanCode)
-    if (existingIndex >= 0) {
-      local[existingIndex] = newPromoItem
-    } else {
-      local.unshift(newPromoItem)
-    }
-    writeLocalPromotions(local)
 
     return NextResponse.json({
       success: true,
       message: `Promo ${cleanCode} berhasil disimpan dan aktif untuk terminal Kasir.`,
-      data: newPromoItem,
-      dbSynced: savedToDb
+      data: newPromoItem
     })
   } catch (error: any) {
     console.error('Error creating promotion:', error)
-    return NextResponse.json({ error: error.message || 'Gagal membuat promo' }, { status: 500 })
+    return NextResponse.json({ error: 'Promo belum dapat disimpan. Silakan coba lagi.' }, { status: 500 })
   }
 }
 
@@ -276,60 +166,82 @@ export async function PATCH(req: Request) {
     }
 
     const body = await req.json()
-    const { id, ...updates } = body
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'Data promo tidak valid.' }, { status: 400 })
+    }
+    const { id } = body
 
-    if (!id) {
+    if (typeof id !== 'string' || !id) {
       return NextResponse.json({ error: 'ID promo wajib disertakan' }, { status: 400 })
     }
 
-    if (updates.code) {
-      updates.code = updates.code.trim().toUpperCase()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, approval_status')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.approval_status !== 'approved' || !['admin', 'owner'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Forbidden: Hanya Admin atau Owner yang dapat mengelola promo.' }, { status: 403 })
     }
-    if (updates.value !== undefined) {
-      updates.value = parseInt(updates.value)
+
+    const allowedFields = ['code', 'name', 'type', 'value', 'min_purchase', 'max_discount', 'start_date', 'end_date', 'is_active', 'description'] as const
+    const updates: Record<string, unknown> = {}
+    for (const field of allowedFields) {
+      if (Object.hasOwn(body, field)) updates[field] = body[field]
     }
-    if (updates.min_purchase !== undefined) {
-      updates.min_purchase = parseInt(updates.min_purchase) || 0
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'Tidak ada data promo yang diperbarui.' }, { status: 400 })
     }
-    if (updates.max_discount !== undefined) {
-      updates.max_discount = updates.max_discount ? parseInt(updates.max_discount) : null
+    if (typeof updates.code === 'string') updates.code = updates.code.trim().toUpperCase()
+    if (typeof updates.name === 'string') updates.name = updates.name.trim()
+    for (const field of ['value', 'min_purchase', 'max_discount'] as const) {
+      if (updates[field] !== undefined && updates[field] !== null) {
+        const value = Number(updates[field])
+        if (!Number.isInteger(value) || value < (field === 'value' ? 1 : 0)) {
+          return NextResponse.json({ error: `Nilai ${field} harus bilangan bulat yang valid.` }, { status: 400 })
+        }
+        updates[field] = value
+      }
     }
-    if (updates.is_active !== undefined) {
-      updates.is_active = Boolean(updates.is_active)
+    if (updates.type !== undefined && !['percentage', 'fixed'].includes(String(updates.type))) {
+      return NextResponse.json({ error: 'Tipe promo tidak valid.' }, { status: 400 })
+    }
+    if (updates.value !== undefined && updates.type === 'percentage' && Number(updates.value) > 100) {
+      return NextResponse.json({ error: 'Diskon persentase tidak boleh melebihi 100%.' }, { status: 400 })
+    }
+    if (updates.is_active !== undefined && typeof updates.is_active !== 'boolean') {
+      return NextResponse.json({ error: 'Status aktif promo tidak valid.' }, { status: 400 })
+    }
+    if (updates.description !== undefined && updates.description !== null && typeof updates.description !== 'string') {
+      return NextResponse.json({ error: 'Deskripsi promo tidak valid.' }, { status: 400 })
     }
     updates.updated_at = new Date().toISOString()
 
-    // 1. Coba update di Supabase
-    try {
-      const adminClient = getAdminClient() || supabase
-      await adminClient
-        .from('promotions')
-        .update(updates)
-        .eq('id', id)
-    } catch {}
+    const adminClient = getAdminClient() || supabase
+    const { data: updatedPromo, error: updateError } = await adminClient
+      .from('promotions')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .maybeSingle()
 
-    // 2. Update di file JSON persisten
-    const local = readLocalPromotions()
-    let updatedPromo = null
-    const newLocal = local.map((p: any) => {
-      if (p.id === id || (updates.code && p.code === updates.code)) {
-        updatedPromo = { ...p, ...updates }
-        return updatedPromo
-      }
-      return p
-    })
-
-    if (updatedPromo) {
-      writeLocalPromotions(newLocal)
+    if (updateError) {
+      console.error('Error updating promotion:', updateError)
+      return NextResponse.json({ error: 'Promo belum dapat diperbarui. Silakan coba lagi.' }, { status: 500 })
+    }
+    if (!updatedPromo) {
+      return NextResponse.json({ error: 'Promo tidak ditemukan.' }, { status: 404 })
     }
 
     return NextResponse.json({
       success: true,
       message: 'Status promo berhasil diperbarui dan disinkronkan ke Kasir.',
-      data: updatedPromo || updates
+      data: updatedPromo
     })
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Gagal memperbarui promo' }, { status: 500 })
+    console.error('Unexpected error updating promotion:', error)
+    return NextResponse.json({ error: 'Promo belum dapat diperbarui. Silakan coba lagi.' }, { status: 500 })
   }
 }
 
@@ -350,25 +262,38 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'ID promo wajib disertakan' }, { status: 400 })
     }
 
-    // 1. Coba delete di Supabase
-    try {
-      const adminClient = getAdminClient() || supabase
-      await adminClient
-        .from('promotions')
-        .delete()
-        .eq('id', id)
-    } catch {}
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, approval_status')
+      .eq('id', user.id)
+      .single()
 
-    // 2. Delete di file JSON persisten
-    const local = readLocalPromotions()
-    const newLocal = local.filter((p: any) => p.id !== id)
-    writeLocalPromotions(newLocal)
+    if (profile?.approval_status !== 'approved' || !['admin', 'owner'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Forbidden: Hanya Admin atau Owner yang dapat mengelola promo.' }, { status: 403 })
+    }
+
+    const adminClient = getAdminClient() || supabase
+    const { data: deletedPromo, error: deleteError } = await adminClient
+      .from('promotions')
+      .delete()
+      .eq('id', id)
+      .select('id')
+      .maybeSingle()
+
+    if (deleteError) {
+      console.error('Error deleting promotion:', deleteError)
+      return NextResponse.json({ error: 'Promo belum dapat dihapus. Silakan coba lagi.' }, { status: 500 })
+    }
+    if (!deletedPromo) {
+      return NextResponse.json({ error: 'Promo tidak ditemukan.' }, { status: 404 })
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Promo berhasil dihapus.'
     })
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Gagal menghapus promo' }, { status: 500 })
+    console.error('Unexpected error deleting promotion:', error)
+    return NextResponse.json({ error: 'Promo belum dapat dihapus. Silakan coba lagi.' }, { status: 500 })
   }
 }

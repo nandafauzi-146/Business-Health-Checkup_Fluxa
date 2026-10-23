@@ -5,6 +5,7 @@ import { useState, type FormEvent } from 'react'
 import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Eye, EyeOff, LoaderCircle, LockKeyhole, Mail, Phone, ShieldCheck, UserRound } from 'lucide-react'
 import { AnimatedBackground, AuthIntro, useAuthIntro } from '@/components/auth/AuthVisuals'
+import { getUserFacingError } from '@/lib/user-facing-error'
 
 export default function RegisterForm() {
   const { phase, introSymbolRef, introNameRef, brandLogoRef, brandNameRef } = useAuthIntro()
@@ -33,7 +34,7 @@ export default function RegisterForm() {
       setSubmitted(true)
     } catch (registrationError) {
       console.error('Registration form submission failed.', registrationError)
-      setError(registrationError instanceof Error ? registrationError.message : 'Terjadi kendala. Silakan coba lagi.')
+      setError(getUserFacingError(registrationError, 'Pendaftaran belum dapat diproses. Silakan periksa data dan coba lagi.'))
     } finally {
       setLoading(false)
     }

@@ -24,7 +24,7 @@ create table if not exists public.supplier_payments (
   supplier_payable_id uuid not null references public.supplier_payables(id) on delete cascade,
   amount              integer not null check (amount > 0),
   payment_date        timestamptz not null default now(),
-  payment_method      text not null check (payment_method in ('cash', 'qris', 'transfer')),
+  payment_method      text not null check (payment_method in ('cash', 'non_cash')),
   note                text,
   created_by          uuid not null references public.profiles(id),
   created_at          timestamptz not null default now()
@@ -53,7 +53,7 @@ create policy "Pembayaran hutang supplier hanya untuk admin dan owner"
 -- Trigger updated_at
 create trigger trg_supplier_payables_updated_at
   before update on public.supplier_payables
-  for each row execute function public.set_updated_at();
+  for each row execute function public.handle_updated_at();
 
 comment on table public.supplier_payables is 'Hutang bisnis ke supplier/pemasok — dicatat oleh admin/owner';
 comment on table public.supplier_payments is 'Riwayat cicilan/pelunasan hutang ke supplier';

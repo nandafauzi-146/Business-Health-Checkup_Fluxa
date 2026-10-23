@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Search, FileText, CheckCircle, XCircle, Printer, Eye,
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
+import { getUserFacingError } from '@/lib/user-facing-error'
 
 interface SaleItem {
   id: string
@@ -30,14 +31,23 @@ interface Sale {
   void_reason?: string
   voided_at?: string
   cashier_name?: string
-  customer_name?: string
+  refund_status?: 'pending' | 'approved' | 'rejected'
+  refund_approver_name?: string | null
   items?: SaleItem[]
+}
+
+interface RefundRequest {
+  sale_id: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+  reviewer?: { full_name: string } | null
 }
 
 const paymentLabels: Record<string, { label: string; color: string; bg: string }> = {
   cash: { label: 'Tunai', color: 'var(--ok)', bg: 'var(--oks)' },
-  qris: { label: 'QRIS', color: 'var(--acc)', bg: 'var(--accs)' },
-  transfer: { label: 'Transfer', color: '#8A3FFC', bg: 'rgba(138, 63, 252, 0.12)' },
+  non_cash: { label: 'Non-Tunai', color: 'var(--acc)', bg: 'var(--accs)' },
+  qris: { label: 'Non-Tunai', color: 'var(--acc)', bg: 'var(--accs)' },
+  transfer: { label: 'Non-Tunai', color: 'var(--acc)', bg: 'var(--accs)' },
   credit: { label: 'Kasbon', color: 'var(--warn)', bg: 'var(--warns)' }
 }
 
@@ -73,15 +83,76 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
     setTimeout(() => setToast(null), 3500)
   }
 
+  const refreshRefundStatuses = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/refund-requests', { cache: 'no-store' })
+      const result: { requests?: RefundRequest[] } = await response.json()
+      if (!response.ok || !Array.isArray(result.requests)) {
+        throw new Error('Refund statuses could not be loaded.')
+      }
+
+      const latestBySale = new Map<string, RefundRequest>()
+      for (const request of result.requests) {
+        const existing = latestBySale.get(request.sale_id)
+        if (!existing || request.created_at > existing.created_at) {
+          latestBySale.set(request.sale_id, request)
+        }
+      }
+      const statusBySale = new Map(
+        [...latestBySale].map(([saleId, request]) => [saleId, request.status] as const),
+      )
+      const approverBySale = new Map(
+        [...latestBySale].map(([saleId, request]) => [
+          saleId,
+          request.status === 'approved' ? request.reviewer?.full_name || null : null,
+        ] as const),
+      )
+
+      setSales(current => current.map(sale => ({
+        ...sale,
+        refund_status: statusBySale.get(sale.id),
+        refund_approver_name: approverBySale.get(sale.id),
+      })))
+      setSelectedSale(current => current
+        ? {
+            ...current,
+            refund_status: statusBySale.get(current.id),
+            refund_approver_name: approverBySale.get(current.id),
+          }
+        : null)
+    } catch (error) {
+      console.warn('Could not refresh cashier refund statuses:', error)
+    }
+  }, [])
+
+  useEffect(() => {
+    void refreshRefundStatuses()
+    const intervalId = window.setInterval(() => void refreshRefundStatuses(), 30_000)
+    window.addEventListener('focus', refreshRefundStatuses)
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', refreshRefundStatuses)
+    }
+  }, [initialSales, refreshRefundStatuses])
+
   const handleRefresh = () => {
     setIsRefreshing(true)
     router.refresh()
+    void refreshRefundStatuses()
     setTimeout(() => setIsRefreshing(false), 800)
+  }
+
+  const setRefundStatus = (saleId: string, status: Sale['refund_status']) => {
+    setSales(current => current.map(sale => sale.id === saleId
+      ? { ...sale, refund_status: status }
+      : sale))
+    setSelectedSale(current => current?.id === saleId
+      ? { ...current, refund_status: status }
+      : current)
   }
 
   const filteredSales = sales.filter(s =>
     s.invoice_number?.toLowerCase().includes(search.toLowerCase()) ||
-    (s.customer_name || '').toLowerCase().includes(search.toLowerCase()) ||
     s.payment_method?.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -104,7 +175,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
       : selectedPresetReason
 
     try {
-      const res = await fetch('/api/kasir/void', {
+      const res = await fetch('/api/admin/refund-requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -116,74 +187,14 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Gagal memproses pembatalan')
+        throw new Error(data.error || 'Gagal mengirim pengajuan refund')
       }
 
-      const now = new Date().toISOString()
-
-      // Update state sales & selectedSale secara instan
-      setSales(prev => prev.map(s => s.id === voidingSale.id ? {
-        ...s,
-        status: 'voided',
-        void_reason: finalReason,
-        voided_at: now
-      } : s))
-
-      if (selectedSale?.id === voidingSale.id) {
-        setSelectedSale(prev => prev ? {
-          ...prev,
-          status: 'voided',
-          void_reason: finalReason,
-          voided_at: now
-        } : null)
-      }
-
-      try {
-        const refundReport = {
-          invoice: voidingSale.invoice_number,
-          amount: voidingSale.final_amount,
-          reason: finalReason,
-          time: new Date().toISOString()
-        }
-        localStorage.setItem('fluxa_latest_refund_report', JSON.stringify(refundReport))
-        window.dispatchEvent(new CustomEvent('fluxa_refund_created', { detail: refundReport }))
-      } catch {}
-
-      showToast(`Transaksi ${voidingSale.invoice_number} berhasil dibatalkan & di-refund. Stok telah dikembalikan ke sistem.`, 'ok')
+      showToast(`Pengajuan refund ${voidingSale.invoice_number} dikirim dan menunggu persetujuan Admin.`, 'ok')
+      setRefundStatus(voidingSale.id, 'pending')
       setVoidingSale(null)
-    } catch (err: any) {
-      console.warn('API void failed, using fallback update:', err)
-      // Fallback mode (bila database lokal/demo)
-      const now = new Date().toISOString()
-      setSales(prev => prev.map(s => s.id === voidingSale.id ? {
-        ...s,
-        status: 'voided',
-        void_reason: finalReason,
-        voided_at: now
-      } : s))
-
-      if (selectedSale?.id === voidingSale.id) {
-        setSelectedSale(prev => prev ? {
-          ...prev,
-          status: 'voided',
-          void_reason: finalReason,
-          voided_at: now
-        } : null)
-      }
-
-      try {
-        const refundReport = {
-          invoice: voidingSale.invoice_number,
-          amount: voidingSale.final_amount,
-          reason: finalReason,
-          time: new Date().toISOString()
-        }
-        localStorage.setItem('fluxa_latest_refund_report', JSON.stringify(refundReport))
-        window.dispatchEvent(new CustomEvent('fluxa_refund_created', { detail: refundReport }))
-      } catch {}
-
-      showToast(`Transaksi ${voidingSale.invoice_number} berhasil dibatalkan & di-refund (Simulasi mode).`, 'ok')
-      setVoidingSale(null)
+    } catch (err: unknown) {
+      showToast(getUserFacingError(err, 'Pengajuan pembatalan belum dapat dikirim. Silakan coba lagi.'), 'bad')
     } finally {
       setIsSubmittingVoid(false)
     }
@@ -193,7 +204,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
     <div>
       <PageHeader
         title="Riwayat Transaksi Kasir"
-        subtitle="Daftar transaksi penjualan POS, cetak ulang struk, dan refund/pembatalan transaksi"
+        subtitle="Daftar transaksi penjualan POS, cetak ulang struk, dan ajukan refund untuk ditinjau Admin"
       />
 
       {/* Toast Alert */}
@@ -233,7 +244,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                 <Search size={15} color="var(--mute)" />
                 <input
                   type="text"
-                  placeholder="Cari nomor invoice, pelanggan, atau metode bayar..."
+                  placeholder="Cari nomor transaksi atau metode bayar..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent' }}
@@ -255,10 +266,9 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Invoice</th>
+                    <th>No. Transaksi</th>
                     <th>Waktu</th>
                     <th>Kasir</th>
-                    <th>Pelanggan</th>
                     <th>Metode</th>
                     <th>Total</th>
                     <th>Status</th>
@@ -268,7 +278,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                 <tbody>
                   {filteredSales.length === 0 ? (
                     <tr>
-                      <td colSpan={8} style={{ textAlign: 'center', padding: '36px 0', color: 'var(--mute)' }}>
+                      <td colSpan={7} style={{ textAlign: 'center', padding: '36px 0', color: 'var(--mute)' }}>
                         Belum ada riwayat transaksi ditemukan
                       </td>
                     </tr>
@@ -276,6 +286,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                     filteredSales.map(sale => {
                       const pm = paymentLabels[sale.payment_method] || { label: sale.payment_method.toUpperCase(), color: 'var(--mute)', bg: 'var(--border)' }
                       const isCompleted = sale.status === 'completed'
+                      const refundPending = sale.refund_status === 'pending'
 
                       return (
                         <tr key={sale.id} style={{ background: selectedSale?.id === sale.id ? 'var(--accs)' : undefined }}>
@@ -284,7 +295,6 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                             {new Date(sale.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
                           </td>
                           <td style={{ fontSize: 13, color: 'var(--body)' }}>{sale.cashier_name || 'Kasir'}</td>
-                          <td>{sale.customer_name || 'Umum'}</td>
                           <td>
                             <span style={{
                               display: 'inline-block',
@@ -302,10 +312,14 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                             <FormatRupiah amount={sale.final_amount} />
                           </td>
                           <td>
-                            <StatusTag
-                              type={isCompleted ? 'ok' : 'bad'}
-                              label={isCompleted ? 'Sukses' : 'Dibatalkan (Void)'}
-                            />
+                            {refundPending ? (
+                              <StatusTag type="warn" label="Refund Dalam Proses" />
+                            ) : (
+                              <StatusTag
+                                type={isCompleted ? 'ok' : 'bad'}
+                                label={isCompleted ? sale.refund_status === 'rejected' ? 'Refund Ditolak' : 'Sukses' : 'Refund'}
+                              />
+                            )}
                           </td>
                           <td style={{ textAlign: 'right' }}>
                             <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
@@ -318,7 +332,17 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                                 <Eye size={13} /> Detail
                               </button>
 
-                              {isCompleted ? (
+                              {isCompleted && refundPending ? (
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="btn btn-secondary"
+                                  style={{ padding: '6px 10px', fontSize: 12, cursor: 'default', opacity: 0.8 }}
+                                  aria-label="Refund sedang menunggu persetujuan Admin"
+                                >
+                                  <RotateCcw size={12} /> Refund Dalam Proses
+                                </button>
+                              ) : isCompleted ? (
                                 <button
                                   id={`refund-btn-${sale.id}`}
                                   onClick={() => openVoidModal(sale)}
@@ -333,9 +357,9 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                                     alignItems: 'center',
                                     gap: 4
                                   }}
-                                  title="Batalkan transaksi dan kembalikan dana (Refund)"
+                                  title="Ajukan refund untuk ditinjau Admin"
                                 >
-                                  <RotateCcw size={12} /> Refund
+                                  <RotateCcw size={12} /> Ajukan Refund
                                 </button>
                               ) : (
                                 <span style={{
@@ -362,7 +386,8 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
 
         {/* Panel Detail Struk */}
         {selectedSale && (
-          <SectionCard>
+            <>
+            <SectionCard>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Receipt size={18} color="var(--acc)" />
@@ -389,12 +414,17 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, marginBottom: 4 }}>
                   <AlertTriangle size={15} />
-                  <span>TRANSAKSI INI TELAH DIBATALKAN (VOID)</span>
+                  <span>TRANSAKSI INI TELAH DIBATALKAN (REFUND)</span>
                 </div>
                 <div>Alasan: <strong>{selectedSale.void_reason || 'Pembatalan transaksi'}</strong></div>
                 {selectedSale.voided_at && (
                   <div style={{ fontSize: 11, marginTop: 2, opacity: 0.85 }}>
                     Waktu: {new Date(selectedSale.voided_at).toLocaleString('id-ID')}
+                  </div>
+                )}
+                {selectedSale.refund_status === 'approved' && (
+                  <div style={{ fontSize: 11, marginTop: 2, opacity: 0.85 }}>
+                    Disetujui oleh: <strong>{selectedSale.refund_approver_name || 'Admin'}</strong>
                   </div>
                 )}
               </div>
@@ -420,7 +450,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
               <div style={{ textAlign: 'center', borderBottom: '1px dashed #ccc', paddingBottom: 10, marginBottom: 10 }}>
                 <div style={{ fontWeight: 800, fontSize: 16 }}>FLUXA POS</div>
                 <div style={{ fontSize: 11, color: '#666' }}>Smart Retail & F&B Store</div>
-                <div style={{ fontSize: 11, color: '#666' }}>No: {selectedSale.invoice_number}</div>
+                <div style={{ fontSize: 11, color: '#666' }}>No. Transaksi: {selectedSale.invoice_number}</div>
                 <div style={{ fontSize: 11, color: '#666' }}>
                   {new Date(selectedSale.created_at).toLocaleString('id-ID')}
                 </div>
@@ -428,16 +458,12 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
 
               <div style={{ borderBottom: '1px dashed #ccc', paddingBottom: 10, marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                  <span>Pelanggan:</span>
-                  <span>{selectedSale.customer_name || 'Umum'}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                   <span>Kasir:</span>
                   <span>{selectedSale.cashier_name || 'Kasir'}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                   <span>Metode:</span>
-                  <span style={{ textTransform: 'uppercase', fontWeight: 600 }}>{selectedSale.payment_method}</span>
+                  <span style={{ fontWeight: 600 }}>{paymentLabels[selectedSale.payment_method]?.label || selectedSale.payment_method}</span>
                 </div>
               </div>
 
@@ -482,7 +508,16 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                 <Printer size={15} /> Cetak Struk
               </button>
 
-              {selectedSale.status === 'completed' && (
+              {selectedSale.status === 'completed' && selectedSale.refund_status === 'pending' ? (
+                <button
+                  type="button"
+                  disabled
+                  className="btn btn-secondary"
+                  style={{ width: '100%', justifyContent: 'center', cursor: 'default', opacity: 0.8 }}
+                >
+                  <RotateCcw size={15} /> Refund Dalam Proses
+                </button>
+              ) : selectedSale.status === 'completed' && (
                 <button
                   onClick={() => openVoidModal(selectedSale)}
                   className="btn btn-danger"
@@ -495,15 +530,62 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                     fontWeight: 600
                   }}
                 >
-                  <RotateCcw size={15} /> Refund / Batalkan Transaksi
+                  <RotateCcw size={15} /> Ajukan Refund
                 </button>
               )}
             </div>
           </SectionCard>
+          <div className="thermal-receipt" aria-hidden="true">
+            <header>
+              <strong>FLUXA POS</strong>
+              <span>{selectedSale.status === 'voided' ? 'Bukti Transaksi Dibatalkan' : 'Bukti Pembayaran'}</span>
+            </header>
+            {selectedSale.status === 'voided' && (
+              <div className="thermal-receipt-meta"><strong>TRANSAKSI VOID / REFUND</strong></div>
+            )}
+            <div className="thermal-receipt-meta">
+              <div>No. Transaksi: {selectedSale.invoice_number}</div>
+              <div>{new Date(selectedSale.created_at).toLocaleString('id-ID')}</div>
+              <div>Kasir: {selectedSale.cashier_name || 'Kasir'}</div>
+              <div>Metode: {paymentLabels[selectedSale.payment_method]?.label || selectedSale.payment_method}</div>
+            </div>
+            <div className="thermal-receipt-items">
+              {(selectedSale.items || []).map(item => (
+                <div className="thermal-receipt-item" key={item.id}>
+                  <div>{item.product_name}</div>
+                  <div className="thermal-receipt-line">
+                    <span>{item.quantity} x Rp {item.unit_price.toLocaleString('id-ID')}</span>
+                    <span>Rp {item.subtotal.toLocaleString('id-ID')}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="thermal-receipt-totals">
+              <div>
+                <span>Subtotal</span>
+                <span>Rp {selectedSale.subtotal.toLocaleString('id-ID')}</span>
+              </div>
+              {selectedSale.discount > 0 && (
+                <div>
+                  <span>Diskon</span>
+                  <span>-Rp {selectedSale.discount.toLocaleString('id-ID')}</span>
+                </div>
+              )}
+              <div className="thermal-receipt-total">
+                <strong>TOTAL</strong>
+                <strong>Rp {selectedSale.final_amount.toLocaleString('id-ID')}</strong>
+              </div>
+            </div>
+            {selectedSale.status === 'voided' && selectedSale.void_reason && (
+              <div className="thermal-receipt-meta">Alasan void: {selectedSale.void_reason}</div>
+            )}
+            <footer>Terima kasih atas kunjungan Anda</footer>
+          </div>
+          </>
         )}
       </div>
 
-      {/* Modal Refund / Pembatalan Transaksi (Void) */}
+      {/* Modal pengajuan refund untuk persetujuan Admin */}
       {voidingSale && (
         <div style={{
           position: 'fixed',
@@ -540,10 +622,10 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                 </div>
                 <div>
                   <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: 'var(--ink)' }}>
-                    Refund & Pembatalan Transaksi
+                    Ajukan Refund Transaksi
                   </h3>
                   <span style={{ fontSize: 12, color: 'var(--mute)' }}>
-                    Invoice: <strong style={{ fontFamily: 'monospace' }}>{voidingSale.invoice_number}</strong>
+                    No. Transaksi: <strong style={{ fontFamily: 'monospace' }}>{voidingSale.invoice_number}</strong>
                   </span>
                 </div>
               </div>
@@ -572,11 +654,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--mute)' }}>
                 <span>Metode Pembayaran Asal:</span>
-                <span style={{ fontWeight: 600, textTransform: 'uppercase' }}>{voidingSale.payment_method}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--mute)', marginTop: 4 }}>
-                <span>Pelanggan:</span>
-                <span>{voidingSale.customer_name || 'Pelanggan Umum'}</span>
+                <span style={{ fontWeight: 600 }}>{paymentLabels[voidingSale.payment_method]?.label || voidingSale.payment_method}</span>
               </div>
             </div>
 
@@ -594,14 +672,14 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
             }}>
               <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
               <span>
-                <strong>Efek Pembatalan:</strong> Seluruh item barang dalam invoice ini akan otomatis <strong>dikembalikan ke stok toko</strong>, dan transaksi tercatat sebagai Void di laporan kasir.
+                <strong>Efek Pembatalan:</strong> Seluruh item barang dalam transaksi ini akan otomatis <strong>dikembalikan ke stok toko</strong>, dan transaksi tercatat sebagai Refund/Batal di laporan kasir.
               </span>
             </div>
 
             {/* Pilihan Alasan Pembatalan */}
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>
-                Alasan Refund / Pembatalan (Wajib):
+                Alasan Refund (Wajib):
               </label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
                 {PRESET_REASONS.map(reason => (
@@ -677,7 +755,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                   boxShadow: '0 4px 14px rgba(229, 72, 77, 0.3)'
                 }}
               >
-                {isSubmittingVoid ? 'Memproses Refund...' : 'Konfirmasi Refund & Batalkan'}
+                {isSubmittingVoid ? 'Mengirim pengajuan...' : 'Kirim Pengajuan Refund'}
               </button>
             </div>
           </div>

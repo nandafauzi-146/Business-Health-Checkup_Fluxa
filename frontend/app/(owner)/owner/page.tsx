@@ -55,11 +55,9 @@ export default async function OwnerDashboardPage() {
       .gte('created_at', sevenDayStart),
   ])
 
-  if (monthlySummaryResult.error) throw new Error(`Gagal memuat ringkasan bulanan: ${monthlySummaryResult.error.message}`)
-  if (dailySalesResult.error) throw new Error(`Gagal memuat penjualan harian: ${dailySalesResult.error.message}`)
-  if (checkupsResult.error) throw new Error(`Gagal memuat rapor kesehatan bisnis: ${checkupsResult.error.message}`)
-  if (lowStockResult.error) throw new Error(`Gagal memuat peringatan stok: ${lowStockResult.error.message}`)
-  if (completedSalesResult.error) throw new Error(`Gagal memuat transaksi tujuh hari terakhir: ${completedSalesResult.error.message}`)
+  if (monthlySummaryResult.error || dailySalesResult.error || checkupsResult.error || lowStockResult.error || completedSalesResult.error) {
+    throw new Error('Data dashboard belum dapat dimuat. Silakan muat ulang halaman.')
+  }
 
   const saleIds = completedSalesResult.data.map((sale) => sale.id)
   const saleItemResults = await Promise.all(splitIntoBatches(saleIds).map((saleIdBatch) =>
@@ -69,7 +67,7 @@ export default async function OwnerDashboardPage() {
       .in('sale_id', saleIdBatch)))
 
   for (const result of saleItemResults) {
-    if (result.error) throw new Error(`Gagal memuat detail produk terjual: ${result.error.message}`)
+    if (result.error) throw new Error('Data penjualan produk belum dapat dimuat. Silakan muat ulang halaman.')
   }
 
   const saleItems = saleItemResults.flatMap((result) => result.data ?? [])
@@ -81,7 +79,7 @@ export default async function OwnerDashboardPage() {
       .in('id', productIdBatch)))
 
   for (const result of productResults) {
-    if (result.error) throw new Error(`Gagal memuat nama produk terlaris: ${result.error.message}`)
+    if (result.error) throw new Error('Data produk terlaris belum dapat dimuat. Silakan muat ulang halaman.')
   }
 
   const products = productResults.flatMap((result) => result.data ?? [])
@@ -95,7 +93,7 @@ export default async function OwnerDashboardPage() {
       .in('id', categoryIdBatch)))
 
   for (const result of categoryResults) {
-    if (result.error) throw new Error(`Gagal memuat kategori produk: ${result.error.message}`)
+    if (result.error) throw new Error('Data kategori produk belum dapat dimuat. Silakan muat ulang halaman.')
   }
 
   const monthlySummary = monthlySummaryResult.data

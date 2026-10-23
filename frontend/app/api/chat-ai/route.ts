@@ -28,16 +28,23 @@ RINGKASAN KEUANGAN:
 - Laba Kotor: ${fmt(ctx.gross_profit)} (${ctx.gross_margin}%)
 - Biaya Operasional: ${fmt(ctx.opex)}
 - Laba Bersih: ${fmt(ctx.net_profit)} (${ctx.net_margin}%)
-- Kas di Tangan: ${fmt(ctx.cash)}
 - Nilai Stok: ${fmt(ctx.inventory)}
-- Total Hutang ke Supplier: ${fmt(ctx.payables || 0)}
+- Piutang pelanggan belum lunas: ${fmt(ctx.receivables)}
+- Hutang supplier belum lunas: ${fmt(ctx.payables)}
 `.trim()
 
   if (ctx.payable_list && ctx.payable_list.length > 0) {
     block += '\n\nRINCIAN HUTANG KE SUPPLIER / VENDOR:\n'
     ctx.payable_list.forEach((r: any, i: number) => {
       const overdue = r.due_date && new Date(r.due_date) < new Date() ? ' [LEWAT JATUH TEMPO]' : ''
-      block += `${i + 1}. ${r.supplier_name || r.customer_name} | Tanggal: ${r.created_at?.split('T')[0]} | Jatuh Tempo: ${r.due_date || '-'}${overdue} | Sisa: ${fmt(r.remaining_amount)}\n`
+      block += `${i + 1}. ${r.supplier_name || 'Supplier'} | Tanggal: ${r.created_at?.split('T')[0]} | Jatuh Tempo: ${r.due_date || '-'}${overdue} | Sisa: ${fmt(r.remaining_amount)}\n`
+    })
+  }
+
+  if (ctx.receivable_list && ctx.receivable_list.length > 0) {
+    block += '\n\nPIUTANG PELANGGAN:\n'
+    ctx.receivable_list.forEach((r: any, i: number) => {
+      block += `${i + 1}. Piutang umum | Jatuh Tempo: ${r.due_date || '-'} | Sisa: ${fmt(r.remaining_amount)}\n`
     })
   }
 
@@ -62,26 +69,71 @@ RINGKASAN KEUANGAN:
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages } = await req.json() as { messages: { role: string; content: string }[] }
-
-    if (!messages || !Array.isArray(messages)) {
+    const body: unknown = await req.json()
+    if (!body || typeof body !== 'object' || !Array.isArray((body as { messages?: unknown }).messages)) {
       return NextResponse.json({ error: 'Format pesan tidak valid' }, { status: 400 })
     }
+    const messages = (body as { messages: unknown[] }).messages
+    if (
+      messages.length === 0 ||
+      messages.length > 20 ||
+      messages.some(message =>
+        !message || typeof message !== 'object' ||
+        !['user', 'assistant'].includes(String((message as { role?: unknown }).role)) ||
+        typeof (message as { content?: unknown }).content !== 'string' ||
+        !(message as { content: string }).content.trim() ||
+        (message as { content: string }).content.length > 4000
+      ) ||
+      (messages[messages.length - 1] as { role?: string }).role !== 'user'
+    ) {
+      return NextResponse.json({ error: 'Pesan tidak valid atau melebihi batas percakapan.' }, { status: 400 })
+    }
+    const validMessages = messages as { role: 'user' | 'assistant'; content: string }[]
 
     // Fetch business context from DB
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Silakan login.' }, { status: 401 })
 
-    const [salesRes, expensesRes, receivablesRes, productsRes, profileRes] = await Promise.all([
-      supabase.from('sales').select('final_amount, sale_items(quantity, buy_price)').eq('status', 'completed'),
-      supabase.from('expenses').select('amount, description, expense_date, expense_categories(name)').order('expense_date', { ascending: false }).limit(15),
-      supabase.from('receivables').select('total_amount, paid_amount, due_date, created_at, note, customers(name)').neq('status', 'paid').order('created_at', { ascending: false }),
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('full_name, role, approval_status')
+      .eq('id', user.id)
+      .single()
+    if (profileError || profile?.role !== 'owner' || profile.approval_status !== 'approved') {
+      return NextResponse.json({ error: 'Fitur ini hanya tersedia untuk Owner yang disetujui.' }, { status: 403 })
+    }
+
+    const now = new Date()
+    const dateParts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Jakarta',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(now)
+    const year = Number(dateParts.find(part => part.type === 'year')?.value)
+    const month = Number(dateParts.find(part => part.type === 'month')?.value)
+    const day = Number(dateParts.find(part => part.type === 'day')?.value)
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`
+    const today = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const startTimestamp = new Date(`${startDate}T00:00:00+07:00`).toISOString()
+    const nextMonth = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10)
+    const nextMonthTimestamp = new Date(`${nextMonth}T00:00:00+07:00`).toISOString()
+
+    const [salesRes, expensesRes, receivablesRes, payablesRes, productsRes] = await Promise.all([
+      supabase.from('sales').select('final_amount, sale_items(quantity, buy_price)').eq('status', 'completed').gte('created_at', startTimestamp).lt('created_at', nextMonthTimestamp),
+      supabase.from('expenses').select('amount, description, expense_date, expense_categories(name)').gte('expense_date', startDate).lt('expense_date', nextMonth).order('expense_date', { ascending: false }).limit(100),
+      supabase.from('receivables').select('total_amount, paid_amount, due_date, created_at, note').neq('status', 'paid').order('created_at', { ascending: false }),
+      supabase.from('supplier_payables').select('supplier_name, due_date, created_at, total_amount, paid_amount').neq('status', 'paid').order('created_at', { ascending: false }),
       supabase.from('products').select('name, stock, min_stock, buy_price, sell_price').eq('is_active', true),
-      supabase.from('profiles').select('full_name').eq('role', 'owner').limit(1).maybeSingle(),
     ])
+    const queryError = [salesRes.error, expensesRes.error, receivablesRes.error, payablesRes.error, productsRes.error].find(Boolean)
+    if (queryError) throw queryError
 
     const sales = salesRes.data || []
     const expenses = expensesRes.data || []
     const receivables = receivablesRes.data || []
+    const payables = payablesRes.data || []
     const products = productsRes.data || []
 
     let revenue = 0, cogs = 0
@@ -94,30 +146,30 @@ export async function POST(req: NextRequest) {
     const netProfit = grossProfit - opex
     const inventory = products.reduce((sum: number, p: any) => sum + (Math.max(0, p.stock || 0) * (p.buy_price || 0)), 0)
     const totalReceivables = receivables.reduce((sum: number, r: any) => sum + (r.total_amount - r.paid_amount), 0)
-
-    const now = new Date()
+    const totalPayables = payables.reduce((sum: number, r: any) => sum + (r.total_amount - r.paid_amount), 0)
     const ctx = {
-      owner_name: profileRes.data?.full_name || 'Pemilik',
-      period_start: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0],
-      period_end: now.toISOString().split('T')[0],
-      revenue: revenue || 55000000,
-      cogs: cogs || 34000000,
-      gross_profit: grossProfit || 21000000,
+      owner_name: profile.full_name || 'Pemilik',
+      period_start: startDate,
+      period_end: today,
+      revenue,
+      cogs,
+      gross_profit: grossProfit,
       gross_margin: revenue > 0 ? ((grossProfit / revenue) * 100).toFixed(1) : '38.2',
-      opex: opex || 7000000,
-      net_profit: netProfit || 14000000,
+      opex,
+      net_profit: netProfit,
       net_margin: revenue > 0 ? ((netProfit / revenue) * 100).toFixed(1) : '25.5',
-      cash: 16000000,
-      inventory: inventory || 22000000,
-      receivables: totalReceivables || 4500000,
+      inventory,
+      receivables: totalReceivables,
+      payables: totalPayables,
       receivable_list: receivables.map((r: any) => ({
-        customer_name: (r.customers as any)?.name || 'Pelanggan Umum',
-        total_amount: r.total_amount,
-        paid_amount: r.paid_amount,
+        remaining_amount: r.total_amount - r.paid_amount,
+        due_date: r.due_date,
+      })),
+      payable_list: payables.map((r: any) => ({
+        supplier_name: r.supplier_name,
         remaining_amount: r.total_amount - r.paid_amount,
         due_date: r.due_date,
         created_at: r.created_at,
-        note: r.note,
       })),
       expense_list: expenses.map((e: any) => ({
         description: e.description,
@@ -127,17 +179,21 @@ export async function POST(req: NextRequest) {
       })),
       product_list: products,
     }
+    if (revenue === 0) {
+      ctx.gross_margin = '0'
+      ctx.net_margin = '0'
+    }
 
     const contextBlock = buildChatContextBlock(ctx)
     const apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY
 
     if (!apiKey) {
-      return NextResponse.json({ error: 'API Key Gemini belum dikonfigurasi di server.' }, { status: 500 })
+      return NextResponse.json({ error: 'Layanan AI belum tersedia saat ini. Silakan coba lagi nanti.' }, { status: 503 })
     }
 
     // Build Gemini multi-turn contents
     // Inject context into the first user message
-    const geminiContents = messages.map((msg, idx) => {
+    const geminiContents = validMessages.map((msg, idx) => {
       let content = msg.content
       if (idx === 0 && msg.role === 'user') {
         content = `${contextBlock}\n\nPertanyaan saya: ${msg.content}`
@@ -149,12 +205,8 @@ export async function POST(req: NextRequest) {
     })
 
     const candidateModels = [
-      'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-2.5-pro',
-      'gemini-3.5-flash-lite',
-      'gemini-3.5-flash'
+      'gemini-3.8-flash',
+      'gemini-3.1-pro-preview',
     ]
 
     for (const model of candidateModels) {
@@ -193,6 +245,6 @@ export async function POST(req: NextRequest) {
 
   } catch (err: any) {
     console.error('Chat AI route error:', err)
-    return NextResponse.json({ error: `Terjadi kesalahan: ${err.message}` }, { status: 500 })
+    return NextResponse.json({ error: 'Layanan AI belum dapat memproses permintaan. Silakan coba lagi.' }, { status: 500 })
   }
 }

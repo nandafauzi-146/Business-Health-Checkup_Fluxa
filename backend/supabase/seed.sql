@@ -1,5 +1,5 @@
 -- supabase/seed.sql
--- Data Dummy: Kategori, Produk, Pelanggan, Kategori Pengeluaran
+-- Data Dummy: Kategori, Produk, Kategori Pengeluaran
 
 -- 1. Kategori Produk
 insert into public.categories (name, description) values
@@ -19,12 +19,6 @@ insert into public.products (category_id, name, sku, barcode, buy_price, sell_pr
   ((select id from public.categories where name = 'Sembako'), 'Minyak Goreng Sawit 1L', 'SBK-002', '8993003002', 15000, 18500, 40, 10, 'pouch', true),
   ((select id from public.categories where name = 'Makanan Berat'), 'Nasi Goreng Spesial', 'MKN-001', '8994004001', 12000, 22000, 40, 5, 'porsi', true)
 on conflict (sku) do nothing;
-
--- 3. Pelanggan Tetap
-insert into public.customers (name, phone, address) values
-  ('Budi Santoso', '081234567890', 'Jl. Merdeka No. 12, Sleman'),
-  ('Siti Rahmawati', '085712345678', 'Jl. Kaliurang KM 5, Sleman'),
-  ('Warung Bu Joko', '081398765432', 'Jl. Palagan No. 45, Sleman');
 
 -- 4. Kategori Biaya Operasional
 insert into public.expense_categories (name, description) values

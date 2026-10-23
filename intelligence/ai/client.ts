@@ -19,17 +19,13 @@ export async function generateAiHealthInsights(
   metrics: FinancialHealthMetrics,
   customApiKey?: string
 ): Promise<AiDiagnosisResponse> {
-  const apiKey = customApiKey || process.env.GEMINI_API_KEY || process.env.AI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+  const apiKey = customApiKey || process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
   const prompt = buildDiagnosticPrompt(input, metrics);
 
   if (apiKey) {
     const candidateModels = [
-      'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-2.5-pro',
-      'gemini-3.5-flash-lite',
-      'gemini-3.5-flash'
+      'gemini-3.8-flash',
+      'gemini-3.1-pro-preview',
     ];
     let lastError: any = null;
 
