@@ -15,6 +15,36 @@ function getAdminClient() {
   })
 }
 
+async function upsertRegistrationProfile(
+  adminClient: ReturnType<typeof getAdminClient>,
+  userId: string,
+  fullName: string,
+  phone: string | null,
+  email: string,
+  registrationPath: 'subscribe' | 'trial',
+) {
+  const baseProfile = {
+    id: userId,
+    full_name: fullName,
+    role: 'owner',
+    phone,
+    email,
+    registration_path: registrationPath,
+    updated_at: new Date().toISOString(),
+  }
+
+  const profileWithApproval = {
+    ...baseProfile,
+    approval_status: 'pending',
+    approved_at: null,
+    trial_started_at: null,
+    trial_ends_at: null,
+  }
+
+  const { error } = await adminClient.from('profiles').upsert(profileWithApproval)
+  if (error) throw error
+}
+
 export async function POST(request: Request) {
   try {
     const body: unknown = await request.json()
@@ -22,7 +52,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Data pendaftaran tidak valid.' }, { status: 400 })
     }
 
-    const { full_name, email, password, phone } = body as Record<string, unknown>
+    const { full_name, email, password, phone, registration_path } = body as Record<string, unknown>
     if (typeof full_name !== 'string' || full_name.trim().length < 2 || full_name.trim().length > 120) {
       return NextResponse.json({ error: 'Nama harus diisi (2–120 karakter).' }, { status: 400 })
     }
@@ -36,15 +66,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Nomor telepon tidak valid.' }, { status: 400 })
     }
 
+    const validPath: 'subscribe' | 'trial' =
+      registration_path === 'subscribe' ? 'subscribe' : 'trial'
+
     const normalizedEmail = email.trim().toLowerCase()
+    const normalizedPhone = typeof phone === 'string' ? phone.trim() || null : null
     const adminClient = getAdminClient()
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email: normalizedEmail,
       password,
-      email_confirm: true,
       user_metadata: {
         full_name: full_name.trim(),
-        phone: typeof phone === 'string' ? phone.trim() || null : null,
+        phone: normalizedPhone,
       },
     })
 
@@ -55,29 +88,44 @@ export async function POST(request: Request) {
     }
 
     const user = authData.user
-    const { error: profileError } = await adminClient.from('profiles').upsert({
-      id: user.id,
-      full_name: full_name.trim(),
-      role: 'owner',
-      phone: typeof phone === 'string' ? phone.trim() || null : null,
-      email: normalizedEmail,
-      approval_status: 'pending',
-      approved_at: null,
-      trial_started_at: null,
-      trial_ends_at: null,
-      updated_at: new Date().toISOString(),
-    })
 
-    if (profileError) {
+    try {
+      await upsertRegistrationProfile(
+        adminClient,
+        user.id,
+        full_name.trim(),
+        normalizedPhone,
+        normalizedEmail,
+        validPath,
+      )
+    } catch (profileError) {
       const { error: cleanupError } = await adminClient.auth.admin.deleteUser(user.id)
       if (cleanupError) {
         console.error('Unable to remove account after profile creation failed.', cleanupError)
       }
-      console.error('Unable to create pending registration profile.', profileError)
+
+      const message = profileError instanceof Error ? profileError.message : 'Pendaftaran belum dapat disimpan.'
+      console.error('Unable to create pending registration profile.', message)
+
+      if (/Skema tabel profiles belum siap|approval_status|trial_started_at|does not exist/i.test(message)) {
+        return NextResponse.json(
+          { error: 'Skema database belum siap untuk pendaftaran. Jalankan migrasi approval/trial di Supabase terlebih dahulu.' },
+          { status: 500 },
+        )
+      }
+
       return NextResponse.json({ error: 'Pendaftaran belum dapat disimpan. Silakan coba lagi.' }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, approvalStatus: 'pending' }, { status: 201 })
+    return NextResponse.json(
+      {
+        success: true,
+        approvalStatus: 'pending',
+        registrationPath: validPath,
+        userId: user.id,
+      },
+      { status: 201 },
+    )
   } catch (error) {
     console.error('Registration request failed.', error)
     return NextResponse.json({ error: 'Terjadi kendala saat memproses pendaftaran.' }, { status: 500 })

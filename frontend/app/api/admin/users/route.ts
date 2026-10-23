@@ -110,17 +110,28 @@ export async function POST(req: Request) {
     const createdUser = authData.user;
 
     // 2. Pastikan tabel profiles terisi / terupdate
+    const profilePayload = {
+      id: createdUser.id,
+      full_name: full_name.trim(),
+      role: targetRole,
+      phone: phone?.trim() || null,
+      email: email.trim().toLowerCase(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const profileWithApproval = {
+      ...profilePayload,
+      approval_status: "approved",
+      approved_at: new Date().toISOString(),
+      trial_started_at: targetRole === "owner" ? new Date().toISOString() : null,
+      trial_ends_at: targetRole === "owner"
+        ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        : null,
+    };
+
     const { error: profileError } = await adminClient
       .from("profiles")
-      .upsert({
-        id: createdUser.id,
-        full_name: full_name.trim(),
-        role: targetRole,
-        phone: phone?.trim() || null,
-        email: email.trim().toLowerCase(),
-        approval_status: "approved",
-        updated_at: new Date().toISOString(),
-      })
+      .upsert(profileWithApproval)
       .select()
       .single();
 
@@ -134,6 +145,17 @@ export async function POST(req: Request) {
           cleanupError,
         );
       console.error("Unable to save staff profile.", profileError);
+
+      if (/approval_status|trial_started_at|does not exist/i.test(profileError.message ?? "")) {
+        return NextResponse.json(
+          {
+            error:
+              "Skema database belum siap untuk pendaftaran/penambahan akun. Jalankan migrasi approval/trial di Supabase terlebih dahulu.",
+          },
+          { status: 500 },
+        );
+      }
+
       return NextResponse.json(
         { error: "Profil pengguna belum dapat disimpan." },
         { status: 500 },

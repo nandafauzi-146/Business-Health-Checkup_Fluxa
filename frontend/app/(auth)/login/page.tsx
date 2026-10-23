@@ -5,14 +5,20 @@ import LoginForm from "@/components/auth/LoginForm";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string | string[] }>
+  searchParams: Promise<{ status?: string | string[] }>;
 }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const params = await searchParams;
-  const queryStatus = Array.isArray(params.status) ? params.status[0] : params.status;
-  let registrationStatus: 'pending' | 'rejected' | null =
-    queryStatus === 'pending' || queryStatus === 'rejected' ? queryStatus : null;
+  const queryStatus = Array.isArray(params.status)
+    ? params.status[0]
+    : params.status;
+  let registrationStatus: "pending" | "rejected" | null =
+    queryStatus === "pending" || queryStatus === "rejected"
+      ? queryStatus
+      : null;
 
   if (user) {
     const { data: profile } = await supabase
@@ -21,10 +27,14 @@ export default async function LoginPage({
       .eq("id", user.id)
       .single();
 
-    if (profile?.approval_status === 'pending' || profile?.approval_status === 'rejected') {
+    if (
+      profile?.approval_status === "pending" ||
+      profile?.approval_status === "rejected"
+    ) {
       registrationStatus = profile.approval_status;
       const { error } = await supabase.auth.signOut();
-      if (error) console.error('Unable to end unapproved registration session.', error);
+      if (error)
+        console.error("Unable to end unapproved registration session.", error);
     } else {
       if (profile?.role === "super_admin") redirect("/super-admin");
       if (profile?.role === "kasir") redirect("/kasir");
