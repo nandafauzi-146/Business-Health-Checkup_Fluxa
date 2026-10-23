@@ -38,17 +38,7 @@ create table if not exists public.products (
   updated_at timestamptz not null default now()
 );
 
--- 4. Customers
-create table if not exists public.customers (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  phone text,
-  address text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
--- 5. Shifts
+-- 4. Shifts
 create table if not exists public.shifts (
   id uuid primary key default gen_random_uuid(),
   cashier_id uuid not null references public.profiles(id),
@@ -70,11 +60,10 @@ create table if not exists public.sales (
   invoice_number text not null unique,
   shift_id uuid references public.shifts(id) on delete set null,
   cashier_id uuid not null references public.profiles(id),
-  customer_id uuid references public.customers(id) on delete set null,
   total_amount integer not null check (total_amount >= 0),
   discount integer not null default 0 check (discount >= 0),
   final_amount integer not null check (final_amount >= 0),
-  payment_method text not null check (payment_method in ('cash', 'qris', 'transfer', 'credit')),
+  payment_method text not null check (payment_method in ('cash', 'non_cash')),
   payment_status text not null default 'paid' check (payment_status in ('paid', 'unpaid', 'partial')),
   status text not null default 'completed' check (status in ('completed', 'voided')),
   void_reason text,
@@ -133,7 +122,6 @@ create table if not exists public.expenses (
 -- 11. Receivables (Kasbon / Piutang)
 create table if not exists public.receivables (
   id uuid primary key default gen_random_uuid(),
-  customer_id uuid not null references public.customers(id) on delete cascade,
   sale_id uuid references public.sales(id) on delete set null,
   total_amount integer not null check (total_amount > 0),
   paid_amount integer not null default 0 check (paid_amount >= 0),
@@ -150,7 +138,7 @@ create table if not exists public.receivable_payments (
   receivable_id uuid not null references public.receivables(id) on delete cascade,
   amount integer not null check (amount > 0),
   payment_date timestamptz not null default now(),
-  payment_method text not null check (payment_method in ('cash', 'qris', 'transfer')),
+  payment_method text not null check (payment_method in ('cash', 'non_cash')),
   note text,
   created_by uuid not null references public.profiles(id),
   created_at timestamptz not null default now()

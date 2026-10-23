@@ -41,16 +41,6 @@ create table if not exists public.products (
   updated_at timestamptz not null default now()
 );
 
--- 4. Customers
-create table if not exists public.customers (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  phone text,
-  address text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
 -- 5. Shifts
 create table if not exists public.shifts (
   id uuid primary key default gen_random_uuid(),
@@ -73,11 +63,10 @@ create table if not exists public.sales (
   invoice_number text not null unique,
   shift_id uuid references public.shifts(id) on delete set null,
   cashier_id uuid not null references public.profiles(id),
-  customer_id uuid references public.customers(id) on delete set null,
   total_amount integer not null check (total_amount >= 0),
   discount integer not null default 0 check (discount >= 0),
   final_amount integer not null check (final_amount >= 0),
-  payment_method text not null check (payment_method in ('cash', 'qris', 'transfer', 'credit')),
+  payment_method text not null check (payment_method in ('cash', 'non_cash')),
   payment_status text not null default 'paid' check (payment_status in ('paid', 'unpaid', 'partial')),
   status text not null default 'completed' check (status in ('completed', 'voided')),
   void_reason text,
@@ -136,7 +125,6 @@ create table if not exists public.expenses (
 -- 11. Receivables (Kasbon / Piutang)
 create table if not exists public.receivables (
   id uuid primary key default gen_random_uuid(),
-  customer_id uuid not null references public.customers(id) on delete cascade,
   sale_id uuid references public.sales(id) on delete set null,
   total_amount integer not null check (total_amount > 0),
   paid_amount integer not null default 0 check (paid_amount >= 0),
@@ -153,7 +141,7 @@ create table if not exists public.receivable_payments (
   receivable_id uuid not null references public.receivables(id) on delete cascade,
   amount integer not null check (amount > 0),
   payment_date timestamptz not null default now(),
-  payment_method text not null check (payment_method in ('cash', 'qris', 'transfer')),
+  payment_method text not null check (payment_method in ('cash', 'non_cash')),
   note text,
   created_by uuid not null references public.profiles(id),
   created_at timestamptz not null default now()
@@ -203,7 +191,6 @@ create index if not exists idx_shifts_status on public.shifts(status);
 
 create index if not exists idx_sales_cashier on public.sales(cashier_id);
 create index if not exists idx_sales_shift on public.sales(shift_id);
-create index if not exists idx_sales_customer on public.sales(customer_id);
 create index if not exists idx_sales_status on public.sales(status);
 create index if not exists idx_sales_created_at on public.sales(created_at desc);
 
@@ -216,7 +203,6 @@ create index if not exists idx_stock_movements_created_at on public.stock_moveme
 create index if not exists idx_expenses_category on public.expenses(category_id);
 create index if not exists idx_expenses_date on public.expenses(expense_date desc);
 
-create index if not exists idx_receivables_customer on public.receivables(customer_id);
 create index if not exists idx_receivables_status on public.receivables(status);
 
 create index if not exists idx_receivable_payments_receivable on public.receivable_payments(receivable_id);
@@ -299,8 +285,6 @@ create trigger trg_categories_updated_at before update on public.categories
 create trigger trg_products_updated_at before update on public.products
   for each row execute function public.handle_updated_at();
 
-create trigger trg_customers_updated_at before update on public.customers
-  for each row execute function public.handle_updated_at();
 
 create trigger trg_shifts_updated_at before update on public.shifts
   for each row execute function public.handle_updated_at();
@@ -475,7 +459,6 @@ $$;
 -- Parameter p_items berformat JSON array: [{"product_id": "...", "quantity": 2}, ...]
 create or replace function public.create_sale(
   p_shift_id uuid,
-  p_customer_id uuid,
   p_payment_method text,
   p_discount integer default 0,
   p_items jsonb default '[]'::jsonb
@@ -513,19 +496,18 @@ begin
     raise exception 'Keranjang belanja tidak boleh kosong.';
   end if;
 
-  if p_payment_method not in ('cash', 'qris', 'transfer', 'credit') then
+  if p_payment_method not in ('cash', 'non_cash') then
     raise exception 'Metode pembayaran tidak valid.';
   end if;
 
-  -- Buat invoice number: INV-YYYYMMDD-XXXXX
-  v_invoice_number := 'INV-' || to_char(now(), 'YYYYMMDD') || '-' || upper(substr(md5(random()::text), 1, 6));
+  -- Buat nomor transaksi: TRKFLX-YYYYMMDD-XXXXX
+  v_invoice_number := 'TRKFLX-' || to_char(now(), 'YYYYMMDD') || '-' || upper(substr(md5(random()::text), 1, 6));
 
   -- Buat header sales terlebih dahulu (total diupdate setelah hitung item)
   insert into public.sales (
     invoice_number,
     shift_id,
     cashier_id,
-    customer_id,
     total_amount,
     discount,
     final_amount,
@@ -536,7 +518,6 @@ begin
     v_invoice_number,
     p_shift_id,
     v_cashier_id,
-    p_customer_id,
     0,
     v_discount,
     0,
@@ -621,29 +602,6 @@ begin
   set total_amount = v_total_amount,
       final_amount = v_final_amount
   where id = v_sale_id;
-
-  -- Jika metode pembayaran adalah 'credit' (kasbon), otomatis masukkan ke receivables
-  if p_payment_method = 'credit' then
-    if p_customer_id is null then
-      raise exception 'Pelanggan wajib dipilih untuk transaksi kasbon / kredit.';
-    end if;
-
-    insert into public.receivables (
-      customer_id,
-      sale_id,
-      total_amount,
-      paid_amount,
-      status,
-      note
-    ) values (
-      p_customer_id,
-      v_sale_id,
-      v_final_amount,
-      0,
-      'unpaid',
-      'Kasbon dari transaksi ' || v_invoice_number
-    );
-  end if;
 
   return v_sale_id;
 end;
@@ -792,31 +750,7 @@ create policy "Produk dapat dikelola oleh admin dan owner"
   using (public.is_admin_or_owner())
   with check (public.is_admin_or_owner());
 
--- 4. CUSTOMERS
-alter table public.customers enable row level security;
-
-create policy "Pelanggan dapat dibaca oleh staf"
-  on public.customers for select
-  to authenticated
-  using (public.is_staff());
-
-create policy "Pelanggan dapat ditambahkan atau diubah oleh staf"
-  on public.customers for insert
-  to authenticated
-  with check (public.is_staff());
-
-create policy "Pelanggan dapat diedit oleh staf"
-  on public.customers for update
-  to authenticated
-  using (public.is_staff())
-  with check (public.is_staff());
-
-create policy "Pelanggan hanya dapat dihapus oleh admin atau owner"
-  on public.customers for delete
-  to authenticated
-  using (public.is_admin_or_owner());
-
--- 5. SHIFTS
+-- 4. SHIFTS
 alter table public.shifts enable row level security;
 
 create policy "Shifts dapat dibaca oleh kasir pemilik atau admin/owner"
@@ -935,7 +869,7 @@ select
   count(s.id)::integer as transaction_count,
   coalesce(sum(s.final_amount), 0)::integer as total_revenue,
   coalesce(sum(case when s.payment_method = 'cash' then s.final_amount else 0 end), 0)::integer as cash_revenue,
-  coalesce(sum(case when s.payment_method in ('qris', 'transfer') then s.final_amount else 0 end), 0)::integer as non_cash_revenue,
+  coalesce(sum(case when s.payment_method in ('non_cash', 'qris', 'transfer') then s.final_amount else 0 end), 0)::integer as non_cash_revenue,
   coalesce(sum(case when s.payment_method = 'credit' then s.final_amount else 0 end), 0)::integer as credit_revenue
 from public.sales s
 where s.status = 'completed'
@@ -960,7 +894,7 @@ left join public.categories c on c.id = p.category_id
 where p.is_active = true
 order by p.stock asc;
 -- supabase/seed.sql
--- Data Dummy: Kategori, Produk, Pelanggan, Kategori Pengeluaran
+-- Data Dummy: Kategori, Produk, Kategori Pengeluaran
 
 -- 1. Kategori Produk
 insert into public.categories (name, description) values
@@ -980,12 +914,6 @@ insert into public.products (category_id, name, sku, barcode, buy_price, sell_pr
   ((select id from public.categories where name = 'Sembako'), 'Minyak Goreng Sawit 1L', 'SBK-002', '8993003002', 15000, 18500, 40, 10, 'pouch', true),
   ((select id from public.categories where name = 'Makanan Berat'), 'Nasi Goreng Spesial', 'MKN-001', '8994004001', 12000, 22000, 40, 5, 'porsi', true)
 on conflict (sku) do nothing;
-
--- 3. Pelanggan Tetap
-insert into public.customers (name, phone, address) values
-  ('Budi Santoso', '081234567890', 'Jl. Merdeka No. 12, Sleman'),
-  ('Siti Rahmawati', '085712345678', 'Jl. Kaliurang KM 5, Sleman'),
-  ('Warung Bu Joko', '081398765432', 'Jl. Palagan No. 45, Sleman');
 
 -- 4. Kategori Biaya Operasional
 insert into public.expense_categories (name, description) values

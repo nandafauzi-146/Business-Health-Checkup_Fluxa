@@ -45,31 +45,7 @@ create policy "Produk dapat dikelola oleh admin dan owner"
   using (public.is_admin_or_owner())
   with check (public.is_admin_or_owner());
 
--- 4. CUSTOMERS
-alter table public.customers enable row level security;
-
-create policy "Pelanggan dapat dibaca oleh staf"
-  on public.customers for select
-  to authenticated
-  using (public.is_staff());
-
-create policy "Pelanggan dapat ditambahkan atau diubah oleh staf"
-  on public.customers for insert
-  to authenticated
-  with check (public.is_staff());
-
-create policy "Pelanggan dapat diedit oleh staf"
-  on public.customers for update
-  to authenticated
-  using (public.is_staff())
-  with check (public.is_staff());
-
-create policy "Pelanggan hanya dapat dihapus oleh admin atau owner"
-  on public.customers for delete
-  to authenticated
-  using (public.is_admin_or_owner());
-
--- 5. SHIFTS
+-- 4. SHIFTS
 alter table public.shifts enable row level security;
 
 create policy "Shifts dapat dibaca oleh kasir pemilik atau admin/owner"
@@ -77,7 +53,7 @@ create policy "Shifts dapat dibaca oleh kasir pemilik atau admin/owner"
   to authenticated
   using (cashier_id = auth.uid() or public.is_admin_or_owner());
 
--- 6. SALES (Hanya SELECT - mutasi lewat RPC create_sale & void_sale)
+-- 5. SALES (Hanya SELECT - mutasi lewat RPC create_sale & void_sale)
 alter table public.sales enable row level security;
 
 create policy "Sales dapat dibaca oleh kasir pembuat atau admin/owner"
@@ -85,7 +61,7 @@ create policy "Sales dapat dibaca oleh kasir pembuat atau admin/owner"
   to authenticated
   using (cashier_id = auth.uid() or public.is_admin_or_owner());
 
--- 7. SALE_ITEMS (Hanya SELECT - mutasi lewat RPC create_sale)
+-- 6. SALE_ITEMS (Hanya SELECT - mutasi lewat RPC create_sale)
 alter table public.sale_items enable row level security;
 
 create policy "Sale items dapat dibaca oleh staf pemilik transaksi atau admin/owner"
@@ -99,7 +75,7 @@ create policy "Sale items dapat dibaca oleh staf pemilik transaksi atau admin/ow
     )
   );
 
--- 8. STOCK_MOVEMENTS (Hanya SELECT - mutasi lewat RPC)
+-- 7. STOCK_MOVEMENTS (Hanya SELECT - mutasi lewat RPC)
 alter table public.stock_movements enable row level security;
 
 create policy "Pergerakan stok hanya dapat dilihat oleh admin dan owner"

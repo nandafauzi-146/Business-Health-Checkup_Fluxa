@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseAdminClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
+import { getUserFacingError } from "@/lib/user-facing-error";
 
 function getErrorMessage(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback;
+  return getUserFacingError(error, fallback);
 }
 
 function getAdminClient() {
@@ -103,7 +104,7 @@ export async function POST(req: Request) {
       });
 
     if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 400 });
+      return NextResponse.json({ error: getErrorMessage(authError, "Akun belum dapat dibuat. Silakan periksa data dan coba lagi.") }, { status: 400 });
     }
 
     const createdUser = authData.user;
@@ -259,8 +260,9 @@ export async function PUT(req: Request) {
       .eq("id", id);
 
     if (updateProfErr) {
+      console.error("Unable to update user profile:", updateProfErr);
       return NextResponse.json(
-        { error: updateProfErr.message },
+        { error: "Data profil belum dapat diperbarui. Silakan coba lagi." },
         { status: 400 },
       );
     }
@@ -280,7 +282,19 @@ export async function PUT(req: Request) {
       authUpdatePayload.password = password.trim();
     }
 
-    await adminClient.auth.admin.updateUserById(id, authUpdatePayload);
+    const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(
+      id,
+      authUpdatePayload,
+    );
+    if (authUpdateError) {
+      console.error("Auth account update failed after profile update:", authUpdateError);
+      return NextResponse.json(
+        {
+          error: "Profil tersimpan, tetapi perubahan pada akun belum dapat diselesaikan. Silakan hubungi Admin.",
+        },
+        { status: 502 },
+      );
+    }
 
     return NextResponse.json({
       success: true,

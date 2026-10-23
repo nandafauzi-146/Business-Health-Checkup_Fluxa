@@ -21,9 +21,6 @@ create trigger trg_categories_updated_at before update on public.categories
 create trigger trg_products_updated_at before update on public.products
   for each row execute function public.handle_updated_at();
 
-create trigger trg_customers_updated_at before update on public.customers
-  for each row execute function public.handle_updated_at();
-
 create trigger trg_shifts_updated_at before update on public.shifts
   for each row execute function public.handle_updated_at();
 

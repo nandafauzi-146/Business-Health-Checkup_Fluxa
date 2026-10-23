@@ -366,9 +366,9 @@ export default function LoginForm({ registrationStatus }: { registrationStatus?:
         if (signOutError) console.error('Unable to sign out an account without a readable profile.', signOutError)
 
         if (profileError?.message.includes('approval_status')) {
-          setError('Sistem persetujuan belum siap. Minta administrator menerapkan migrasi database terbaru, lalu coba masuk kembali.')
+          setError('Akses akun belum dapat diverifikasi. Silakan coba lagi atau hubungi Admin.')
         } else {
-          setError('Profil akses akun tidak dapat dibaca. Pastikan profil akun tersedia dan hubungi administrator.')
+          setError('Akses akun belum dapat diverifikasi. Silakan hubungi Admin.')
         }
         return
       }

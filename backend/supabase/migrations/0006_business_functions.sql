@@ -105,7 +105,6 @@ $$;
 -- Parameter p_items berformat JSON array: [{"product_id": "...", "quantity": 2}, ...]
 create or replace function public.create_sale(
   p_shift_id uuid,
-  p_customer_id uuid,
   p_payment_method text,
   p_discount integer default 0,
   p_items jsonb default '[]'::jsonb
@@ -143,19 +142,18 @@ begin
     raise exception 'Keranjang belanja tidak boleh kosong.';
   end if;
 
-  if p_payment_method not in ('cash', 'qris', 'transfer', 'credit') then
+  if p_payment_method not in ('cash', 'non_cash') then
     raise exception 'Metode pembayaran tidak valid.';
   end if;
 
-  -- Buat invoice number: INV-YYYYMMDD-XXXXX
-  v_invoice_number := 'INV-' || to_char(now(), 'YYYYMMDD') || '-' || upper(substr(md5(random()::text), 1, 6));
+  -- Buat nomor transaksi: TRKFLX-YYYYMMDD-XXXXX
+  v_invoice_number := 'TRKFLX-' || to_char(now(), 'YYYYMMDD') || '-' || upper(substr(md5(random()::text), 1, 6));
 
   -- Buat header sales terlebih dahulu (total diupdate setelah hitung item)
   insert into public.sales (
     invoice_number,
     shift_id,
     cashier_id,
-    customer_id,
     total_amount,
     discount,
     final_amount,
@@ -166,12 +164,11 @@ begin
     v_invoice_number,
     p_shift_id,
     v_cashier_id,
-    p_customer_id,
     0,
     v_discount,
     0,
     p_payment_method,
-    case when p_payment_method = 'credit' then 'unpaid' else 'paid' end,
+    'paid',
     'completed'
   ) returning id into v_sale_id;
 
@@ -251,29 +248,6 @@ begin
   set total_amount = v_total_amount,
       final_amount = v_final_amount
   where id = v_sale_id;
-
-  -- Jika metode pembayaran adalah 'credit' (kasbon), otomatis masukkan ke receivables
-  if p_payment_method = 'credit' then
-    if p_customer_id is null then
-      raise exception 'Pelanggan wajib dipilih untuk transaksi kasbon / kredit.';
-    end if;
-
-    insert into public.receivables (
-      customer_id,
-      sale_id,
-      total_amount,
-      paid_amount,
-      status,
-      note
-    ) values (
-      p_customer_id,
-      v_sale_id,
-      v_final_amount,
-      0,
-      'unpaid',
-      'Kasbon dari transaksi ' || v_invoice_number
-    );
-  end if;
 
   return v_sale_id;
 end;

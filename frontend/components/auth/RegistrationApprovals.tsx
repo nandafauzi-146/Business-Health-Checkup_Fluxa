@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Check, Clock3, LoaderCircle, LogOut, RefreshCw, ShieldCheck, UserRound, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { getUserFacingError } from '@/lib/user-facing-error'
 import styles from './registration-approvals.module.css'
 
 interface Registration {
@@ -31,7 +32,7 @@ export default function RegistrationApprovals() {
       setRegistrations(result.registrations || [])
     } catch (loadError) {
       console.error('Unable to load approval queue.', loadError)
-      setError(loadError instanceof Error ? loadError.message : 'Terjadi kendala saat memuat pendaftar.')
+      setError(getUserFacingError(loadError, 'Daftar pendaftar belum dapat dimuat. Silakan coba lagi.'))
     } finally {
       setLoading(false)
     }
@@ -48,7 +49,7 @@ export default function RegistrationApprovals() {
         if (!cancelled) setRegistrations(result.registrations || [])
       } catch (loadError) {
         console.error('Unable to load approval queue.', loadError)
-        if (!cancelled) setError(loadError instanceof Error ? loadError.message : 'Terjadi kendala saat memuat pendaftar.')
+        if (!cancelled) setError(getUserFacingError(loadError, 'Daftar pendaftar belum dapat dimuat. Silakan coba lagi.'))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -77,7 +78,7 @@ export default function RegistrationApprovals() {
       setRegistrations((current) => current.filter((item) => item.id !== registration.id))
     } catch (processError) {
       console.error('Unable to process registration.', processError)
-      setError(processError instanceof Error ? processError.message : 'Terjadi kendala saat memproses pendaftaran.')
+      setError(getUserFacingError(processError, 'Persetujuan pendaftaran belum dapat diproses. Silakan coba lagi.'))
     } finally {
       setProcessingId(null)
     }

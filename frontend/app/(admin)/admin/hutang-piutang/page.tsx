@@ -6,33 +6,40 @@ export const metadata = { title: 'Kelola Hutang & Piutang Usaha — Fluxa Admin'
 export default async function AdminHutangPiutangPage() {
   const supabase = await createClient()
 
-  let items: DebtReceivableItem[] = []
-  try {
-    const { data, error } = await supabase
+  const [{ data, error }, { data: catData }] = await Promise.all([
+    supabase
       .from('supplier_payables')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(100)
+      .limit(100),
+    supabase
+      .from('debt_categories')
+      .select('id, name')
+      .order('name', { ascending: true })
+  ])
 
-    if (!error && data) {
-      items = data.map((d: any) => ({
-        id: d.id,
-        type: (d.type || 'payable') as 'payable' | 'receivable',
-        party_name: d.party_name || d.supplier_name || 'Mitra Usaha',
-        category: d.category || 'Supplier / Bahan Baku',
-        description: d.description || '',
-        total_amount: d.total_amount || 0,
-        paid_amount: d.paid_amount || 0,
-        remaining_amount: (d.total_amount || 0) - (d.paid_amount || 0),
-        due_date: d.due_date || null,
-        status: (d.status || 'unpaid') as 'unpaid' | 'partial' | 'paid',
-        note: d.note || null,
-        created_at: d.created_at
-      }))
-    }
-  } catch {
-    // Demo fallback inside component
-  }
+  const items: DebtReceivableItem[] = (data || []).map((item) => ({
+    id: item.id,
+    type: item.type || 'payable',
+    party_name: item.party_name || item.supplier_name || 'Mitra Usaha',
+    category: item.category || 'Supplier / Bahan Baku',
+    description: item.description || '',
+    total_amount: item.total_amount || 0,
+    paid_amount: item.paid_amount || 0,
+    remaining_amount: (item.total_amount || 0) - (item.paid_amount || 0),
+    due_date: item.due_date || null,
+    status: item.status || 'unpaid',
+    note: item.note || null,
+    created_at: item.created_at
+  }))
 
-  return <DebtReceivablesClient initialData={items} />
+  const categories = (catData || []).map((c) => ({ id: c.id, name: c.name }))
+
+  return (
+    <DebtReceivablesClient
+      initialData={items}
+      initialCategories={categories}
+      loadError={error ? 'Data hutang dan piutang belum dapat dimuat. Silakan coba lagi.' : null}
+    />
+  )
 }

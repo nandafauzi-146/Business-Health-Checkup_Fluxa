@@ -94,6 +94,10 @@ where email = 'operator@example.com';
 ```
 Simpan `SUPABASE_SERVICE_ROLE_KEY` hanya di environment server aplikasi. Jangan pernah mengeksposnya sebagai variabel `NEXT_PUBLIC_*`.
 
+Untuk menyimpan foto produk, jalankan migrasi `backend/supabase/migrations/0020_ensure_product_image_url.sql` pada proyek Supabase yang dipakai aplikasi. Migrasi ini idempoten: memastikan kolom `image_url` ada pada tabel `products` lalu meminta PostgREST memuat ulang cache skema. Migrasi ini diperlukan meskipun file 0012 sudah ada di repository.
+
+Jalankan migrasi `backend/supabase/migrations/0019_security_and_transaction_integrity.sql` pada proyek Supabase untuk mengunci perubahan role, memvalidasi checkout, menyediakan alur refund/pembayaran atomik, dan memakai metode pembayaran penjualan `cash` atau `non_cash`. Migrasi ini juga menghapus tabel `customers` serta relasi `customer_id` dari penjualan/piutang; riwayat invoice tidak lagi bergantung pada data pelanggan. Nilai metode pembayaran lama `qris`/`transfer` tetap tersimpan dan ditampilkan sebagai Non-Tunai.
+
 ---
 
 ## Aturan Utama Pengembangan

@@ -5,6 +5,7 @@ import { Package, Search, PlusCircle, ArrowDownRight, ArrowUpRight, History, Ale
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
 import { createClient } from '@/lib/supabase/client'
+import { getUserFacingError } from '@/lib/user-facing-error'
 
 interface ProductStock {
   id: string
@@ -26,6 +27,10 @@ interface StockMovement {
   current_stock: number
   note: string | null
   product_name?: string
+}
+
+function getStockAdjustmentError(error: unknown): string {
+  return getUserFacingError(error, 'Stok belum dapat diperbarui. Silakan coba lagi.')
 }
 
 export default function StockManagementClient({
@@ -102,7 +107,8 @@ export default function StockManagementClient({
 
       if (error) throw error
 
-      const finalStock = newStock !== null ? newStock : calculatePreviewStock()
+      if (newStock === null) throw new Error('Database tidak mengembalikan stok terbaru.')
+      const finalStock = newStock
 
       showNotification(`Stok ${selectedProduct.name} berhasil diperbarui menjadi ${finalStock} ${selectedProduct.unit}.`, 'ok')
 
@@ -120,25 +126,10 @@ export default function StockManagementClient({
       }
       setMovements(prev => [newMovementItem, ...prev])
       setModalOpen(false)
-    } catch (err: any) {
-      console.error('Error adjusting stock:', err)
-      // Fallback demo
-      const finalStock = calculatePreviewStock()
-      showNotification(`Stok ${selectedProduct.name} diperbarui menjadi ${finalStock} ${selectedProduct.unit} (simulasi mode).`, 'ok')
-      setProducts(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, stock: finalStock } : p))
-
-      const newMovementItem: StockMovement = {
-        id: Math.random().toString(),
-        created_at: new Date().toISOString(),
-        type: adjustType,
-        quantity: adjustType === 'in' ? adjustQty : adjustType === 'out' ? -adjustQty : adjustQty,
-        previous_stock: selectedProduct.stock,
-        current_stock: finalStock,
-        note: adjustNote.trim() || 'Penyesuaian stok manual',
-        product_name: selectedProduct.name
-      }
-      setMovements(prev => [newMovementItem, ...prev])
-      setModalOpen(false)
+    } catch (err: unknown) {
+      const message = getStockAdjustmentError(err)
+      console.error('Error adjusting stock:', message, err)
+      showNotification(message, 'bad')
     } finally {
       setIsSubmitting(false)
     }

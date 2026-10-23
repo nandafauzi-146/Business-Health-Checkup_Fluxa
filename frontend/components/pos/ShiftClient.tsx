@@ -47,67 +47,13 @@ export interface ShiftItem {
   status: 'open' | 'closed'
 }
 
-const DEFAULT_DEMO_SHIFTS: ShiftItem[] = [
-  {
-    id: 's-demo-1',
-    cashier_id: 'c1',
-    cashier_name: 'Budi Santoso',
-    opened_at: '2026-10-08T07:30:00Z',
-    closed_at: '2026-10-08T15:30:00Z',
-    initial_cash: 500000,
-    expected_cash: 3850000,
-    final_cash: 3850000,
-    difference: 0,
-    status: 'closed',
-    note: 'Kas cocok sempurna, sesi shift pagi lancar'
-  },
-  {
-    id: 's-demo-2',
-    cashier_id: 'c2',
-    cashier_name: 'Siti Rahma',
-    opened_at: '2026-10-07T14:00:00Z',
-    closed_at: '2026-10-07T22:00:00Z',
-    initial_cash: 500000,
-    expected_cash: 4250000,
-    final_cash: 4230000,
-    difference: -20000,
-    status: 'closed',
-    note: 'Selisih Rp20.000 terpakai untuk pembulatan kembalian receh'
-  },
-  {
-    id: 's-demo-3',
-    cashier_id: 'c1',
-    cashier_name: 'Budi Santoso',
-    opened_at: '2026-10-07T07:30:00Z',
-    closed_at: '2026-10-07T15:30:00Z',
-    initial_cash: 500000,
-    expected_cash: 3600000,
-    final_cash: 3625000,
-    difference: 25000,
-    status: 'closed',
-    note: 'Kelebihan kas tip sukarela pelanggan umum'
-  },
-  {
-    id: 's-demo-4',
-    cashier_id: 'c3',
-    cashier_name: 'Ahmad Fauzi',
-    opened_at: '2026-10-06T14:00:00Z',
-    closed_at: '2026-10-06T22:00:00Z',
-    initial_cash: 500000,
-    expected_cash: 5120000,
-    final_cash: 5120000,
-    difference: 0,
-    status: 'closed',
-    note: 'Rekonsiliasi seimbang dan tercatat akurat'
-  }
-]
-
 interface Props {
   activeShift?: ShiftItem | null
   allActiveShifts?: ShiftItem[]
   recentShifts: ShiftItem[]
   userId: string
   role?: 'kasir' | 'admin' | 'owner'
+  loadError?: string | null
 }
 
 export default function ShiftClient({
@@ -115,7 +61,8 @@ export default function ShiftClient({
   allActiveShifts: initialAllActive = [],
   recentShifts: initialRecent = [],
   userId,
-  role = 'admin'
+  role = 'admin',
+  loadError,
 }: Props) {
   const supabase = createClient()
   const [activeShift, setActiveShift] = useState<ShiftItem | null>(initialShift || null)
@@ -126,9 +73,7 @@ export default function ShiftClient({
       ? [initialShift]
       : []
   )
-  const [recentShifts, setRecentShifts] = useState<ShiftItem[]>(
-    initialRecent.length > 0 ? initialRecent : DEFAULT_DEMO_SHIFTS
-  )
+  const [recentShifts, setRecentShifts] = useState<ShiftItem[]>(initialRecent)
 
   const [toast, setToast] = useState('')
   const [openModal, setOpenModal] = useState(false)
@@ -264,6 +209,12 @@ export default function ShiftClient({
           </button>
         )}
       </div>
+
+      {loadError && (
+        <div role="alert" style={{ marginBottom: 16, padding: 12, borderRadius: 10, color: 'var(--bad)', background: 'var(--bads)' }}>
+          Data shift belum dapat dimuat. Silakan coba lagi.
+        </div>
+      )}
 
       {/* 4 Kartu KPI Interaktif */}
       <div style={{

@@ -27,7 +27,7 @@ select
   count(s.id)::integer as transaction_count,
   coalesce(sum(s.final_amount), 0)::integer as total_revenue,
   coalesce(sum(case when s.payment_method = 'cash' then s.final_amount else 0 end), 0)::integer as cash_revenue,
-  coalesce(sum(case when s.payment_method in ('qris', 'transfer') then s.final_amount else 0 end), 0)::integer as non_cash_revenue,
+  coalesce(sum(case when s.payment_method in ('non_cash', 'qris', 'transfer') then s.final_amount else 0 end), 0)::integer as non_cash_revenue,
   coalesce(sum(case when s.payment_method = 'credit' then s.final_amount else 0 end), 0)::integer as credit_revenue
 from public.sales s
 where s.status = 'completed'

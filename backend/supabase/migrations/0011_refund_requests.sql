@@ -53,3 +53,5 @@ create policy "admin_owner_update_refund_requests"
   to authenticated
   using (public.is_admin_or_owner())
   with check (public.is_admin_or_owner());
+
+grant select, insert, update on table public.refund_requests to authenticated;

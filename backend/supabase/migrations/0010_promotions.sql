@@ -24,6 +24,7 @@ create index if not exists idx_promotions_is_active on public.promotions(is_acti
 create index if not exists idx_promotions_dates on public.promotions(start_date, end_date);
 
 -- Trigger updated_at otomatis
+drop trigger if exists trg_promotions_updated_at on public.promotions;
 create trigger trg_promotions_updated_at
   before update on public.promotions
   for each row execute function public.handle_updated_at();
@@ -32,14 +33,31 @@ create trigger trg_promotions_updated_at
 alter table public.promotions enable row level security;
 
 -- Staf (Kasir, Admin, Owner) dapat membaca promo aktif untuk transaksi POS
+drop policy if exists "Promosi dapat dibaca oleh staf" on public.promotions;
 create policy "Promosi dapat dibaca oleh staf"
   on public.promotions for select
   to authenticated
   using (public.is_staff());
 
 -- Hanya Admin dan Owner yang dapat membuat, mengubah, dan menghapus promo
+drop policy if exists "Promosi dapat dikelola oleh admin dan owner" on public.promotions;
 create policy "Promosi dapat dikelola oleh admin dan owner"
   on public.promotions for all
   to authenticated
   using (public.is_admin_or_owner())
   with check (public.is_admin_or_owner());
+
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+    and not exists (
+      select 1
+      from pg_publication_tables
+      where pubname = 'supabase_realtime'
+        and schemaname = 'public'
+        and tablename = 'promotions'
+    ) then
+    alter publication supabase_realtime add table public.promotions;
+  end if;
+end
+$$;

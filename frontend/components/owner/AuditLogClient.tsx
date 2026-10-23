@@ -327,17 +327,20 @@ export default function AuditLogClient({
 
     switch (log.action) {
       case 'CREATE_SALE':
+        const saleMethod = ['qris', 'transfer', 'non_cash'].includes(nd.payment_method)
+          ? 'Non-Tunai'
+          : (nd.payment_method || 'tunai').toUpperCase()
         return (
           <div>
-            <strong>Transaksi Penjualan</strong> nota <code style={{ background: 'var(--bg)', padding: '2px 5px', borderRadius: 4 }}>{nd.invoice_number || 'INV'}</code> senilai{' '}
-            <strong style={{ color: 'var(--ok)' }}>{formatRp(nd.final_amount || 0)}</strong> via <em>{(nd.payment_method || 'tunai').toUpperCase()}</em>
+            <strong>Transaksi Penjualan</strong> No. Transaksi <code style={{ background: 'var(--bg)', padding: '2px 5px', borderRadius: 4 }}>{nd.invoice_number || 'Tidak tersedia'}</code> senilai{' '}
+            <strong style={{ color: 'var(--ok)' }}>{formatRp(nd.final_amount || 0)}</strong> via <em>{saleMethod}</em>
             {nd.discount ? ` (Diskon: ${formatRp(nd.discount)})` : ''}.
           </div>
         )
       case 'VOID_SALE':
         return (
           <div>
-            <strong style={{ color: 'var(--bad)' }}>Pembatalan / Void Transaksi</strong> nota{' '}
+            <strong style={{ color: 'var(--bad)' }}>Pembatalan / Void Transaksi</strong> No. Transaksi{' '}
             <code style={{ background: 'var(--bg)', padding: '2px 5px', borderRadius: 4 }}>{nd.invoice_number}</code> senilai{' '}
             <strong>{formatRp(nd.final_amount || 0)}</strong>.
             <div style={{ fontSize: 12, color: 'var(--bad)', marginTop: 2 }}>
@@ -545,7 +548,7 @@ export default function AuditLogClient({
           <div className="kpi-icon" style={{ background: 'var(--bads)', color: 'var(--bad)' }}>
             <ShieldAlert size={20} />
           </div>
-          <div className="kpi-label">Pembatalan Nota (Void)</div>
+          <div className="kpi-label">Pembatalan Transaksi (Void)</div>
           <div className="kpi-value" style={{ color: voidActions > 0 ? 'var(--bad)' : 'var(--ok)' }}>
             {voidActions} <span style={{ fontSize: 14, fontWeight: 500 }}>Transaksi</span>
           </div>
@@ -565,7 +568,7 @@ export default function AuditLogClient({
             <input
               id="search-audit-input"
               className="input"
-              placeholder="Cari nama kasir/admin, invoice, produk, alasan void..."
+              placeholder="Cari nama kasir/admin, nomor transaksi, produk, alasan void..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               style={{ paddingLeft: 36, width: '100%' }}

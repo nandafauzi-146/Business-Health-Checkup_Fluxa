@@ -153,33 +153,6 @@ export interface Database {
         };
         Relationships: [];
       };
-      customers: {
-        Row: {
-          id: string;
-          name: string;
-          phone: string | null;
-          address: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          name: string;
-          phone?: string | null;
-          address?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          name?: string;
-          phone?: string | null;
-          address?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
       shifts: {
         Row: {
           id: string;
@@ -231,11 +204,10 @@ export interface Database {
           invoice_number: string;
           shift_id: string | null;
           cashier_id: string;
-          customer_id: string | null;
           total_amount: number;
           discount: number;
           final_amount: number;
-          payment_method: "cash" | "qris" | "transfer" | "credit";
+          payment_method: "cash" | "non_cash";
           payment_status: "paid" | "unpaid" | "partial";
           status: "completed" | "voided";
           void_reason: string | null;
@@ -249,11 +221,10 @@ export interface Database {
           invoice_number: string;
           shift_id?: string | null;
           cashier_id: string;
-          customer_id?: string | null;
           total_amount: number;
           discount?: number;
           final_amount: number;
-          payment_method: "cash" | "qris" | "transfer" | "credit";
+          payment_method: "cash" | "non_cash";
           payment_status?: "paid" | "unpaid" | "partial";
           status?: "completed" | "voided";
           void_reason?: string | null;
@@ -267,11 +238,10 @@ export interface Database {
           invoice_number?: string;
           shift_id?: string | null;
           cashier_id?: string;
-          customer_id?: string | null;
           total_amount?: number;
           discount?: number;
           final_amount?: number;
-          payment_method?: "cash" | "qris" | "transfer" | "credit";
+          payment_method?: "cash" | "non_cash";
           payment_status?: "paid" | "unpaid" | "partial";
           status?: "completed" | "voided";
           void_reason?: string | null;
@@ -408,7 +378,6 @@ export interface Database {
       receivables: {
         Row: {
           id: string;
-          customer_id: string;
           sale_id: string | null;
           total_amount: number;
           paid_amount: number;
@@ -421,7 +390,6 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          customer_id: string;
           sale_id?: string | null;
           total_amount: number;
           paid_amount?: number;
@@ -433,7 +401,6 @@ export interface Database {
         };
         Update: {
           id?: string;
-          customer_id?: string;
           sale_id?: string | null;
           total_amount?: number;
           paid_amount?: number;
@@ -450,7 +417,7 @@ export interface Database {
           receivable_id: string;
           amount: number;
           payment_date: string;
-          payment_method: "cash" | "qris" | "transfer";
+          payment_method: "cash" | "non_cash";
           note: string | null;
           created_by: string;
           created_at: string;
@@ -460,7 +427,7 @@ export interface Database {
           receivable_id: string;
           amount: number;
           payment_date?: string;
-          payment_method: "cash" | "qris" | "transfer";
+          payment_method: "cash" | "non_cash";
           note?: string | null;
           created_by: string;
           created_at?: string;
@@ -470,7 +437,7 @@ export interface Database {
           receivable_id?: string;
           amount?: number;
           payment_date?: string;
-          payment_method?: "cash" | "qris" | "transfer";
+          payment_method?: "cash" | "non_cash";
           note?: string | null;
           created_by?: string;
           created_at?: string;
@@ -615,10 +582,10 @@ export interface Database {
       create_sale: {
         Args: {
           p_shift_id: string;
-          p_customer_id: string | null;
-          p_payment_method: "cash" | "qris" | "transfer" | "credit";
+          p_payment_method: "cash" | "non_cash";
           p_discount?: number;
           p_items: { product_id: string; quantity: number }[] | Json;
+          p_customer_id?: string | null;
         };
         Returns: string;
       };

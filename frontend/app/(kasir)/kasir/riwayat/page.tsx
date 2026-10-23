@@ -19,7 +19,6 @@ export default async function SalesHistoryPage() {
       status,
       void_reason,
       voided_at,
-      customers (name),
       profiles:cashier_id (full_name),
       sale_items (
         id,
@@ -48,7 +47,6 @@ export default async function SalesHistoryPage() {
     void_reason: s.void_reason,
     voided_at: s.voided_at,
     cashier_name: s.profiles?.full_name || null,
-    customer_name: s.customers?.name || null,
     items: (s.sale_items || []).map((item: any) => ({
       id: item.id,
       product_name: item.products?.name || 'Produk',

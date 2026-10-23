@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
+import { getUserFacingError } from '@/lib/user-facing-error'
 
 function getAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
@@ -48,7 +49,9 @@ export async function POST(request: Request) {
     })
 
     if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 400 })
+      return NextResponse.json({
+        error: getUserFacingError(authError, 'Pendaftaran belum dapat diproses. Periksa kembali data dan coba lagi.'),
+      }, { status: 400 })
     }
 
     const user = authData.user

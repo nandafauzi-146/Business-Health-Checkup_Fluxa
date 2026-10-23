@@ -6,6 +6,7 @@ import { Sparkles, RefreshCw, Key, CheckCircle, AlertTriangle, Bot, Activity, La
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
 import { PageHeader } from '@/components/layout/Topbar'
 import { FinancialHealthInput, BusinessHealthDiagnosis } from '@intelligence/index'
+import { getUserFacingError } from '@/lib/user-facing-error'
 
 interface Props {
   initialInput: FinancialHealthInput
@@ -191,7 +192,7 @@ export default function BusinessHealthClient({
       }
     } catch (err: any) {
       console.error('Error generating AI checkup:', err)
-      alert('Error memproses rapor AI: ' + err.message)
+      alert(getUserFacingError(err, 'Rapor kesehatan belum dapat diproses. Silakan coba lagi.'))
     } finally {
       setLoading(false)
     }

@@ -5,18 +5,11 @@ import { Plus, Search, Package, Edit, Trash2, X, Check, Filter, Camera, Image as
 import { SectionCard, StatusTag } from '@/components/ui/Cards'
 import { PageHeader } from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
+import { getUserFacingError } from '@/lib/user-facing-error'
 
 function formatRp(n: number) {
   return 'Rp' + new Intl.NumberFormat('id-ID').format(n)
 }
-
-const DEMO_PRODUCTS = [
-  { id: '1', name: 'Kopi Arabika 250g', sku: 'KA-001', category_id: '1', categories: { name: 'Minuman' }, buy_price: 35000, sell_price: 55000, stock: 3, min_stock: 10, unit: 'pcs', is_active: true, image_url: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=300&q=80' },
-  { id: '2', name: 'Gula Pasir 1kg', sku: 'GP-001', category_id: '2', categories: { name: 'Bahan Baku' }, buy_price: 14000, sell_price: 18000, stock: 5, min_stock: 20, unit: 'kg', is_active: true, image_url: 'https://images.unsplash.com/photo-1581441363689-1f3c3c414635?w=300&q=80' },
-  { id: '3', name: 'Susu UHT Full Cream', sku: 'SU-001', category_id: '1', categories: { name: 'Minuman' }, buy_price: 15000, sell_price: 22000, stock: 18, min_stock: 12, unit: 'liter', is_active: true, image_url: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300&q=80' },
-  { id: '4', name: 'Teh Hijau Celup', sku: 'TH-001', category_id: '1', categories: { name: 'Minuman' }, buy_price: 8000, sell_price: 14000, stock: 45, min_stock: 15, unit: 'kotak', is_active: true, image_url: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=300&q=80' },
-  { id: '5', name: 'Roti Tawar Gandum', sku: 'RT-001', category_id: '3', categories: { name: 'Makanan' }, buy_price: 12000, sell_price: 18000, stock: 8, min_stock: 10, unit: 'bungkus', is_active: false, image_url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&q=80' },
-]
 
 interface Category {
   id: string
@@ -41,11 +34,62 @@ interface Product {
 interface Props {
   products: Product[]
   categories: Category[]
+  loadError?: string | null
 }
 
-export default function ProductsClient({ products: initialProducts, categories }: Props) {
+function getProductSaveError(error: unknown): { message: string; details: Record<string, unknown> } {
+  if (!error || typeof error !== 'object') {
+    return {
+      message: getUserFacingError(error, 'Produk belum dapat disimpan. Periksa kembali data dan coba lagi.'),
+      details: {},
+    }
+  }
+
+  const read = (key: string): unknown => {
+    return Reflect.get(error, key)
+  }
+  const details = Object.fromEntries(
+    ['name', 'message', 'code', 'details', 'hint', 'status', 'statusCode']
+      .flatMap(key => {
+        const value = read(key)
+        return typeof value === 'string' || typeof value === 'number' ? [[key, value]] : []
+      }),
+  )
+  const errorMessage = read('message')
+  if (read('code') === 'PGRST204' && typeof errorMessage === 'string' && errorMessage.includes('image_url')) {
+    return {
+      message: 'Foto produk belum dapat disimpan saat ini. Silakan coba lagi atau hubungi Admin.',
+      details,
+    }
+  }
+
+  return {
+    message: getUserFacingError(error, 'Produk belum dapat disimpan. Periksa kembali data dan coba lagi.'),
+    details,
+  }
+}
+
+function isMissingImageUrlColumn(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const code = Reflect.get(error, 'code')
+  const message = Reflect.get(error, 'message')
+  return code === 'PGRST204' &&
+    typeof message === 'string' &&
+    message.includes('image_url')
+}
+
+function notifyProductsUpdated() {
+  window.dispatchEvent(new Event('fluxa_products_updated'))
+  try {
+    localStorage.setItem('fluxa_products_updated', String(Date.now()))
+  } catch (err) {
+    console.error('Could not broadcast product update:', err)
+  }
+}
+
+export default function ProductsClient({ products: initialProducts, categories, loadError }: Props) {
   const supabase = createClient()
-  const [products, setProducts] = useState<Product[]>(initialProducts.length > 0 ? initialProducts : DEMO_PRODUCTS)
+  const [products, setProducts] = useState<Product[]>(initialProducts)
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
@@ -166,101 +210,107 @@ export default function ProductsClient({ products: initialProducts, categories }
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.name || !form.sell_price) return
+    const sellPrice = Number(form.sell_price)
+    const buyPrice = form.buy_price ? Number(form.buy_price) : 0
+    const stock = form.stock ? Number(form.stock) : 0
+    const minStock = form.min_stock ? Number(form.min_stock) : 5
+    if (!form.name.trim() || !form.sell_price || !Number.isInteger(sellPrice) || sellPrice <= 0) {
+      showToast('Nama produk dan harga jual berupa angka bulat lebih besar dari 0 wajib diisi.', 'bad')
+      return
+    }
+    if (![buyPrice, stock, minStock].every(value => Number.isInteger(value) && value >= 0)) {
+      showToast('Harga modal, stok, dan batas stok harus berupa angka bulat nol atau lebih.', 'bad')
+      return
+    }
     setSaving(true)
 
     try {
-      const payload: any = {
+      let imageWasOmitted = false
+      const payload = {
         name: form.name.trim(),
         sku: form.sku.trim() || null,
-        buy_price: parseInt(form.buy_price) || 0,
-        sell_price: parseInt(form.sell_price) || 0,
-        min_stock: parseInt(form.min_stock) || 5,
+        buy_price: buyPrice,
+        sell_price: sellPrice,
+        min_stock: minStock,
         unit: form.unit.trim() || 'pcs',
         category_id: form.category_id || null,
         image_url: form.image_url ? form.image_url.trim() : null,
         is_active: form.is_active,
-        updated_at: new Date().toISOString()
       }
 
-      const categoryObj = categories.find(c => c.id === form.category_id)
-
       if (editingProduct) {
-        const { error } = await supabase
+        let result = await supabase
           .from('products')
           .update(payload)
           .eq('id', editingProduct.id)
+          .select('*')
+          .single()
 
-        if (error) throw error
+        if (isMissingImageUrlColumn(result.error)) {
+          const { image_url: omittedImageUrl, ...payloadWithoutImage } = payload
+          void omittedImageUrl
+          result = await supabase
+            .from('products')
+            .update(payloadWithoutImage)
+            .eq('id', editingProduct.id)
+            .select('*')
+            .single()
+          imageWasOmitted = true
+        }
 
-        setProducts(prev => prev.map(p => p.id === editingProduct.id ? {
-          ...p,
-          ...payload,
-          categories: categoryObj ? { name: categoryObj.name } : p.categories
-        } : p))
+        if (result.error) throw result.error
+        const categoryName = categories.find(category => category.id === result.data.category_id)?.name
 
-        showToast(`Produk "${form.name}" berhasil diperbarui.`, 'ok')
+        const updatedProduct: Product = {
+          ...result.data,
+          categories: categoryName ? { name: categoryName } : null,
+        }
+
+        setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p))
+        notifyProductsUpdated()
+
+        showToast(
+          imageWasOmitted
+            ? `Data produk "${form.name}" tersimpan, tetapi foto belum dapat disimpan saat ini.`
+            : `Produk "${form.name}" berhasil diperbarui.`,
+          imageWasOmitted ? 'bad' : 'ok',
+        )
       } else {
-        payload.stock = parseInt(form.stock) || 0
-        const { data, error } = await supabase
+        const insertPayload = { ...payload, stock }
+        let result = await supabase
           .from('products')
-          .insert(payload)
+          .insert(insertPayload)
           .select('*, categories(name)')
           .single()
 
-        if (error) throw error
-
-        const newProd = data || {
-          id: Math.random().toString(),
-          ...payload,
-          categories: categoryObj ? { name: categoryObj.name } : null
+        if (isMissingImageUrlColumn(result.error)) {
+          const { image_url: omittedImageUrl, ...payloadWithoutImage } = insertPayload
+          void omittedImageUrl
+          result = await supabase
+            .from('products')
+            .insert(payloadWithoutImage)
+            .select('*, categories(name)')
+            .single()
+          imageWasOmitted = true
         }
 
-        setProducts(prev => [newProd, ...prev])
-        showToast(`Produk "${form.name}" berhasil ditambahkan.`, 'ok')
+        if (result.error) throw result.error
+
+        setProducts(prev => [result.data, ...prev])
+        notifyProductsUpdated()
+        showToast(
+          imageWasOmitted
+            ? `Produk "${form.name}" tersimpan, tetapi foto belum dapat disimpan saat ini.`
+            : `Produk "${form.name}" berhasil ditambahkan.`,
+          imageWasOmitted ? 'bad' : 'ok',
+        )
       }
 
       setShowDialog(false)
-    } catch (err: any) {
-      console.error('Error saving product:', err)
-      // Fallback for demo local testing
-      if (editingProduct) {
-        const categoryObj = categories.find(c => c.id === form.category_id)
-        setProducts(prev => prev.map(p => p.id === editingProduct.id ? {
-          ...p,
-          name: form.name,
-          sku: form.sku || null,
-          buy_price: parseInt(form.buy_price) || 0,
-          sell_price: parseInt(form.sell_price) || 0,
-          min_stock: parseInt(form.min_stock) || 5,
-          unit: form.unit || 'pcs',
-          category_id: form.category_id || null,
-          image_url: form.image_url ? form.image_url.trim() : null,
-          is_active: form.is_active,
-          categories: categoryObj ? { name: categoryObj.name } : p.categories
-        } : p))
-        showToast(`Produk "${form.name}" diperbarui (simulasi mode).`, 'ok')
-        setShowDialog(false)
-      } else {
-        const categoryObj = categories.find(c => c.id === form.category_id)
-        const dummy: Product = {
-          id: Math.random().toString(),
-          name: form.name,
-          sku: form.sku || null,
-          buy_price: parseInt(form.buy_price) || 0,
-          sell_price: parseInt(form.sell_price) || 0,
-          stock: parseInt(form.stock) || 0,
-          min_stock: parseInt(form.min_stock) || 5,
-          unit: form.unit || 'pcs',
-          category_id: form.category_id || null,
-          image_url: form.image_url ? form.image_url.trim() : null,
-          is_active: form.is_active,
-          categories: categoryObj ? { name: categoryObj.name } : null
-        }
-        setProducts(prev => [dummy, ...prev])
-        showToast(`Produk "${form.name}" ditambahkan (simulasi mode).`, 'ok')
-        setShowDialog(false)
-      }
+    } catch (err: unknown) {
+      const saveError = getProductSaveError(err)
+      console.error('Error saving product:', saveError.message, saveError.details)
+      showToast(saveError.message, 'bad')
     } finally {
       setSaving(false)
     }
@@ -269,18 +319,22 @@ export default function ProductsClient({ products: initialProducts, categories }
   const handleToggleStatus = async (p: Product) => {
     const nextStatus = !p.is_active
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('products')
         .update({ is_active: nextStatus, updated_at: new Date().toISOString() })
         .eq('id', p.id)
+        .select('id')
+        .maybeSingle()
 
       if (error) throw error
+      if (!data) throw new Error('Produk tidak ditemukan atau Anda tidak memiliki izin untuk mengubahnya.')
 
       setProducts(prev => prev.map(item => item.id === p.id ? { ...item, is_active: nextStatus } : item))
+      notifyProductsUpdated()
       showToast(`Status ${p.name} diubah menjadi ${nextStatus ? 'Aktif' : 'Nonaktif'}.`, 'ok')
     } catch (err: any) {
-      setProducts(prev => prev.map(item => item.id === p.id ? { ...item, is_active: nextStatus } : item))
-      showToast(`Status ${p.name} diubah menjadi ${nextStatus ? 'Aktif' : 'Nonaktif'} (simulasi).`, 'ok')
+      console.error('Error updating product status:', err)
+      showToast(getUserFacingError(err, `Status produk "${p.name}" belum dapat diperbarui. Silakan coba lagi.`), 'bad')
     }
   }
 
@@ -295,6 +349,12 @@ export default function ProductsClient({ products: initialProducts, categories }
           </button>
         }
       />
+
+      {loadError && (
+        <div role="alert" style={{ marginBottom: 16, padding: 12, borderRadius: 10, color: 'var(--bad)', background: 'var(--bads)' }}>
+          Data produk belum dapat dimuat. Silakan coba lagi.
+        </div>
+      )}
 
       {/* Filter & Search Bar */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
