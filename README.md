@@ -98,6 +98,19 @@ Untuk menyimpan foto produk, jalankan migrasi `backend/supabase/migrations/0020_
 
 Jalankan migrasi `backend/supabase/migrations/0019_security_and_transaction_integrity.sql` pada proyek Supabase untuk mengunci perubahan role, memvalidasi checkout, menyediakan alur refund/pembayaran atomik, dan memakai metode pembayaran penjualan `cash` atau `non_cash`. Migrasi ini juga menghapus tabel `customers` serta relasi `customer_id` dari penjualan/piutang; riwayat invoice tidak lagi bergantung pada data pelanggan. Nilai metode pembayaran lama `qris`/`transfer` tetap tersimpan dan ditampilkan sebagai Non-Tunai.
 
+### Modul Super Admin
+Console Super Admin tersedia di `/super-admin` dengan ringkasan platform, manajemen pengguna, persetujuan pendaftaran, pengelolaan trial, audit log, dan profil operator. Akses serta setiap endpoint pengelolaan memvalidasi sesi Super Admin di server. Perubahan role, status auth, persetujuan, dan trial dicatat pada tabel `audit_logs`.
+
+### Paket, Pembayaran, dan Laporan Subscription
+Jalankan migrasi `backend/supabase/migrations/0019_subscriptions_and_midtrans.sql` setelah migrasi `0018`. Buat paket berbayar melalui `/super-admin/paket`; Owner dapat memilih paket di `/langganan`. Pembayaran diproses aman via Snap Midtrans, dan akses berbayar diaktifkan secara otomatis melalui webhook yang signature-nya divalidasi serta status transaksinya diverifikasi kembali ke Midtrans.
+
+Tambahkan konfigurasi berikut di environment server (jangan gunakan prefix `NEXT_PUBLIC_` untuk server key):
+```env
+MIDTRANS_SERVER_KEY=SB-Mid-server-...
+MIDTRANS_IS_PRODUCTION=false
+```
+Di development lokal, simpan nilai tersebut di `frontend/.env.local` bersama `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY`. Laporan keuangan platform tersedia di `/super-admin/keuangan` dan dapat diekspor ke CSV.
+
 ---
 
 ## Aturan Utama Pengembangan

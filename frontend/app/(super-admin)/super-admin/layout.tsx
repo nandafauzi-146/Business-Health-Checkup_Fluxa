@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import SuperAdminShell from '@/features/super-admin/SuperAdminShell'
 
 export default async function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -7,13 +8,13 @@ export default async function SuperAdminLayout({ children }: { children: React.R
 
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from('profiles')
-    .select('role, approval_status')
+    .select('full_name, role, approval_status')
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'super_admin' || profile.approval_status !== 'approved') redirect('/login')
+  if (error || profile?.role !== 'super_admin' || profile.approval_status !== 'approved') redirect('/login')
 
-  return children
+  return <SuperAdminShell userName={profile.full_name || user.email || 'Super Admin'}>{children}</SuperAdminShell>
 }
