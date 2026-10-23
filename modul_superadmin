@@ -1,0 +1,276 @@
+# PROMPT IMPLEMENTASI MODUL SUPER ADMIN — FLUXA
+
+Bertindaklah sebagai Senior Full-Stack Developer yang berpengalaman dalam Next.js, TypeScript, Supabase, PostgreSQL, Tailwind CSS, dan UI/UX dashboard SaaS.
+
+Saya ingin mengembangkan modul **Super Admin** pada aplikasi Fluxa — Business Health Checkup, sebuah aplikasi pengelolaan bisnis yang menggunakan Next.js dan Supabase.
+
+## 1. Langkah awal: analisis project
+
+Sebelum mengubah kode:
+
+1. Periksa struktur folder frontend dan backend yang sudah ada.
+2. Pelajari sistem autentikasi, middleware, routing, layout dashboard, sidebar, komponen UI, dan integrasi Supabase.
+3. Periksa definisi tipe database pada `frontend/lib/supabase/types.ts` dan `backend/supabase/types.ts`.
+4. Periksa tabel `profiles`, fungsi database, Row Level Security (RLS), trigger, dan migration yang sudah tersedia.
+5. Pelajari dashboard Admin dan Owner sebagai referensi desain serta pola implementasi.
+6. Periksa alur registrasi, persetujuan akun, dan masa trial yang sudah diterapkan.
+7. Identifikasi fitur yang sudah tersedia agar tidak membuat implementasi duplikat.
+
+**Penting:** Jangan langsung mengganti struktur project. Gunakan arsitektur, konvensi penamaan, dan komponen yang sudah ada. Jangan menghapus fitur yang sedang berjalan.
+
+## 2. Tujuan utama
+
+Buat dashboard Super Admin yang memungkinkan pengelolaan seluruh platform Fluxa secara terpusat, dengan otorisasi yang aman dan UI/UX modern, konsisten, responsif, serta mudah digunakan.
+
+Modul yang harus dibuat:
+
+### A. Dashboard Super Admin
+
+Tampilkan ringkasan:
+- Total pengguna terdaftar.
+- Total akun yang menunggu persetujuan.
+- Total akun approved, pending, dan rejected.
+- Total bisnis yang terdaftar, jika struktur database mendukungnya.
+- Akun yang sedang menjalani trial.
+- Akun yang masa trial-nya hampir berakhir atau sudah berakhir.
+- Grafik pertumbuhan pengguna berdasarkan waktu.
+- Aktivitas terbaru administrator.
+
+Gunakan data nyata dari Supabase, bukan angka dummy atau hardcode.
+
+Tampilkan loading state, empty state, dan error state dengan baik.
+
+### B. Manajemen Pengguna
+
+Buat halaman untuk mengelola seluruh pengguna platform.
+
+Fitur:
+- Tabel pengguna dengan pagination.
+- Pencarian berdasarkan nama dan email.
+- Filter berdasarkan role dan status persetujuan.
+- Kolom nama lengkap, email, nomor telepon, role, status, tanggal registrasi, dan masa trial jika tersedia.
+- Halaman atau modal detail pengguna.
+- Pengubahan role dengan validasi dan konfirmasi.
+- Aktivasi dan penonaktifan akun melalui mekanisme yang aman.
+- Aksi yang sesuai untuk setiap status akun.
+
+Role yang digunakan harus mengikuti database project, termasuk:
+- `super_admin`
+- `admin`
+- `owner`
+- `kasir`
+
+Jangan menambahkan role baru tanpa kebutuhan yang jelas.
+
+### C. Persetujuan Pendaftaran
+
+Integrasikan dengan sistem persetujuan akun yang sudah ada.
+
+Gunakan kolom:
+- `approval_status`
+- `approved_at`
+- `reviewed_by`
+- `reviewed_at`
+
+Status:
+- `pending`
+- `approved`
+- `rejected`
+
+Fitur:
+- Daftar pendaftar yang menunggu persetujuan.
+- Detail informasi pendaftar.
+- Tombol Setujui dan Tolak.
+- Dialog konfirmasi sebelum tindakan dilakukan.
+- Pencatatan administrator yang melakukan peninjauan.
+- Pembaruan status secara konsisten di database.
+- Notifikasi keberhasilan atau kegagalan.
+
+Pastikan keputusan persetujuan tidak dapat dimanipulasi melalui frontend.
+
+Jangan mengizinkan pengguna yang belum disetujui mengakses halaman bisnis atau melakukan transaksi.
+
+### D. Manajemen Trial
+
+Gunakan kolom yang sudah tersedia:
+- `trial_started_at`
+- `trial_ends_at`
+
+Fitur:
+- Menampilkan tanggal mulai dan berakhirnya trial.
+- Menghitung sisa hari trial.
+- Menampilkan status trial aktif, segera berakhir, atau kedaluwarsa.
+- Memperpanjang atau mengakhiri trial melalui aksi yang terotorisasi.
+- Memastikan perubahan tercatat dengan benar.
+
+Gunakan zona waktu yang konsisten dan hindari perhitungan masa trial yang hanya mengandalkan waktu browser.
+
+Jangan mengubah aturan trial tujuh hari yang sudah diterapkan tanpa alasan dan persetujuan yang jelas.
+
+### E. Manajemen Bisnis
+
+Periksa terlebih dahulu struktur tabel bisnis yang benar-benar tersedia.
+
+Jika terdapat tabel bisnis atau organisasi, buat halaman untuk:
+- Melihat seluruh bisnis.
+- Melihat pemilik bisnis.
+- Melihat jumlah pengguna setiap bisnis.
+- Melihat status bisnis dan informasi relevan.
+- Mencari serta memfilter bisnis.
+
+Jika belum ada struktur multi-bisnis yang mendukung, jangan membuat tabel atau relasi baru secara sembarangan. Jelaskan keterbatasannya terlebih dahulu dan implementasikan hanya bagian yang didukung oleh database saat ini.
+
+### F. Audit Log dan Keamanan
+
+Buat halaman riwayat aktivitas administrator jika struktur audit log yang tersedia mendukungnya.
+
+Catat tindakan penting seperti:
+- Persetujuan atau penolakan pendaftaran.
+- Perubahan role.
+- Perubahan status akun.
+- Perubahan masa trial.
+
+Catatan audit sebaiknya mencakup aktor, jenis tindakan, target, waktu, dan informasi perubahan yang diperlukan.
+
+Jangan mencatat password, token autentikasi, atau informasi sensitif lainnya.
+
+Jika struktur tabel yang ada tidak mencukupi, usulkan migration baru yang kompatibel dengan database saat ini.
+
+### G. Pengaturan Sistem
+
+Buat halaman pengaturan untuk konfigurasi yang memang didukung oleh aplikasi.
+
+Prioritaskan konfigurasi masa trial dan pengaturan notifikasi jika relevan.
+
+Jangan menambahkan tombol atau pengaturan yang belum memiliki fungsi backend nyata.
+
+## 3. Struktur UI/UX
+
+Gunakan desain dashboard SaaS modern yang profesional dan konsisten dengan tampilan Fluxa.
+
+Sidebar:
+1. Dashboard
+2. Manajemen Pengguna
+3. Persetujuan Pendaftaran
+4. Manajemen Bisnis
+5. Trial & Langganan
+6. Audit Log & Keamanan
+7. Pengaturan Sistem
+8. Profil Super Admin
+
+Persyaratan desain:
+- Sidebar dengan ikon yang sesuai.
+- Header dengan judul halaman dan profil pengguna.
+- Kartu statistik yang informatif.
+- Tabel yang nyaman dibaca.
+- Badge status dengan warna konsisten.
+- Dialog konfirmasi untuk aksi sensitif.
+- Toast atau notifikasi hasil tindakan.
+- Loading skeleton.
+- Empty state yang informatif.
+- Error state dengan opsi mencoba kembali.
+- Responsive layout untuk desktop, tablet, dan mobile.
+- Hierarki visual dan jarak antarelemen yang konsisten.
+- Gunakan komponen yang sudah tersedia sebelum membuat komponen baru.
+
+Jangan membuat halaman login baru jika sistem autentikasi sudah tersedia.
+
+## 4. Routing dan integrasi
+
+Periksa routing yang sudah ada. Jika mengikuti struktur App Router Next.js, gunakan konvensi folder yang sesuai.
+
+Contoh struktur yang dapat digunakan apabila sesuai dengan project:
+
+- `frontend/app/(super-admin)/super-admin/page.tsx`
+- `frontend/app/(super-admin)/super-admin/pengguna/page.tsx`
+- `frontend/app/(super-admin)/super-admin/persetujuan/page.tsx`
+- `frontend/app/(super-admin)/super-admin/bisnis/page.tsx`
+- `frontend/app/(super-admin)/super-admin/trial/page.tsx`
+- `frontend/app/(super-admin)/super-admin/audit-log/page.tsx`
+- `frontend/app/(super-admin)/super-admin/pengaturan/page.tsx`
+
+Struktur di atas merupakan usulan. Sesuaikan dengan routing aktual agar tidak terjadi konflik dengan layout, middleware, atau route group yang sudah ada.
+
+Gunakan komponen terpisah untuk UI yang kompleks, serta server-side data fetching atau API route sesuai pola yang digunakan project.
+
+## 5. Keamanan dan otorisasi
+
+Ini merupakan persyaratan wajib.
+
+- Pastikan hanya pengguna dengan role `super_admin` yang dapat mengakses fitur khusus Super Admin.
+- Validasi role di server, bukan hanya melalui sidebar atau conditional rendering.
+- Periksa autentikasi dan otorisasi pada setiap API route atau Server Action yang melakukan perubahan data.
+- Pertahankan aturan RLS Supabase dan prinsip least privilege.
+- Jangan mengekspos service role key di browser.
+- Jangan mempercayai role atau ID aktor yang dikirim oleh client.
+- Gunakan sesi pengguna dan pemeriksaan server yang sesuai untuk mengidentifikasi aktor.
+- Jangan mengizinkan pengguna biasa mengubah role sendiri menjadi `super_admin`.
+- Lindungi perubahan status persetujuan, masa trial, dan role dari manipulasi langsung melalui client.
+- Jangan menghapus proteksi yang sudah diterapkan oleh database.
+- Hindari penggunaan `any` untuk mengatasi masalah TypeScript.
+- Jangan menggunakan `as` atau type assertion untuk sekadar menyembunyikan error tipe.
+- Tangani kegagalan Supabase secara eksplisit.
+
+Jika kebijakan RLS atau fungsi database perlu diubah, jelaskan dampaknya dan buat migration baru yang aman serta kompatibel. Jangan mengubah migration lama yang mungkin sudah diterapkan di lingkungan produksi.
+
+## 6. Kualitas implementasi
+
+Pastikan:
+- Tidak ada data dummy pada fitur produksi.
+- Tidak ada tombol yang hanya menjadi dekorasi.
+- Tidak ada import yang rusak.
+- Tidak ada konflik nama route.
+- Tidak ada kesalahan TypeScript.
+- Tidak ada query ke kolom yang belum tersedia.
+- Query tabel menggunakan filter, pagination, dan pemilihan kolom yang diperlukan.
+- Komponen dapat digunakan kembali jika memang relevan.
+- Perubahan tidak merusak dashboard Admin, Owner, Kasir, POS, atau landing page.
+- Penanganan error tetap informatif dan tidak membocorkan detail sensitif.
+- Perubahan database disertai migration bila diperlukan.
+
+## 7. Testing dan verifikasi
+
+Setelah implementasi:
+1. Jalankan pemeriksaan TypeScript menggunakan script yang sesuai dengan `package.json`.
+2. Jalankan lint dan build sesuai konfigurasi project.
+3. Periksa seluruh route Super Admin.
+4. Uji akses sebagai `super_admin`.
+5. Uji akses sebagai `admin`, `owner`, `kasir`, dan pengguna yang belum disetujui.
+6. Uji persetujuan pendaftaran dan pembaruan status trial.
+7. Pastikan API menolak request tanpa otorisasi.
+8. Periksa regresi pada halaman yang sudah ada.
+
+Jangan mengklaim pengujian berhasil jika perintahnya belum benar-benar dijalankan.
+
+## 8. Cara bekerja
+
+Kerjakan secara bertahap.
+
+Tahap pertama:
+- Analisis project dan identifikasi file yang relevan.
+- Sampaikan rencana implementasi singkat.
+- Identifikasi ketergantungan database dan risiko perubahan.
+
+Tahap kedua:
+- Implementasikan layout, sidebar, dashboard, dan manajemen pengguna.
+- Integrasikan persetujuan pendaftaran dan trial.
+- Lanjutkan modul lain sesuai dukungan database.
+
+Tahap ketiga:
+- Perkuat otorisasi backend.
+- Tambahkan migration baru jika diperlukan.
+- Jalankan pemeriksaan dan perbaiki error yang ditemukan.
+
+Kamu boleh langsung melakukan perubahan pada file project yang relevan setelah analisis. Jangan hanya memberikan contoh kode atau tutorial.
+
+**Jangan menghapus atau menimpa pekerjaan yang sudah ada. Jangan melakukan `git reset --hard`, menghapus perubahan lokal, melakukan commit, atau push tanpa instruksi eksplisit.**
+
+Pada akhir pengerjaan, berikan ringkasan:
+- File yang dibuat dan diubah.
+- Fitur yang sudah berfungsi.
+- Migration yang perlu diterapkan.
+- Environment variable yang diperlukan jika ada.
+- Hasil TypeScript, lint, build, dan pengujian.
+- Fitur yang belum selesai beserta alasannya.
+
+Mulai dengan menganalisis project yang sedang terbuka, lalu implementasikan modul Super Admin secara bertahap dan aman.

@@ -45,10 +45,11 @@ interface TopbarProps {
   title?: string
   subtitle?: string
   actions?: React.ReactNode
-  role?: 'kasir' | 'admin' | 'owner'
+  role?: 'kasir' | 'admin' | 'owner' | 'super_admin'
 }
 
-function getDefaultNotifications(role: 'kasir' | 'admin' | 'owner'): NotificationItem[] {
+function getDefaultNotifications(role: 'kasir' | 'admin' | 'owner' | 'super_admin'): NotificationItem[] {
+  if (role === 'super_admin') return []
   if (role === 'kasir') {
     return [
       {
@@ -259,13 +260,14 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
   const { preference, isDark, setPreference } = useTheme()
 
   // Tentukan role efektif
-  const effectiveRole: 'kasir' | 'admin' | 'owner' = useMemo(() => {
+  const effectiveRole: 'kasir' | 'admin' | 'owner' | 'super_admin' = useMemo(() => {
     if (role) return role
+    if (pathname?.startsWith('/super-admin')) return 'super_admin'
     if (pathname?.startsWith('/owner')) return 'owner'
     if (pathname?.startsWith('/admin')) return 'admin'
     return 'kasir'
   }, [role, pathname])
-  const isDashboardPage = pathname === '/admin' || pathname === '/owner' || pathname === '/kasir'
+  const isDashboardPage = pathname === '/admin' || pathname === '/owner' || pathname === '/kasir' || pathname === '/super-admin'
   const isSearchPending = searchQuery !== deferredSearchQuery
   const searchableMenuItems = useMemo(
     () => menuByRole[effectiveRole].flatMap(group =>
@@ -592,6 +594,7 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
     kasir: { label: 'KASIR', color: 'var(--acc)', bg: 'var(--accs)', title: 'Pusat Notifikasi Kasir' },
     admin: { label: 'ADMIN', color: 'var(--acc)', bg: 'var(--accs)', title: 'Pusat Notifikasi & Laporan Admin' },
     owner: { label: 'OWNER', color: 'var(--acc)', bg: 'var(--accs)', title: 'Pusat Laporan & Intelijen Bisnis Owner' },
+    super_admin: { label: 'SUPER ADMIN', color: 'var(--acc)', bg: 'var(--accs)', title: 'Pusat Notifikasi Super Admin' },
   }[effectiveRole]
 
   return (

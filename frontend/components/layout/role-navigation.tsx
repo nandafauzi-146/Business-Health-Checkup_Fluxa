@@ -1,9 +1,10 @@
 import {
-  Activity, BarChart3, Building2, ClipboardList, CreditCard, DollarSign, FileText,
-  Layers, LayoutDashboard, Package, Scale, ShoppingCart, Sparkles, Tag, TrendingUp, Users
+  Activity, BarChart3, ClipboardList, CreditCard, DollarSign, FileText,
+  Layers, LayoutDashboard, Package, Scale, Settings2, ShieldCheck, ShoppingCart,
+  Sparkles, Tag, TrendingUp, Users
 } from 'lucide-react'
 
-export type UserRole = 'kasir' | 'admin' | 'owner'
+export type UserRole = 'kasir' | 'admin' | 'owner' | 'super_admin'
 
 export interface NavItem {
   icon: React.ReactNode
@@ -82,6 +83,28 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
         { icon: <Package size={16} />, label: 'Monitoring Stok', href: '/owner/stok' },
         { icon: <Users size={16} />, label: 'Kelola Pengguna', href: '/owner/pengguna' },
         { icon: <FileText size={16} />, label: 'Audit Log', href: '/owner/audit' },
+        { icon: <CreditCard size={16} />, label: 'Subscription', href: '/langganan' },
+      ]
+    }
+  ],
+  super_admin: [
+    {
+      label: 'Platform',
+      items: [
+        { icon: <LayoutDashboard size={16} />, label: 'Dashboard', href: '/super-admin' },
+        { icon: <Users size={16} />, label: 'Manajemen Pengguna', href: '/super-admin/pengguna' },
+        { icon: <ShieldCheck size={16} />, label: 'Persetujuan Pendaftaran', href: '/super-admin/persetujuan' },
+        { icon: <DollarSign size={16} />, label: 'Keuangan Platform', href: '/super-admin/keuangan' },
+      ]
+    },
+    {
+      label: 'Kontrol Platform',
+      items: [
+        { icon: <Activity size={16} />, label: 'Trial & Langganan', href: '/super-admin/trial' },
+        { icon: <CreditCard size={16} />, label: 'Paket Subscription', href: '/super-admin/paket' },
+        { icon: <FileText size={16} />, label: 'Audit Log & Keamanan', href: '/super-admin/audit-log' },
+        { icon: <Settings2 size={16} />, label: 'Pengaturan Sistem', href: '/super-admin/pengaturan' },
+        { icon: <ShieldCheck size={16} />, label: 'Profil Super Admin', href: '/super-admin/profil' },
       ]
     }
   ]

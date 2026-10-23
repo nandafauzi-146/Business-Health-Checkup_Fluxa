@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import {
   ShieldAlert, Search, Filter, Calendar, User, Clock, CheckCircle,
   AlertTriangle, ArrowUpRight, ArrowDownLeft, Printer, RefreshCw,
-  FileText, ShoppingCart, Layers, DollarSign, Scale, X, ChevronRight, Eye
+  FileText, DollarSign, Scale, X, ChevronRight, Eye
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, FormatRupiah } from '@/components/ui/Cards'
@@ -23,7 +23,7 @@ export interface AuditLogItem {
   user_role?: 'kasir' | 'admin' | 'owner' | null
 }
 
-const DEMO_AUDIT_LOGS: AuditLogItem[] = [
+export const DEMO_AUDIT_LOGS: AuditLogItem[] = [
   {
     id: 'log-01',
     action: 'CREATE_SALE',
@@ -258,11 +258,11 @@ export default function AuditLogClient({
 }: {
   initialLogs: AuditLogItem[]
 }) {
-  const logs = initialLogs.length > 0 ? initialLogs : DEMO_AUDIT_LOGS
+  const logs = initialLogs
 
   // Filters
   const [search, setSearch] = useState('')
-  const [roleFilter, setRoleFilter] = useState<'all' | 'kasir' | 'admin' | 'owner'>('all')
+  const [roleFilter, setRoleFilter] = useState<'all' | 'owner' | 'admin' | 'kasir'>('all')
   const [actionCategory, setActionCategory] = useState<string>('all')
   const [dateRange, setDateRange] = useState<'all' | 'today' | '7days' | '30days'>('all')
 
@@ -316,8 +316,9 @@ export default function AuditLogClient({
 
   // KPIs
   const totalCount = logs.length
-  const cashierActions = logs.filter(l => l.user_role === 'kasir').length
+  const ownerActions = logs.filter(l => l.user_role === 'owner').length
   const adminActions = logs.filter(l => l.user_role === 'admin').length
+  const cashierActions = logs.filter(l => l.user_role === 'kasir').length
   const voidActions = logs.filter(l => l.action === 'VOID_SALE').length
 
   // Helper formatting narrative per action
@@ -491,8 +492,8 @@ export default function AuditLogClient({
   return (
     <div>
       <PageHeader
-        title="Audit Log & Integritas Operasional"
-        subtitle="Laporan lengkap rekaman aktivitas Kasir dan Admin untuk transparansi kas fisik, akuntabilitas stok, dan audit keamanan sistem (GTNIC 2026)"
+        title="Audit Log Operasional"
+        subtitle="Rekaman aktivitas Owner, Admin, dan Kasir pada usaha Anda."
         actions={
           <button
             type="button"
@@ -505,7 +506,7 @@ export default function AuditLogClient({
         }
       />
 
-      {/* 4 KPI Ringkasan Aktivitas */}
+      {/* Ringkasan aktivitas */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 20 }}>
         {/* Total Log */}
         <div className="kpi-card" style={{ borderLeft: '4px solid var(--acc)' }}>
@@ -516,31 +517,31 @@ export default function AuditLogClient({
           <div className="kpi-value" style={{ color: 'var(--acc)' }}>
             {totalCount} <span style={{ fontSize: 14, fontWeight: 500 }}>Aksi</span>
           </div>
-          <div className="kpi-sub">Seluruh jejak rekam Kasir & Admin</div>
+          <div className="kpi-sub">Aktivitas Owner, Admin, dan Kasir</div>
         </div>
 
-        {/* Aktivitas Kasir */}
+        {/* Aktivitas Admin dan Kasir */}
         <div className="kpi-card" style={{ borderLeft: '4px solid #2563eb' }}>
           <div className="kpi-icon" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#2563eb' }}>
-            <ShoppingCart size={20} />
+            <User size={20} />
           </div>
-          <div className="kpi-label">Aktivitas Kasir (POS & Shift)</div>
+          <div className="kpi-label">Aktivitas Admin & Kasir</div>
           <div className="kpi-value" style={{ color: '#2563eb' }}>
-            {cashierActions} <span style={{ fontSize: 14, fontWeight: 500 }}>Log</span>
+            {adminActions + cashierActions} <span style={{ fontSize: 14, fontWeight: 500 }}>Log</span>
           </div>
-          <div className="kpi-sub">Transaksi penjualan, kasir buka & tutup shift</div>
+          <div className="kpi-sub">{adminActions} Admin · {cashierActions} Kasir</div>
         </div>
 
-        {/* Aktivitas Admin */}
-        <div className="kpi-card" style={{ borderLeft: '4px solid #d97706' }}>
-          <div className="kpi-icon" style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#d97706' }}>
-            <Layers size={20} />
+        {/* Aktivitas Owner */}
+        <div className="kpi-card" style={{ borderLeft: '4px solid #059669' }}>
+          <div className="kpi-icon" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#059669' }}>
+            <User size={20} />
           </div>
-          <div className="kpi-label">Aktivitas Admin Toko</div>
-          <div className="kpi-value" style={{ color: '#d97706' }}>
-            {adminActions} <span style={{ fontSize: 14, fontWeight: 500 }}>Log</span>
+          <div className="kpi-label">Aktivitas Owner</div>
+          <div className="kpi-value" style={{ color: '#059669' }}>
+            {ownerActions} <span style={{ fontSize: 14, fontWeight: 500 }}>Log</span>
           </div>
-          <div className="kpi-sub">Stok opname, biaya toko, hutang & harga</div>
+          <div className="kpi-sub">Aktivitas akun Owner ini</div>
         </div>
 
         {/* Void Transaksi (Penting untuk Audit Fraud) */}
@@ -596,7 +597,7 @@ export default function AuditLogClient({
             </button>
             <button
               type="button"
-              onClick={() => setRoleFilter('kasir')}
+              onClick={() => setRoleFilter('owner')}
               style={{
                 padding: '6px 12px',
                 borderRadius: 6,
@@ -604,12 +605,12 @@ export default function AuditLogClient({
                 fontSize: 12.5,
                 fontWeight: 600,
                 cursor: 'pointer',
-                background: roleFilter === 'kasir' ? 'rgba(59, 130, 246, 0.12)' : 'transparent',
-                color: roleFilter === 'kasir' ? '#2563eb' : 'var(--mute)',
-                boxShadow: roleFilter === 'kasir' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
+                background: roleFilter === 'owner' ? 'rgba(16, 185, 129, 0.12)' : 'transparent',
+                color: roleFilter === 'owner' ? '#059669' : 'var(--mute)',
+                boxShadow: roleFilter === 'owner' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
               }}
             >
-              🔵 Kasir Saja
+              Owner
             </button>
             <button
               type="button"
@@ -626,7 +627,24 @@ export default function AuditLogClient({
                 boxShadow: roleFilter === 'admin' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
               }}
             >
-              🟠 Admin Saja
+              Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => setRoleFilter('kasir')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 6,
+                border: 'none',
+                fontSize: 12.5,
+                fontWeight: 600,
+                cursor: 'pointer',
+                background: roleFilter === 'kasir' ? 'rgba(59, 130, 246, 0.12)' : 'transparent',
+                color: roleFilter === 'kasir' ? '#2563eb' : 'var(--mute)',
+                boxShadow: roleFilter === 'kasir' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
+              }}
+            >
+              Kasir
             </button>
           </div>
 
@@ -678,7 +696,7 @@ export default function AuditLogClient({
                 <tr>
                   <td colSpan={5} style={{ textAlign: 'center', padding: '40px 16px', color: 'var(--mute)' }}>
                     <ShieldAlert size={28} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.5 }} />
-                    Tidak ada catatan aktivitas audit yang sesuai filter.
+                    Belum ada aktivitas audit yang sesuai filter.
                   </td>
                 </tr>
               ) : (

@@ -174,7 +174,14 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
 
   const groups = menuByRole[role] || menuByRole.kasir
 
-  const roleLabel = role === 'kasir' ? 'Kasir' : role === 'admin' ? 'Admin' : 'Owner'
+  const roleLabel = role === 'kasir'
+    ? 'Kasir'
+    : role === 'admin'
+      ? 'Admin'
+      : role === 'owner'
+        ? 'Owner'
+        : 'Super Admin'
+  const dashboardHref = role === 'super_admin' ? '/super-admin' : role === 'kasir' ? '/kasir' : `/${role}`
   const roleColor = 'var(--acc)'
   const closeMobileSidebar = () => {
     setMobileOpen(false)
@@ -246,7 +253,7 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
         {/* Logo + User */}
         <div className="sidebar-identity">
           <div className="sidebar-brand-row">
-            <Link className="sidebar-brand" href={role === 'kasir' ? '/kasir' : `/${role}`} aria-label="Fluxa, dashboard">
+            <Link className="sidebar-brand" href={dashboardHref} aria-label="Fluxa, dashboard">
               <BrandLogo size={32} />
               <span className="sidebar-label sidebar-brand-name">Fluxa</span>
             </Link>
@@ -310,10 +317,11 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
             <div className="sidebar-nav-group" key={group.label}>
               <div className="nav-group-label sidebar-label">{group.label}</div>
               {group.items.map(item => {
+                const rootHref = role === 'super_admin' ? '/super-admin' : '/' + role
                 const badge = role === 'admin' && item.href === '/admin/transaksi'
                   ? pendingRefundCount
                   : item.badge
-                const isActive = pathname === item.href || (item.href !== '/' + role && pathname.startsWith(item.href))
+                const isActive = pathname === item.href || (item.href !== rootHref && pathname.startsWith(item.href))
                 return (
                   <Link
                     key={item.href}
