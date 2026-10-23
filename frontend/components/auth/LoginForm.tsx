@@ -26,6 +26,10 @@ const demoAccounts = [
   { role: 'Admin', email: 'admin@demo.local', password: 'Admin123!', color: 'admin' },
   { role: 'Kasir', email: 'kasir@demo.local', password: 'Kasir123!', color: 'kasir' },
 ] as const
+const superAdminDemoAccount = {
+  email: 'superadmin@demo.local',
+  password: 'SuperAdmin123!',
+}
 
 function isUserRole(role: unknown): role is UserRole {
   return role === 'kasir' || role === 'admin' || role === 'owner' || role === 'super_admin'
@@ -176,7 +180,7 @@ function DemoAccounts({
       </div>
       {selectedDemo === 'Super Admin' && (
         <p className="login-demo-super-admin-hint" role="status">
-          Masukkan email dan kata sandi akun Super Admin yang sudah terdaftar.
+          Kredensial demo Super Admin sudah diisikan. Tekan Masuk untuk melanjutkan.
         </p>
       )}
       <p className="login-demo-passwords">
@@ -214,6 +218,8 @@ export default function LoginForm({ registrationStatus }: { registrationStatus?:
   const introNameRef = useRef<HTMLParagraphElement>(null)
   const loginLogoRef = useRef<HTMLDivElement>(null)
   const loginNameRef = useRef<HTMLParagraphElement>(null)
+  const emailInputRef = useRef<HTMLInputElement>(null)
+  const passwordInputRef = useRef<HTMLInputElement>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -224,6 +230,23 @@ export default function LoginForm({ registrationStatus }: { registrationStatus?:
   const [selectedDemo, setSelectedDemo] = useState('')
   const router = useRouter()
   const supabase = createClient()
+
+  const clearFeedback = () => {
+    setError('')
+    setErrorField(null)
+    setSuccess('')
+  }
+
+  const focusField = (field: 'email' | 'password') => {
+    if (field === 'email') {
+      emailInputRef.current?.focus()
+      emailInputRef.current?.select()
+      return
+    }
+
+    passwordInputRef.current?.focus()
+    passwordInputRef.current?.select()
+  }
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -319,19 +342,19 @@ export default function LoginForm({ registrationStatus }: { registrationStatus?:
       setError('Masukkan alamat email yang valid.')
       setErrorField('email')
       setSuccess('')
+      focusField('email')
       return
     }
     if (!password) {
       setError('Masukkan kata sandi Anda.')
       setErrorField('password')
       setSuccess('')
+      focusField('password')
       return
     }
 
     setLoading(true)
-    setError('')
-    setErrorField(null)
-    setSuccess('')
+    clearFeedback()
 
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -362,25 +385,35 @@ export default function LoginForm({ registrationStatus }: { registrationStatus?:
         .single()
 
       if (profileError || !profile) {
-        const { error: signOutError } = await supabase.auth.signOut()
-        if (signOutError) console.error('Unable to sign out an account without a readable profile.', signOutError)
+        console.error('Profile query error:', profileError)
+        console.error('User ID:', user.id)
+        console.error('Profile data:', profile)
 
-        if (profileError?.message.includes('approval_status')) {
-          setError('Akses akun belum dapat diverifikasi. Silakan coba lagi atau hubungi Admin.')
+        await supabase.auth.signOut()
+
+        if (profileError?.message?.includes('approval_status')) {
+          setError('Sistem persetujuan belum siap. Minta administrator menerapkan migrasi database terbaru, lalu coba masuk kembali.')
         } else {
-          setError('Akses akun belum dapat diverifikasi. Silakan hubungi Admin.')
+          setError('Profil akses akun tidak dapat dibaca. Pastikan profil akun tersedia dan hubungi administrator.')
         }
+
         return
       }
 
-      if (profile.approval_status === 'pending' || profile.approval_status === 'rejected') {
-        const { error: signOutError } = await supabase.auth.signOut()
-        if (signOutError) console.error('Unable to sign out an unapproved account.', signOutError)
-        setError(profile.approval_status === 'pending'
-          ? 'Pendaftaran Anda masih menunggu persetujuan Super Admin. Trial 7 hari dimulai setelah akun disetujui.'
-          : 'Pendaftaran Anda belum disetujui. Hubungi tim Fluxa untuk informasi lebih lanjut.')
+      if (profile.approval_status !== 'approved') {
+        await supabase.auth.signOut()
+
+        if (profile.approval_status === 'pending') {
+          setError('Akun kamu masih menunggu persetujuan Super Admin. Trial 7 hari dimulai setelah akun disetujui.')
+        } else if (profile.approval_status === 'rejected') {
+          setError('Pendaftaran akun kamu ditolak. Hubungi administrator.')
+        } else {
+          setError('Status persetujuan akun tidak valid. Hubungi administrator.')
+        }
+
         return
       }
+
 
       const destinations: Record<UserRole, string> = {
         kasir: '/kasir',
@@ -411,18 +444,14 @@ export default function LoginForm({ registrationStatus }: { registrationStatus?:
     setEmail(account.email)
     setPassword(account.password)
     setSelectedDemo(account.role)
-    setError('')
-    setErrorField(null)
-    setSuccess('')
+    clearFeedback()
   }
 
   const selectSuperAdmin = () => {
-    setEmail('')
-    setPassword('')
+    setEmail(superAdminDemoAccount.email)
+    setPassword(superAdminDemoAccount.password)
     setSelectedDemo('Super Admin')
-    setError('')
-    setErrorField(null)
-    setSuccess('')
+    clearFeedback()
   }
 
   return (
@@ -466,20 +495,23 @@ export default function LoginForm({ registrationStatus }: { registrationStatus?:
             <div className="login-input-wrap">
               <Mail size={17} aria-hidden="true" />
               <input
+                ref={emailInputRef}
+                autoCapitalize="none"
                 autoComplete="email"
                 id="email-input"
+                name="email"
                 onChange={(event) => {
                   setEmail(event.target.value)
                   setSelectedDemo('')
-                  setError('')
-                  setErrorField(null)
-                  setSuccess('')
+                  clearFeedback()
                 }}
                 placeholder="nama@email.com"
+                spellCheck={false}
                 type="email"
                 value={email}
                 aria-describedby={error ? 'login-error' : undefined}
                 aria-invalid={errorField === 'email' || errorField === 'credentials'}
+                disabled={loading}
               />
             </div>
           </div>
@@ -489,26 +521,32 @@ export default function LoginForm({ registrationStatus }: { registrationStatus?:
             <div className="login-input-wrap">
               <LockKeyhole size={17} aria-hidden="true" />
               <input
+                ref={passwordInputRef}
                 autoComplete="current-password"
                 id="password-input"
+                name="password"
                 onChange={(event) => {
                   setPassword(event.target.value)
                   setSelectedDemo('')
-                  setError('')
-                  setErrorField(null)
-                  setSuccess('')
+                  clearFeedback()
                 }}
                 placeholder="Kata sandi Anda"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 aria-describedby={error ? 'login-error' : undefined}
                 aria-invalid={errorField === 'password' || errorField === 'credentials'}
+                disabled={loading}
               />
               <button
+                aria-controls="password-input"
                 aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
                 className="login-password-toggle"
-                onClick={() => setShowPassword((visible) => !visible)}
+                onClick={(event) => {
+                  event.preventDefault()
+                  setShowPassword((visible) => !visible)
+                }}
                 type="button"
+                disabled={loading}
               >
                 {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
@@ -516,12 +554,12 @@ export default function LoginForm({ registrationStatus }: { registrationStatus?:
           </div>
 
           {error && (
-            <p className="login-feedback login-feedback-error" id="login-error" role="alert">
+            <p className="login-feedback login-feedback-error" id="login-error" role="alert" aria-live="assertive">
               {error}
             </p>
           )}
           {success && (
-            <p className="login-feedback login-feedback-success" role="status">
+            <p className="login-feedback login-feedback-success" role="status" aria-live="polite">
               {success}
             </p>
           )}
@@ -542,7 +580,7 @@ export default function LoginForm({ registrationStatus }: { registrationStatus?:
         </form>
 
         <p className="login-register-prompt">Belum punya akun? <Link href="/register">Daftar & ajukan trial 7 hari</Link></p>
-        <Link className="auth-back-link" href="/">
+        <Link className="auth-back-link" href="/landingpage">
           <ArrowLeft size={15} aria-hidden="true" />
           Beranda
         </Link>
