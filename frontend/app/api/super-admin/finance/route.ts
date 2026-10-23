@@ -53,7 +53,7 @@ export async function GET(request: Request) {
     if (planFilter) allPaymentsQuery = allPaymentsQuery.eq('plan_name', planFilter)
 
     const { data: allPaymentsData, error: paymentsError } = await allPaymentsQuery
-    if (paymentsError) throw paymentsError
+    if (paymentsError) console.error('Subscription payments query failed (non-fatal):', paymentsError)
 
     const allPayments = allPaymentsData ?? []
 

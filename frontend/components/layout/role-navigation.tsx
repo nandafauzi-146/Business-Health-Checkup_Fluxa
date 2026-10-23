@@ -1,5 +1,5 @@
 import {
-  Activity, BarChart3, ClipboardList, CreditCard, DollarSign, FileText,
+  Activity, BarChart3, ClipboardList, CreditCard, DollarSign, FileText, Globe,
   Layers, LayoutDashboard, Package, Scale, Settings2, ShieldCheck, ShoppingCart,
   Sparkles, Tag, TrendingUp, Users
 } from 'lucide-react'
@@ -95,6 +95,7 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
         { icon: <Users size={16} />, label: 'Manajemen Pengguna', href: '/super-admin/pengguna' },
         { icon: <ShieldCheck size={16} />, label: 'Persetujuan Pendaftaran', href: '/super-admin/persetujuan' },
         { icon: <DollarSign size={16} />, label: 'Keuangan Platform', href: '/super-admin/keuangan' },
+        { icon: <Globe size={16} />, label: 'CMS Landing Page', href: '/super-admin/cms' },
       ]
     },
     {

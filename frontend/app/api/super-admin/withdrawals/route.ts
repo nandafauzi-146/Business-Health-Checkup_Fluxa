@@ -68,7 +68,22 @@ export async function GET(request: Request) {
 
     const from = (page - 1) * pageSize
     const { data: withdrawals, count, error } = await query.range(from, from + pageSize - 1)
-    if (error) throw error
+    if (error) {
+      console.error('Platform withdrawals query failed (non-fatal):', error)
+      return NextResponse.json({
+        withdrawals: [],
+        summary: {
+          totalCompletedAmount: 0,
+          completedCount: 0,
+          pendingCount: 0,
+          pendingAmount: 0,
+          byCategory: {},
+        },
+        total: 0,
+        page,
+        pageSize,
+      })
+    }
 
     // Fetch creators and reviewers
     const userIds = [
@@ -89,7 +104,9 @@ export async function GET(request: Request) {
       .from('platform_withdrawals')
       .select('amount, status, category')
 
-    if (aggError) throw aggError
+    if (aggError) {
+      console.error('Platform withdrawals aggregate failed (non-fatal):', aggError)
+    }
 
     const summary = {
       totalCompletedAmount: (allWithdrawals ?? [])
