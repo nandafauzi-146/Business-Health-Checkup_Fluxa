@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from 'recharts'
 import { Sparkles, RefreshCw, CheckCircle, AlertTriangle, Bot, Activity, Layers, ArrowUpRight, DollarSign, Calendar, Users, FileText, Building2 } from 'lucide-react'
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
@@ -98,37 +98,32 @@ export default function BusinessHealthClient({
   const [diagnosis, setDiagnosis] = useState<BusinessHealthDiagnosis>(initialDiagnosis)
   const [loading, setLoading] = useState(false)
 
-  // Restore AI narration dari sessionStorage agar tidak hilang saat navigasi halaman
-  const [aiNarration, setAiNarration] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
+  // Inisialisasi state identik antara server (SSR) dan client untuk mencegah hydration mismatch
+  const [aiNarration, setAiNarration] = useState<string>(
+    initialDiagnosis.ai_insights || initialDiagnosis.summary || ''
+  )
+  const [aiSource, setAiSource] = useState<'ai_llm' | 'heuristic_engine'>('heuristic_engine')
+  const [aiModel, setAiModel] = useState<string | null>(null)
+
+  // Restore cache dari sessionStorage setelah komponen mount di browser
+  useEffect(() => {
+    try {
       const cached = sessionStorage.getItem(CACHE_KEY)
       if (cached) {
-        try {
-          const parsed = JSON.parse(cached)
-          return parsed.narration || initialDiagnosis.ai_insights || initialDiagnosis.summary || ''
-        } catch { /* ignore */ }
+        const parsed = JSON.parse(cached)
+        if (parsed.narration) setAiNarration(parsed.narration)
+        if (parsed.source) setAiSource(parsed.source)
+        if (parsed.model) {
+          const cleanModel = String(parsed.model).toLowerCase().includes('gemini')
+            ? 'FluxAI Intelligence Engine (Live)'
+            : parsed.model
+          setAiModel(cleanModel)
+        }
       }
+    } catch {
+      /* ignore */
     }
-    return initialDiagnosis.ai_insights || initialDiagnosis.summary || ''
-  })
-  const [aiSource, setAiSource] = useState<'ai_llm' | 'heuristic_engine'>(() => {
-    if (typeof window !== 'undefined') {
-      const cached = sessionStorage.getItem(CACHE_KEY)
-      if (cached) {
-        try { return JSON.parse(cached).source || 'heuristic_engine' } catch { /* ignore */ }
-      }
-    }
-    return 'heuristic_engine'
-  })
-  const [aiModel, setAiModel] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      const cached = sessionStorage.getItem(CACHE_KEY)
-      if (cached) {
-        try { return JSON.parse(cached).model || null } catch { /* ignore */ }
-      }
-    }
-    return null
-  })
+  }, [])
   // Simpan ke sessionStorage setiap kali narasi/source/model berubah
   const persistCache = useCallback((narration: string, source: string, model: string | null) => {
     if (typeof window !== 'undefined') {
@@ -229,7 +224,7 @@ export default function BusinessHealthClient({
           </div>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-              Engine Analisis: {aiSource === 'ai_llm' ? (aiModel || 'FluxAI Intelligence Engine (Live)') : 'Deterministic Financial Engine (Standar Akuntansi UMKM)'}
+              Engine Analisis: {aiSource === 'ai_llm' ? 'FluxAI Intelligence Engine (Live)' : 'Deterministic Financial Engine (Standar Akuntansi UMKM)'}
               <span style={{
                 fontSize: 11, padding: '2px 8px', borderRadius: 12, fontWeight: 700,
                 background: aiSource === 'ai_llm' ? 'var(--oks)' : 'var(--accs)',
@@ -301,7 +296,7 @@ export default function BusinessHealthClient({
       {/* Narasi AI / Advisor Eksekutif */}
       <div style={{ marginBottom: 20 }}>
         <SectionCard
-          title={aiSource === 'ai_llm' ? (aiModel ? `Analisis Eksekutif dari ${aiModel}` : 'Analisis Eksekutif dari FluxAI') : 'Diagnosis Finansial Eksekutif'}
+          title={aiSource === 'ai_llm' ? 'Analisis Eksekutif dari FluxAI' : 'Diagnosis Finansial Eksekutif'}
           action={
             <span style={{
               fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 8,

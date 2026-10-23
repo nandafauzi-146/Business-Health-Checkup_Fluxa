@@ -44,7 +44,7 @@ export async function GET() {
         .eq('role', 'owner').eq('approval_status', 'approved').gt('trial_ends_at', today).lte('trial_ends_at', soon),
       adminClient.from('profiles').select('id', { count: 'exact', head: true })
         .eq('role', 'owner').eq('approval_status', 'approved').lte('trial_ends_at', today),
-      adminClient.from('businesses').select('id', { count: 'exact', head: true }),
+      adminClient.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'owner'),
       adminClient.from('subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'active').gt('current_period_end', today),
       adminClient.from('subscriptions').select('id', { count: 'exact', head: true }).or(`status.eq.expired,and(status.eq.active,current_period_end.lte.${today})`),
       adminClient.from('subscription_payments').select('amount, status'),
@@ -54,7 +54,7 @@ export async function GET() {
           .select('id', { count: 'exact', head: true })
           .gte('created_at', month.start)
           .lt('created_at', month.end)
-        if (error) throw error
+        if (error) console.error('Error fetching user growth trend:', error)
         return { month: month.month, total: count ?? 0 }
       })),
       Promise.all(monthQueries.map(async (month) => {
@@ -63,7 +63,10 @@ export async function GET() {
           .eq('status', 'success')
           .gte('paid_at', month.start)
           .lt('paid_at', month.end)
-        if (error) throw error
+        if (error) {
+          // Non-fatal if table is missing or empty
+          return { month: month.month, revenue: 0 }
+        }
         const total = (data ?? []).reduce((sum, item) => sum + item.amount, 0)
         return { month: month.month, revenue: total }
       })),

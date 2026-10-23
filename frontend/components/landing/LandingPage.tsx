@@ -25,39 +25,44 @@ import {
   Users,
   Wallet,
   Moon,
+  Tag,
+  CreditCard,
+  Activity,
+  Layers,
 } from 'lucide-react'
 import { useTheme } from '@/components/layout/ThemeProvider'
+import type { LandingCMSContent } from '@/lib/cms'
+import defaultContent from '@/content/landing-default.json'
 import styles from './landingpage.module.css'
 
-const WHATSAPP_URL = 'https://wa.me/628980148297?text=Halo%20Admin%20FLUXA%20%F0%9F%91%8B%0A%0ASaya%20tertarik%20untuk%20menggunakan%20FLUXA%20sebagai%20sistem%20pengelolaan%20bisnis%20saya.%0A%0ASaya%20ingin%20mengetahui%20lebih%20lanjut%20mengenai%20fitur%2C%20cara%20pendaftaran%2C%20dan%20cara%20memulai%20trial%20gratis%20selama%207%20hari.%0A%0AMohon%20informasi%20dan%20panduannya%2C%20ya.%20Terima%20kasih!%20%F0%9F%98%8A'
+const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>> = {
+  ShoppingCart,
+  BarChart3,
+  Bot,
+  Package,
+  Wallet,
+  Users,
+  ShieldCheck,
+  Sparkles,
+  TrendingUp,
+  Database,
+  CircleDollarSign,
+  ClipboardCheck,
+  Headset,
+  Tag,
+  CreditCard,
+  Activity,
+  Layers,
+}
 
-const features = [
-  { icon: ShoppingCart, title: 'Kasir praktis', description: 'Catat transaksi lebih cepat, kelola shift, dan pantau penjualan dalam satu tempat.', tone: 'blue' },
-  { icon: BarChart3, title: 'Laporan otomatis', description: 'Lihat ringkasan omzet, laba, arus kas, dan performa bisnis tanpa rekap manual.', tone: 'purple' },
-  { icon: Bot, title: 'Analisis dengan AI', description: 'Dapatkan diagnosis kesehatan usaha dan insight untuk menentukan langkah berikutnya.', tone: 'green' },
-  { icon: Package, title: 'Kontrol stok', description: 'Pantau persediaan, nilai stok, dan produk yang perlu segera diperhatikan.', tone: 'orange' },
-  { icon: Wallet, title: 'Kelola kas & piutang', description: 'Pantau uang masuk, pengeluaran, kasbon, serta hutang-piutang bisnis.', tone: 'cyan' },
-  { icon: Users, title: 'Tim lebih teratur', description: 'Atur akses owner, admin, dan kasir sesuai peran masing-masing.', tone: 'pink' },
-]
+function resolveIcon(name: string, fallback = Sparkles) {
+  return ICON_MAP[name] || fallback
+}
 
-const steps = [
-  { number: '01', icon: Database, label: 'SIAPKAN USAHA', title: 'Mulai dari data bisnis Anda', description: 'Masukkan profil usaha, produk, harga, dan stok awal. Atur akun owner, admin, serta kasir sesuai tanggung jawab tim.', detail: 'Profil · Produk · Stok · Tim' },
-  { number: '02', icon: ShoppingCart, label: 'CATAT AKTIVITAS', title: 'Jalankan transaksi harian', description: 'Gunakan kasir untuk mencatat penjualan. Aktivitas transaksi membantu memperbarui ringkasan penjualan dan persediaan.', detail: 'Transaksi · Shift · Persediaan' },
-  { number: '03', icon: BarChart3, label: 'PAHAMI ANGKA', title: 'Pantau laporan dan arus kas', description: 'Tinjau performa penjualan, pemasukan, pengeluaran, stok, serta piutang dalam laporan yang lebih mudah dibaca.', detail: 'Penjualan · Keuangan · Piutang' },
-  { number: '04', icon: Bot, label: 'TENTUKAN LANGKAH', title: 'Gunakan insight untuk bertumbuh', description: 'Jalankan diagnosis kesehatan bisnis berbantuan AI, pahami area yang perlu perhatian, lalu tentukan prioritas berikutnya.', detail: 'Diagnosis AI · Rekomendasi · Tindak lanjut' },
-]
-
-const packages = [
+const defaultPackages = [
   { name: 'Starter', description: 'Untuk usaha kecil yang ingin mulai lebih rapi.', features: ['Kasir & pencatatan transaksi', 'Manajemen produk dan stok', 'Ringkasan laporan usaha'] },
   { name: 'Growth', description: 'Untuk bisnis yang ingin memahami performa lebih dalam.', features: ['Semua fitur Starter', 'Diagnosis kesehatan bisnis berbasis AI', 'Analisis kas dan piutang'], featured: true },
   { name: 'Multi-cabang', description: 'Untuk tim dan operasional dengan kebutuhan lebih luas.', features: ['Semua fitur Growth', 'Pengelolaan tim dan peran', 'Diskusi kebutuhan penggunaan'] },
-]
-
-const faqs = [
-  { question: 'Fluxa cocok untuk bisnis apa?', answer: 'Fluxa dirancang untuk membantu UMKM mengelola transaksi, stok, dan kesehatan bisnis. Anda dapat menyesuaikan penggunaan dengan kebutuhan operasional usaha.' },
-  { question: 'Bagaimana AI Fluxa membantu bisnis saya?', answer: 'AI membantu membaca data bisnis yang tersedia dan menyajikan diagnosis serta insight. Hasilnya menjadi bahan pertimbangan, bukan pengganti keputusan pemilik bisnis.' },
-  { question: 'Apakah saya bisa mencoba Fluxa sebelum berlangganan?', answer: 'Tersedia periode trial 7 hari. Hubungi tim Fluxa untuk informasi aktivasi dan ketentuan trial.' },
-  { question: 'Apakah harga paket sudah ditampilkan?', answer: 'Harga belum dicantumkan di halaman ini. Hubungi tim Fluxa untuk mendapatkan informasi paket dan biaya sesuai kebutuhan bisnis Anda.' },
 ]
 
 function ExampleChart() {
@@ -83,11 +88,17 @@ function ExampleChart() {
   )
 }
 
-export default function LandingPage() {
+export default function LandingPage({ content }: { content?: LandingCMSContent }) {
   const router = useRouter()
   const { isDark, setPreference } = useTheme()
   const [introActive, setIntroActive] = useState(true)
   const [isLeaving, setIsLeaving] = useState(false)
+
+  const cms = content || (defaultContent as unknown as LandingCMSContent)
+  const whatsappUrl = `https://wa.me/${(cms.contact?.whatsappNumber || '628980148297').replace(/\D/g, '')}?text=${encodeURIComponent(cms.contact?.whatsappMessage || '')}`
+  const featuresList = cms.features || []
+  const stepsList = cms.steps || []
+  const faqsList = cms.faqs || []
 
   useEffect(() => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -174,13 +185,16 @@ export default function LandingPage() {
         <div className={styles.heroInner}>
           <div className={styles.heroCopy}>
             <div className={styles.heroEyebrowRow}>
-              <div className={styles.pill}><span /> Platform bisnis untuk UMKM modern</div>
-              <div className={styles.heroStamp}><CircleDollarSign size={18} /> Data usaha, satu dashboard</div>
+              <div className={styles.pill}><span /> {cms.hero?.eyebrow || 'Platform bisnis untuk UMKM modern'}</div>
+              <div className={styles.heroStamp}><CircleDollarSign size={18} /> {cms.hero?.badge || 'Data usaha, satu dashboard'}</div>
             </div>
-            <h1>Bisnis lebih terarah.<br /><span>Tumbuh lebih percaya diri.</span></h1>
-            <p className={styles.heroDescription}>Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan AI — semua dalam satu platform.</p>
-            <div className={styles.heroActions}><Link className={styles.primaryButton} href="/register">Coba gratis 7 hari <ArrowRight size={17} /></Link><a className={styles.secondaryButton} href="#cara-kerja"><span className={styles.playIcon}>↓</span> Kenali cara kerjanya</a></div>
-            <div className={styles.trustNote}><ShieldCheck size={17} /> Satu platform untuk operasional dan insight bisnis</div>
+            <h1>{cms.hero?.title || 'Bisnis lebih terarah.'}<br /><span>{cms.hero?.titleHighlight || 'Tumbuh lebih percaya diri.'}</span></h1>
+            <p className={styles.heroDescription}>{cms.hero?.description || 'Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan AI — semua dalam satu platform.'}</p>
+            <div className={styles.heroActions}>
+              <Link className={styles.primaryButton} href="/register">{cms.hero?.ctaText || 'Coba gratis 7 hari'} <ArrowRight size={17} /></Link>
+              <a className={styles.secondaryButton} href="#cara-kerja"><span className={styles.playIcon}>↓</span> {cms.hero?.ctaSecondaryText || 'Kenali cara kerjanya'}</a>
+            </div>
+            <div className={styles.trustNote}><ShieldCheck size={17} /> {cms.hero?.trustNote || 'Satu platform untuk operasional dan insight bisnis'}</div>
           </div>
           <div className={styles.heroVisual}>
             <div className={styles.visualOrb} aria-hidden="true" />
@@ -198,38 +212,133 @@ export default function LandingPage() {
 
       <section className={styles.featureSection} id="fitur"><div className={styles.sectionWrap}>
         <div className={styles.sectionHeading}><span className={styles.eyebrow}>SEMUA YANG DIBUTUHKAN</span><h2>Operasional rapi,<br /><span>keputusan makin berarti.</span></h2><p>Fluxa menyatukan aktivitas harian dan insight bisnis agar Anda bisa fokus mengembangkan usaha.</p></div>
-        <div className={styles.featureGrid}>{features.map(({ icon: Icon, title, description, tone }) => <article className={styles.featureCard} key={title}><span className={`${styles.featureIcon} ${styles[tone]}`}><Icon size={21} strokeWidth={1.8} /></span><h3>{title}</h3><p>{description}</p><span className={styles.cardArrow}><ArrowRight size={16} /></span></article>)}</div>
+        <div className={styles.featureGrid}>
+          {featuresList.map((item, idx) => {
+            const IconComponent = resolveIcon(item.icon)
+            return (
+              <article className={styles.featureCard} key={idx}>
+                <span className={`${styles.featureIcon} ${styles[item.tone] || styles.blue}`}>
+                  <IconComponent size={21} strokeWidth={1.8} />
+                </span>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+                <span className={styles.cardArrow}><ArrowRight size={16} /></span>
+              </article>
+            )
+          })}
+        </div>
       </div></section>
 
       <section className={styles.aiSection}><div className={`${styles.sectionWrap} ${styles.aiLayout}`}>
-        <div className={styles.aiCopy}><span className={styles.eyebrow}><Sparkles size={14} /> INSIGHT BISNIS BERBANTU AI</span><h2>Bukan sekadar angka.<br /><span>Pahami ceritanya.</span></h2><p>FluxAI membantu merangkum kondisi usaha dari data operasional Anda, mengidentifikasi tren, dan menyajikan rekomendasi yang lebih mudah ditindaklanjuti.</p><ul className={styles.checkList}><li><Check size={16} /> Diagnosis kesehatan bisnis</li><li><Check size={16} /> Tren penjualan dan arus kas</li><li><Check size={16} /> Rekomendasi berdasarkan data</li></ul><a href="#cara-kerja" className={styles.textLink}>Pelajari cara kerja FluxAI <ArrowRight size={16} /></a></div>
+        <div className={styles.aiCopy}>
+          <span className={styles.eyebrow}><Sparkles size={14} /> {cms.aiInsight?.eyebrow || 'INSIGHT BISNIS BERBANTU AI'}</span>
+          <h2>{cms.aiInsight?.title || 'Bukan sekadar angka.'}<br /><span>{cms.aiInsight?.titleHighlight || 'Pahami ceritanya.'}</span></h2>
+          <p>{cms.aiInsight?.description || 'FluxAI membantu merangkum kondisi usaha dari data operasional Anda, mengidentifikasi tren, dan menyajikan rekomendasi yang lebih mudah ditindaklanjuti.'}</p>
+          <ul className={styles.checkList}>
+            {(cms.aiInsight?.checklist || []).map((checkItem, idx) => (
+              <li key={idx}><Check size={16} /> {checkItem}</li>
+            ))}
+          </ul>
+          <a href="#cara-kerja" className={styles.textLink}>Pelajari cara kerja FluxAI <ArrowRight size={16} /></a>
+        </div>
         <ExampleChart />
       </div></section>
 
       <section className={styles.howSection} id="cara-kerja"><div className={styles.sectionWrap}>
         <div className={styles.sectionHeading}><span className={styles.eyebrow}>MUDAH DIMULAI</span><h2>Dari transaksi harian<br /><span>menjadi langkah nyata.</span></h2></div>
-        <div className={styles.steps}>{steps.map(({ icon: Icon, ...step }) => <article className={styles.step} key={step.number}>
-          <div className={styles.stepHead}><span className={styles.stepNumber}>{step.number}</span><span className={styles.stepIcon}><Icon size={19} /></span><span className={styles.stepLabel}>{step.label}</span></div>
-          <h3>{step.title}</h3><p>{step.description}</p>
-          <div className={styles.stepDetail}><Clock3 size={14} /><span>{step.detail}</span></div>
-        </article>)}</div>
+        <div className={styles.steps}>
+          {stepsList.map((step, idx) => {
+            const StepIcon = resolveIcon(step.icon, Database)
+            return (
+              <article className={styles.step} key={idx}>
+                <div className={styles.stepHead}>
+                  <span className={styles.stepNumber}>{step.number || `0${idx + 1}`}</span>
+                  <span className={styles.stepIcon}><StepIcon size={19} /></span>
+                  <span className={styles.stepLabel}>{step.label}</span>
+                </div>
+                <h3>{step.title}</h3>
+                <p>{step.description}</p>
+                <div className={styles.stepDetail}><Clock3 size={14} /><span>{step.detail}</span></div>
+              </article>
+            )
+          })}
+        </div>
       </div></section>
 
-      <section className={styles.contactSection} id="kontak"><div className={styles.contactCard}><span className={styles.contactIcon}><Headset size={23} /></span><div><span className={styles.eyebrow}>ADA PERTANYAAN?</span><h2>Mari bicarakan kebutuhan bisnis Anda.</h2><p>Tim Fluxa siap membantu Anda memahami fitur, trial, dan pilihan paket yang sesuai.</p></div><a className={styles.secondaryButton} href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">Tanya via WhatsApp <ArrowRight size={16} /></a></div></section>
+      <section className={styles.contactSection} id="kontak">
+        <div className={styles.contactCard}>
+          <span className={styles.contactIcon}><Headset size={23} /></span>
+          <div>
+            <span className={styles.eyebrow}>{cms.contact?.eyebrow || 'ADA PERTANYAAN?'}</span>
+            <h2>{cms.contact?.heading || 'Mari bicarakan kebutuhan bisnis Anda.'}</h2>
+            <p>{cms.contact?.description || 'Tim Fluxa siap membantu Anda memahami fitur, trial, dan pilihan paket yang sesuai.'}</p>
+          </div>
+          <a className={styles.secondaryButton} href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+            {cms.contact?.buttonText || 'Tanya via WhatsApp'} <ArrowRight size={16} />
+          </a>
+        </div>
+      </section>
 
-      <section className={styles.trialSection} id="trial"><div className={styles.trialDecor} aria-hidden="true"><span /><span /><span /></div><div className={styles.trialContent}><span className={styles.trialPill}><Sparkles size={14} /> MULAI BERSAMA FLUXA</span><h2>Mulai bisnis Anda<br />dengan <span>cara fleksibel.</span></h2><p>Daftar sekarang. Pilih langganan langsung untuk aktivasi instan tanpa antrean, atau ajukan free trial 7 hari gratis.</p><Link className={styles.trialButton} href="/register">Mulai Sekarang <ArrowRight size={17} /></Link><span className={styles.trialFootnote}><ShieldCheck size={15} /> Langganan instan via Midtrans atau Trial gratis 7 hari</span></div></section>
+      <section className={styles.trialSection} id="trial">
+        <div className={styles.trialDecor} aria-hidden="true"><span /><span /><span /></div>
+        <div className={styles.trialContent}>
+          <span className={styles.trialPill}><Sparkles size={14} /> {cms.trialBanner?.pill || 'MULAI BERSAMA FLUXA'}</span>
+          <h2>{cms.trialBanner?.title || 'Mulai bisnis Anda'}<br />dengan <span>{cms.trialBanner?.titleHighlight || 'cara fleksibel.'}</span></h2>
+          <p>{cms.trialBanner?.description || 'Daftar sekarang. Pilih langganan langsung untuk aktivasi instan tanpa antrean, atau ajukan free trial 7 hari gratis.'}</p>
+          <Link className={styles.trialButton} href="/register">{cms.trialBanner?.ctaText || 'Mulai Sekarang'} <ArrowRight size={17} /></Link>
+          <span className={styles.trialFootnote}><ShieldCheck size={15} /> {cms.trialBanner?.footnote || 'Langganan instan via Midtrans atau Trial gratis 7 hari'}</span>
+        </div>
+      </section>
 
-      <section className={styles.pricingSection} id="paket"><div className={styles.sectionWrap}>
-        <div className={styles.sectionHeading}><span className={styles.eyebrow}>PILIH SESUAI KEBUTUHAN</span><h2>Paket yang tumbuh<br /><span>bersama bisnis Anda.</span></h2><p>Mulai dengan trial 7 hari, lalu pilih kategori paket yang paling sesuai dengan tahap bisnis Anda.</p></div>
-        <div className={styles.packageGrid}>{packages.map((plan) => <article className={`${styles.packageCard} ${plan.featured ? styles.packageFeatured : ''}`} key={plan.name}>{plan.featured && <span className={styles.popularBadge}>Pilihan bisnis</span>}<h3>{plan.name}</h3><p className={styles.packageDescription}>{plan.description}</p><div className={styles.packagePrice}>Hubungi kami<small>untuk informasi harga</small></div><a className={plan.featured ? styles.primaryButton : styles.packageButton} href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">Tanyakan paket <ArrowRight size={16} /></a><div className={styles.packageDivider} /><span className={styles.packageIncludes}>Yang termasuk:</span><ul>{plan.features.map((feature) => <li key={feature}><Check size={15} />{feature}</li>)}</ul></article>)}</div>
-      </div></section>
+      <section className={styles.pricingSection} id="paket">
+        <div className={styles.sectionWrap}>
+          <div className={styles.sectionHeading}>
+            <span className={styles.eyebrow}>{cms.pricing?.eyebrow || 'PILIH SESUAI KEBUTUHAN'}</span>
+            <h2>
+              {cms.pricing?.title || 'Paket yang tumbuh'}<br />
+              <span>{cms.pricing?.titleHighlight || 'bersama bisnis Anda.'}</span>
+            </h2>
+            <p>{cms.pricing?.description || 'Mulai dengan trial 7 hari, lalu pilih kategori paket yang paling sesuai dengan tahap bisnis Anda.'}</p>
+          </div>
+          <div className={styles.packageGrid}>
+            {(cms.pricing?.packages || defaultPackages).map((plan, idx) => (
+              <article className={`${styles.packageCard} ${plan.featured ? styles.packageFeatured : ''}`} key={plan.name || idx}>
+                {plan.featured && <span className={styles.popularBadge}>{plan.badge || 'Pilihan bisnis'}</span>}
+                <h3>{plan.name}</h3>
+                <p className={styles.packageDescription}>{plan.description}</p>
+                <div className={styles.packagePrice}>
+                  {plan.priceLabel || 'Hubungi kami'}
+                  <small>{plan.priceSublabel || 'untuk informasi harga'}</small>
+                </div>
+                <a className={plan.featured ? styles.primaryButton : styles.packageButton} href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                  {cms.pricing?.buttonText || 'Tanyakan paket'} <ArrowRight size={16} />
+                </a>
+                <div className={styles.packageDivider} />
+                <span className={styles.packageIncludes}>Yang termasuk:</span>
+                <ul>
+                  {(plan.features || []).map((feature, fIdx) => (
+                    <li key={fIdx}><Check size={15} />{feature}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section className={styles.faqSection} id="faq"><div className={`${styles.sectionWrap} ${styles.faqLayout}`}>
-        <div className={styles.faqIntro}><span className={styles.eyebrow}>FAQ</span><h2>Pertanyaan yang<br /><span>sering ditanyakan.</span></h2><p>Belum menemukan jawaban? Hubungi tim Fluxa untuk informasi lebih lanjut.</p><a className={styles.textLink} href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">Hubungi kami via WhatsApp <ArrowRight size={16} /></a></div>
-        <div className={styles.faqList}>{faqs.map((faq) => <details className={styles.faqItem} key={faq.question}><summary>{faq.question}<ChevronDown size={18} /></summary><p>{faq.answer}</p></details>)}</div>
+        <div className={styles.faqIntro}><span className={styles.eyebrow}>FAQ</span><h2>Pertanyaan yang<br /><span>sering ditanyakan.</span></h2><p>Belum menemukan jawaban? Hubungi tim Fluxa untuk informasi lebih lanjut.</p><a className={styles.textLink} href={whatsappUrl} target="_blank" rel="noopener noreferrer">Hubungi kami via WhatsApp <ArrowRight size={16} /></a></div>
+        <div className={styles.faqList}>
+          {faqsList.map((faq, idx) => (
+            <details className={styles.faqItem} key={idx}>
+              <summary>{faq.question}<ChevronDown size={18} /></summary>
+              <p>{faq.answer}</p>
+            </details>
+          ))}
+        </div>
       </div></section>
 
-      <footer className={styles.footer}><div className={styles.footerInner}><Link className={styles.brand} href="/"><Image src="/Fluxa-Logo.webp" alt="" width={34} height={34} /><span>fluxa<span className={styles.brandDot}>.</span></span></Link><p>Kelola hari ini. Tumbuh untuk esok.</p><div><a href="#fitur">Fitur</a><a href="#kontak">Kontak</a><Link href="/login">Login</Link></div></div><span className={styles.copyright}>© {new Date().getFullYear()} Fluxa. Semua hak dilindungi.</span></footer>
+      <footer className={styles.footer}><div className={styles.footerInner}><Link className={styles.brand} href="/"><Image src="/Fluxa-Logo.webp" alt="" width={34} height={34} /><span>fluxa<span className={styles.brandDot}>.</span></span></Link><p>{cms.footer?.tagline || 'Kelola hari ini. Tumbuh untuk esok.'}</p><div><a href="#fitur">Fitur</a><a href="#kontak">Kontak</a><Link href="/login">Login</Link></div></div><span className={styles.copyright}>© {new Date().getFullYear()} Fluxa. {cms.footer?.copyright || 'Semua hak dilindungi.'}</span></footer>
     </main>
   )
 }
