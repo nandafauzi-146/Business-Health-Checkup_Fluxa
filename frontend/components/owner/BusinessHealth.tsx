@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from 'recharts'
-import { Sparkles, RefreshCw, Key, CheckCircle, AlertTriangle, Bot, Activity, Layers, ArrowUpRight, Check, DollarSign, Calendar, Users, FileText, Building2 } from 'lucide-react'
+import { Sparkles, RefreshCw, CheckCircle, AlertTriangle, Bot, Activity, Layers, ArrowUpRight, DollarSign, Calendar, Users, FileText, Building2 } from 'lucide-react'
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
 import { PageHeader } from '@/components/layout/Topbar'
 import { FinancialHealthInput, BusinessHealthDiagnosis } from '@intelligence/index'
@@ -14,7 +14,7 @@ interface Props {
   pastCheckups: any[]
 }
 
-// Markdown formatter yang rapi dan elegan untuk narasi AI Gemini
+// Markdown formatter yang rapi dan elegan untuk narasi AI eksekutif
 function FormattedAiNarration({ text }: { text: string }) {
   if (!text) return null
 
@@ -129,35 +129,12 @@ export default function BusinessHealthClient({
     }
     return null
   })
-  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false)
-  const [apiKey, setApiKey] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('fluxa_gemini_key') || ''
-    }
-    return ''
-  })
-  const [tempApiKey, setTempApiKey] = useState(apiKey)
-  const [apiSaveSuccess, setApiSaveSuccess] = useState(false)
-
   // Simpan ke sessionStorage setiap kali narasi/source/model berubah
   const persistCache = useCallback((narration: string, source: string, model: string | null) => {
     if (typeof window !== 'undefined') {
       sessionStorage.setItem(CACHE_KEY, JSON.stringify({ narration, source, model }))
     }
   }, [])
-
-  const handleSaveApiKey = (e: React.FormEvent) => {
-    e.preventDefault()
-    setApiKey(tempApiKey.trim())
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('fluxa_gemini_key', tempApiKey.trim())
-    }
-    setApiSaveSuccess(true)
-    setTimeout(() => {
-      setApiSaveSuccess(false)
-      setApiKeyModalOpen(false)
-    }, 1200)
-  }
 
   const handleGenerate = async () => {
     // Hapus cache lama sebelum generate ulang
@@ -171,7 +148,6 @@ export default function BusinessHealthClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...input,
-          apiKey: apiKey.trim() || undefined,
           saveToDb: true
         })
       })
@@ -215,36 +191,22 @@ export default function BusinessHealthClient({
     <div>
       <PageHeader
         title="AI Business Health Checkup"
-        subtitle="Diagnosis kesehatan finansial UMKM berbasis data transaksi riil kasir & Google Gemini AI"
+        subtitle="Diagnosis kesehatan finansial UMKM berbasis data transaksi riil kasir & AI Executive Advisor"
         actions={
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button
-              onClick={() => {
-                setTempApiKey(apiKey)
-                setApiKeyModalOpen(true)
-              }}
-              className="btn btn-secondary"
-              style={{ gap: 6 }}
-            >
-              <Key size={14} />
-              {apiKey ? 'Ganti Gemini API Key' : 'Set Gemini API Key'}
-            </button>
-
-            <button
-              id="generate-checkup-btn"
-              className="btn btn-primary"
-              onClick={handleGenerate}
-              disabled={loading}
-              style={{ gap: 6 }}
-            >
-              {loading ? (
-                <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
-              ) : (
-                <Sparkles size={14} />
-              )}
-              {loading ? 'Menghubungkan ke Gemini AI...' : 'Generate Rapor AI (Live)'}
-            </button>
-          </div>
+          <button
+            id="generate-checkup-btn"
+            className="btn btn-primary"
+            onClick={handleGenerate}
+            disabled={loading}
+            style={{ gap: 6 }}
+          >
+            {loading ? (
+              <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
+            ) : (
+              <Sparkles size={14} />
+            )}
+            {loading ? 'Menganalisis data finansial...' : 'Generate Rapor AI (Live)'}
+          </button>
         }
       />
 
@@ -267,7 +229,7 @@ export default function BusinessHealthClient({
           </div>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-              Engine Analisis: {aiSource === 'ai_llm' ? (aiModel || 'Google Gemini AI (Live API)') : 'Deterministic Financial Engine (Standar Akuntansi UMKM)'}
+              Engine Analisis: {aiSource === 'ai_llm' ? (aiModel || 'FluxAI Intelligence Engine (Live)') : 'Deterministic Financial Engine (Standar Akuntansi UMKM)'}
               <span style={{
                 fontSize: 11, padding: '2px 8px', borderRadius: 12, fontWeight: 700,
                 background: aiSource === 'ai_llm' ? 'var(--oks)' : 'var(--accs)',
@@ -336,17 +298,17 @@ export default function BusinessHealthClient({
         </SectionCard>
       </div>
 
-      {/* Narasi AI Gemini / Advisor Eksekutif */}
+      {/* Narasi AI / Advisor Eksekutif */}
       <div style={{ marginBottom: 20 }}>
         <SectionCard
-          title={aiSource === 'ai_llm' ? `Analisis Eksekutif dari ${aiModel || 'Gemini AI'}` : 'Diagnosis Finansial Eksekutif'}
+          title={aiSource === 'ai_llm' ? (aiModel ? `Analisis Eksekutif dari ${aiModel}` : 'Analisis Eksekutif dari FluxAI') : 'Diagnosis Finansial Eksekutif'}
           action={
             <span style={{
               fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 8,
               background: aiSource === 'ai_llm' ? 'var(--oks)' : 'var(--bg)',
               color: aiSource === 'ai_llm' ? 'var(--ok)' : 'var(--ink)'
             }}>
-              {aiSource === 'ai_llm' ? '✓ Terverifikasi AI Gemini Live' : 'Rule Engine'}
+              {aiSource === 'ai_llm' ? '✓ Terverifikasi AI Live' : 'Rule Engine'}
             </span>
           }
         >
@@ -534,67 +496,6 @@ export default function BusinessHealthClient({
           ))}
         </div>
       </SectionCard>
-
-      {/* Modal Pengaturan Gemini API Key */}
-      {apiKeyModalOpen && (
-        <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: 460 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Key size={18} color="var(--acc)" /> Konfigurasi Google Gemini API Key
-              </h3>
-              <button onClick={() => setApiKeyModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
-            </div>
-
-            <p style={{ fontSize: 13, color: 'var(--mute)', lineHeight: 1.5, marginBottom: 14 }}>
-              Masukkan Google Gemini API Key Anda. API key disimpan secara aman di browser lokal Anda serta di <code style={{ background: '#eee', padding: '1px 4px', borderRadius: 4 }}>.env.local</code> sebagai <code style={{ background: '#eee', padding: '1px 4px', borderRadius: 4 }}>GEMINI_API_KEY</code>.
-            </p>
-
-            <form onSubmit={handleSaveApiKey}>
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>
-                  Gemini API Key:
-                </label>
-                <input
-                  type="password"
-                  placeholder="AQ.Ab8..."
-                  value={tempApiKey}
-                  onChange={e => setTempApiKey(e.target.value)}
-                  style={{
-                    width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--line)',
-                    fontSize: 13, outline: 'none', fontFamily: 'monospace'
-                  }}
-                />
-              </div>
-
-              {apiSaveSuccess && (
-                <div style={{
-                  padding: '8px 12px', background: 'var(--oks)', color: 'var(--ok)',
-                  borderRadius: 6, fontSize: 12, fontWeight: 600, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6
-                }}>
-                  <Check size={14} /> API Key berhasil disimpan!
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  onClick={() => setApiKeyModalOpen(false)}
-                  className="btn btn-secondary"
-                >
-                  Tutup
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                >
-                  Simpan & Terapkan
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

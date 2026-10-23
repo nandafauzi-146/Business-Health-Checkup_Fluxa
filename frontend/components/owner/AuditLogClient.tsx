@@ -4,7 +4,8 @@ import { useState, useMemo } from 'react'
 import {
   ShieldAlert, Search, Filter, Calendar, User, Clock, CheckCircle,
   AlertTriangle, ArrowUpRight, ArrowDownLeft, Printer, RefreshCw,
-  FileText, ShoppingCart, Layers, DollarSign, Scale, X, ChevronRight, Eye
+  FileText, ShoppingCart, Layers, DollarSign, Scale, X, ChevronRight, Eye,
+  ArrowRight, Info
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, FormatRupiah } from '@/components/ui/Cards'
@@ -251,6 +252,159 @@ function timeAgo(iso: string) {
   if (hours < 24) return `${hours} jam lalu`
   const days = Math.floor(hours / 24)
   return `${days} hari lalu`
+}
+
+// Terjemahan ramah untuk istilah teknis database agar mudah dipahami pemilik bisnis
+const FIELD_LABELS: Record<string, string> = {
+  // Produk & Stok
+  name: 'Nama Produk / Barang',
+  product_name: 'Nama Produk / Barang',
+  sell_price: 'Harga Jual ke Pembeli',
+  buy_price: 'Harga Modal / Pokok',
+  stock: 'Jumlah Stok Saat Ini',
+  min_stock: 'Batas Minimum Stok',
+  qty: 'Jumlah Unit Perubahan',
+  type: 'Jenis Aktivitas Perubahan',
+  is_active: 'Status Penjualan Produk',
+  category_id: 'Kategori Produk',
+  category_name: 'Kategori Produk',
+  barcode: 'Kode Barcode Produk',
+
+  // Penjualan & Kasir
+  invoice_number: 'Nomor Nota / Struk Penjualan',
+  final_amount: 'Total Pembayaran Akhir',
+  total_amount: 'Total Nilai Transaksi',
+  subtotal: 'Subtotal Belanja',
+  discount: 'Potongan Diskon Belanja',
+  payment_method: 'Metode Pembayaran',
+  cashier_id: 'Kasir yang Bertugas',
+  status: 'Status Transaksi',
+  items_count: 'Jumlah Macam Barang Dibeli',
+  void_reason: 'Alasan Pembatalan Transaksi',
+  restored_stock: 'Pengembalian Stok ke Rak',
+
+  // Shift & Kas
+  initial_cash: 'Modal Awal Kas Laci',
+  final_cash: 'Uang Fisik Kas Saat Tutup Shift',
+  expected_cash: 'Total Kas Menurut Sistem',
+  difference: 'Selisih Kas Laci (Fisik vs Sistem)',
+  opened_at: 'Waktu Buka Shift Kasir',
+  closed_at: 'Waktu Tutup Shift Kasir',
+
+  // Pengeluaran & Biaya
+  amount: 'Nominal Biaya / Uang',
+  description: 'Keterangan Pengeluaran',
+  expense_date: 'Tanggal Biaya Operasional',
+  category: 'Kategori Pengeluaran',
+
+  // Hutang & Piutang
+  party_name: 'Nama Pihak / Rekanan Mitra',
+  supplier_name: 'Nama Pemasok / Supplier',
+  paid_amount: 'Jumlah Sudah Terbayar',
+  due_date: 'Batas Waktu Jatuh Tempo',
+  note: 'Catatan Keterangan',
+  payment_date: 'Tanggal Pembayaran'
+}
+
+// Daftar atribut teknis internal database yang tidak boleh ditampilkan ke pemilik
+const TECHNICAL_KEYS_TO_IGNORE = new Set([
+  'id', 'created_at', 'updated_at', 'user_id', 'cashier_id',
+  'created_by', 'updated_by', 'sale_id', 'product_id', 'profile_id',
+  'supplier_payable_id', 'expense_category_id', 'category_id',
+  'tenant_id', 'store_id', 'ip_address'
+])
+
+const TABLE_FRIENDLY_NAMES: Record<string, { label: string; desc: string }> = {
+  sales: { label: 'Transaksi Penjualan (Kasir)', desc: 'Pencatatan struk & penjualan kasir' },
+  sale_items: { label: 'Rincian Barang Penjualan', desc: 'Item belanja pembeli' },
+  products: { label: 'Katalog Produk & Harga', desc: 'Data master barang, harga modal/jual, & stok' },
+  shifts: { label: 'Shift & Kas Laci Kasir', desc: 'Rekonsiliasi uang fisik laci kasir' },
+  expenses: { label: 'Buku Biaya Operasional', desc: 'Pengeluaran harian dan operasional toko' },
+  supplier_payables: { label: 'Hutang & Piutang Usaha', desc: 'Kewajiban supplier atau piutang rekanan' },
+  supplier_payments: { label: 'Riwayat Pembayaran Hutang', desc: 'Pencatatan cicilan / pelunasan hutang' },
+  receivables: { label: 'Buku Piutang Pelanggan', desc: 'Tagihan penjualan tempo ke pelanggan' },
+  receivable_payments: { label: 'Pembayaran Piutang', desc: 'Pelunasan tagihan pelanggan' },
+  debt_categories: { label: 'Kategori Hutang & Piutang', desc: 'Pengelompokan jenis kewajiban' }
+}
+
+function formatFieldValue(key: string, val: any): string {
+  if (val === null || val === undefined) return '—'
+  if (typeof val === 'boolean') {
+    if (key === 'is_active') return val ? 'Aktif (Dapat Dijual)' : 'Non-Aktif (Disembunyikan)'
+    if (key === 'restored_stock') return val ? 'Ya, stok dikembalikan' : 'Tidak dikembalikan'
+    return val ? 'Ya' : 'Tidak'
+  }
+  if (typeof val === 'number') {
+    if (
+      key.includes('price') ||
+      key.includes('amount') ||
+      key.includes('cash') ||
+      key.includes('difference') ||
+      key.includes('discount') ||
+      key.includes('subtotal')
+    ) {
+      if (key === 'difference' && val === 0) return 'Rp 0 (Kas Pas / Sesuai)'
+      return formatRp(val)
+    }
+    if (key === 'qty' || key === 'stock' || key.includes('count') || key === 'min_stock') {
+      return `${val.toLocaleString('id-ID')} unit`
+    }
+    return val.toLocaleString('id-ID')
+  }
+  if (typeof val === 'string') {
+    if (key === 'type') {
+      if (val === 'in') return 'Penambahan / Masuk (+)'
+      if (val === 'out') return 'Pengurangan / Keluar (-)'
+      if (val === 'adjustment') return 'Penyesuaian Opname Fisik'
+      if (val === 'payable') return 'Hutang Toko (Kewajiban)'
+      if (val === 'receivable') return 'Piutang Usaha (Tagihan)'
+    }
+    if (key === 'payment_method') {
+      const pmMap: Record<string, string> = {
+        cash: 'Uang Tunai (Cash)',
+        tunai: 'Uang Tunai (Cash)',
+        qris: 'QRIS',
+        transfer: 'Transfer Bank',
+        non_cash: 'Non-Tunai'
+      }
+      return pmMap[val.toLowerCase()] || val.toUpperCase()
+    }
+    if (key === 'status') {
+      const statusMap: Record<string, string> = {
+        completed: 'Selesai / Berhasil',
+        voided: 'Dibatalkan (Void)',
+        open: 'Shift Terbuka (Aktif)',
+        closed: 'Shift Telah Ditutup',
+        unpaid: 'Belum Lunas',
+        partial: 'Cicilan Sebagian',
+        paid: 'Lunas Sepenuhnya'
+      }
+      return statusMap[val.toLowerCase()] || val
+    }
+    if (key.includes('date') || key.includes('opened_at') || key.includes('closed_at')) {
+      if (/^\d{4}-\d{2}-\d{2}/.test(val)) {
+        try {
+          const d = new Date(val)
+          if (!isNaN(d.getTime())) {
+            return d.toLocaleDateString('id-ID', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+              hour: val.includes('T') || val.includes(':') ? '2-digit' : undefined,
+              minute: val.includes('T') || val.includes(':') ? '2-digit' : undefined
+            })
+          }
+        } catch {
+          return val
+        }
+      }
+    }
+    return val
+  }
+  if (typeof val === 'object') {
+    return JSON.stringify(val)
+  }
+  return String(val)
 }
 
 export default function AuditLogClient({
@@ -752,7 +906,7 @@ export default function AuditLogClient({
             border: '1px solid var(--line)',
             borderRadius: 14,
             width: '100%',
-            maxWidth: 640,
+            maxWidth: 720,
             boxShadow: '0 16px 40px rgba(0,0,0,0.25)',
             overflow: 'hidden',
             maxHeight: '90vh',
@@ -773,7 +927,7 @@ export default function AuditLogClient({
                   {getActionBadge(selectedLog.action)}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--mute)', marginTop: 2 }}>
-                  ID: {selectedLog.id} • Waktu: {formatDate(selectedLog.created_at)}
+                  Waktu: {formatDate(selectedLog.created_at)} ({timeAgo(selectedLog.created_at)})
                 </div>
               </div>
               <button
@@ -789,74 +943,171 @@ export default function AuditLogClient({
             <div style={{ padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Ringkasan Kejadian */}
               <div style={{ background: 'var(--bg)', padding: '14px', borderRadius: 10, border: '1px solid var(--line)' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--mute)', textTransform: 'uppercase', marginBottom: 6 }}>
-                  Ringkasan Narasi
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mute)', textTransform: 'uppercase', marginBottom: 6 }}>
+                  Ringkasan Aktivitas
                 </div>
                 <div style={{ fontSize: 14 }}>
                   {formatNarrative(selectedLog)}
                 </div>
               </div>
 
-              {/* Data Pelaku & Target */}
+              {/* Data Pelaku & Target Modul */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div style={{ background: 'var(--bg)', padding: '12px', borderRadius: 8, border: '1px solid var(--line)' }}>
+                <div style={{ background: 'var(--bg)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--line)' }}>
                   <div style={{ fontSize: 11, color: 'var(--mute)', fontWeight: 600 }}>Staf Pelaksana:</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{selectedLog.user_name || 'Sistem'}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2, color: 'var(--ink)' }}>{selectedLog.user_name || 'Sistem Otomatis'}</div>
                   <div style={{ marginTop: 4 }}>{getRoleBadge(selectedLog.user_role)}</div>
                 </div>
 
-                <div style={{ background: 'var(--bg)', padding: '12px', borderRadius: 8, border: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--mute)', fontWeight: 600 }}>Tabel & Record ID:</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, fontFamily: 'monospace', marginTop: 2 }}>
-                    {selectedLog.table_name}
+                <div style={{ background: 'var(--bg)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--line)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--mute)', fontWeight: 600 }}>Bagian / Modul Terkait:</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2, color: 'var(--ink)' }}>
+                    {TABLE_FRIENDLY_NAMES[selectedLog.table_name]?.label || selectedLog.table_name}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--mute)', fontFamily: 'monospace', marginTop: 2 }}>
-                    ID: {selectedLog.record_id || '—'}
+                  <div style={{ fontSize: 11, color: 'var(--mute)', marginTop: 2 }}>
+                    {TABLE_FRIENDLY_NAMES[selectedLog.table_name]?.desc || 'Aktivitas sistem internal'}
                   </div>
                 </div>
               </div>
 
-              {/* Old Data (Jika Ada) */}
-              {selectedLog.old_data && (
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--bad)', marginBottom: 6 }}>
-                    Data Sebelum Perubahan (Old Data):
-                  </div>
-                  <pre style={{
-                    background: 'var(--bg)',
-                    padding: '12px',
-                    borderRadius: 8,
-                    fontSize: 12,
-                    fontFamily: 'monospace',
-                    border: '1px solid var(--line)',
-                    overflowX: 'auto',
-                    whiteSpace: 'pre-wrap'
-                  }}>
-                    {JSON.stringify(selectedLog.old_data, null, 2)}
-                  </pre>
-                </div>
-              )}
+              {/* PERBANDINGAN DATA: INFORMATION / SECTION | BEFORE CHANGE (OLD DATA) | AFTER CHANGE (NEW DATA) */}
+              {(() => {
+                const oldObj = selectedLog.old_data && typeof selectedLog.old_data === 'object' ? selectedLog.old_data : {}
+                const newObj = selectedLog.new_data && typeof selectedLog.new_data === 'object' ? selectedLog.new_data : {}
 
-              {/* New Data */}
-              {selectedLog.new_data && (
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ok)', marginBottom: 6 }}>
-                    Data Sesudah / Rekaman Transaksi (New Data):
+                const hasOld = Object.keys(oldObj).length > 0
+                const hasNew = Object.keys(newObj).length > 0
+
+                // Ambil seluruh atribut data, abaikan atribut teknis database
+                const rawKeys = Array.from(new Set([...Object.keys(oldObj), ...Object.keys(newObj)]))
+                const keys = rawKeys.filter(k => !TECHNICAL_KEYS_TO_IGNORE.has(k))
+
+                if (keys.length === 0) {
+                  return (
+                    <div style={{ padding: 14, background: 'var(--bg)', borderRadius: 8, color: 'var(--mute)', fontSize: 13, textAlign: 'center' }}>
+                      Tidak ada rekaman data spesifik yang dicatat untuk aktivitas ini.
+                    </div>
+                  )
+                }
+
+                const isUpdate = hasOld && hasNew
+                const isCreateOnly = !hasOld && hasNew
+                const isDeleteOnly = hasOld && !hasNew
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
+                          Perbandingan Rincian Aktivitas
+                        </div>
+                        <div style={{ fontSize: 11.5, color: 'var(--mute)', marginTop: 2 }}>
+                          {isUpdate && 'Membandingkan data sebelum dilakukan perubahan dengan nilai terbaru.'}
+                          {isCreateOnly && 'Pencatatan baru: data sebelum perubahan belum ada di sistem.'}
+                          {isDeleteOnly && 'Aktivitas penghapusan: data berikut telah dihapus dari sistem.'}
+                        </div>
+                      </div>
+                      <span style={{
+                        fontSize: 11,
+                        padding: '3px 8px',
+                        borderRadius: 6,
+                        fontWeight: 700,
+                        background: isUpdate ? 'var(--warns)' : (isCreateOnly ? 'var(--oks)' : 'var(--bads)'),
+                        color: isUpdate ? 'var(--warn)' : (isCreateOnly ? 'var(--ok)' : 'var(--bad)'),
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {isUpdate && '● Pembaruan Data'}
+                        {isCreateOnly && '✓ Pencatatan Baru'}
+                        {isDeleteOnly && '✕ Penghapusan Data'}
+                      </span>
+                    </div>
+
+                    <div style={{ border: '1px solid var(--line)', borderRadius: 10, overflow: 'hidden' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)', textAlign: 'left' }}>
+                            <th style={{ padding: '11px 14px', width: '36%', color: 'var(--ink)', fontWeight: 700 }}>
+                              Informasi Bagian
+                            </th>
+                            <th style={{ padding: '11px 14px', width: '32%', color: 'var(--bad)', fontWeight: 700 }}>
+                              Sebelum Perubahan (Data Lama)
+                            </th>
+                            <th style={{ padding: '11px 14px', width: '32%', color: 'var(--ok)', fontWeight: 700 }}>
+                              Sesudah Perubahan (Data Baru)
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {keys.map((key, idx) => {
+                            const oldVal = oldObj[key]
+                            const newVal = newObj[key]
+                            const hasOldVal = oldVal !== undefined && oldVal !== null
+                            const hasNewVal = newVal !== undefined && newVal !== null
+                            const isChanged = isUpdate && JSON.stringify(oldVal) !== JSON.stringify(newVal)
+                            const label = FIELD_LABELS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+
+                            return (
+                              <tr key={key} style={{
+                                borderBottom: idx === keys.length - 1 ? 'none' : '1px solid var(--line)',
+                                background: isChanged ? 'rgba(245, 158, 11, 0.05)' : (idx % 2 === 0 ? 'var(--panel)' : 'var(--bg)')
+                              }}>
+                                <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--ink)' }}>
+                                  {label}
+                                  {isChanged && (
+                                    <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 10, color: 'var(--warn)', fontWeight: 700 }}>
+                                      • Diperbarui
+                                    </span>
+                                  )}
+                                </td>
+
+                                {/* Before Change (Old Data) */}
+                                <td style={{ padding: '10px 14px' }}>
+                                  {hasOldVal ? (
+                                    <span style={{
+                                      color: isChanged ? 'var(--bad)' : 'var(--ink)',
+                                      background: isChanged ? 'var(--bads)' : 'transparent',
+                                      padding: isChanged ? '2px 6px' : '0',
+                                      borderRadius: 4,
+                                      fontWeight: isChanged ? 600 : 400,
+                                      display: 'inline-block'
+                                    }}>
+                                      {formatFieldValue(key, oldVal)}
+                                    </span>
+                                  ) : (
+                                    <span style={{ color: 'var(--mute)', fontStyle: 'italic', fontSize: 11.5 }}>
+                                      {isCreateOnly ? '— (Pencatatan Baru)' : '— (Tidak ada)'}
+                                    </span>
+                                  )}
+                                </td>
+
+                                {/* After Change (New Data) */}
+                                <td style={{ padding: '10px 14px' }}>
+                                  {hasNewVal ? (
+                                    <span style={{
+                                      color: isChanged || isCreateOnly ? 'var(--ok)' : 'var(--ink)',
+                                      background: isChanged ? 'var(--oks)' : 'transparent',
+                                      padding: isChanged ? '2px 6px' : '0',
+                                      borderRadius: 4,
+                                      fontWeight: isChanged || isCreateOnly ? 600 : 400,
+                                      display: 'inline-block'
+                                    }}>
+                                      {formatFieldValue(key, newVal)}
+                                    </span>
+                                  ) : (
+                                    <span style={{ color: 'var(--mute)', fontStyle: 'italic', fontSize: 11.5 }}>
+                                      {isDeleteOnly ? '— (Dihapus dari Sistem)' : '— (Dihapus)'}
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                  <pre style={{
-                    background: 'var(--bg)',
-                    padding: '12px',
-                    borderRadius: 8,
-                    fontSize: 12,
-                    fontFamily: 'monospace',
-                    border: '1px solid var(--line)',
-                    overflowX: 'auto',
-                    whiteSpace: 'pre-wrap'
-                  }}>
-                    {JSON.stringify(selectedLog.new_data, null, 2)}
-                  </pre>
-                </div>
-              )}
+                )
+              })()}
             </div>
 
             {/* Footer */}
