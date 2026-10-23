@@ -24,8 +24,10 @@ export async function generateAiHealthInsights(
 
   if (apiKey) {
     const candidateModels = [
-      'gemini-3.8-flash',
-      'gemini-3.1-pro-preview',
+      'gemini-3.5-flash-lite',
+      'gemini-flash-lite-latest',
+      'gemini-3.5-flash',
+      'gemini-3-flash-preview',
     ];
     let lastError: any = null;
 
@@ -53,6 +55,7 @@ export async function generateAiHealthInsights(
               maxOutputTokens: 4096,
             },
           }),
+          signal: AbortSignal.timeout(12000),
         });
 
         if (!response.ok) {
@@ -69,7 +72,7 @@ export async function generateAiHealthInsights(
           return {
             insights: generatedText.trim(),
             source: 'ai_llm',
-            model: `Google ${model} (Live API)`,
+            model: 'FluxAI Intelligence Engine (Live API)',
           };
         }
       } catch (err: any) {
@@ -78,11 +81,11 @@ export async function generateAiHealthInsights(
       }
     }
 
-    console.warn('All Gemini candidate models failed:', lastError?.message);
+    console.warn('All AI candidate models failed:', lastError?.message);
     return {
       insights: generateDeterministicNarrative(input, metrics),
       source: 'heuristic_engine',
-      error: `Gemini API: ${lastError?.message || 'Gagal memanggil model'}. Menampilkan analisis rasio akuntansi deterministik.`,
+      error: `AI Service: ${lastError?.message || 'Gagal memanggil model'}. Menampilkan analisis rasio akuntansi deterministik.`,
     };
   }
 

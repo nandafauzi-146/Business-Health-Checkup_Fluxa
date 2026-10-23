@@ -205,8 +205,10 @@ export async function POST(req: NextRequest) {
     })
 
     const candidateModels = [
-      'gemini-3.8-flash',
-      'gemini-3.1-pro-preview',
+      'gemini-3.5-flash-lite',
+      'gemini-flash-lite-latest',
+      'gemini-3.5-flash',
+      'gemini-3-flash-preview',
     ]
 
     for (const model of candidateModels) {
@@ -221,6 +223,7 @@ export async function POST(req: NextRequest) {
             contents: geminiContents,
             generationConfig: { temperature: 0.5, maxOutputTokens: 2048 },
           }),
+          signal: AbortSignal.timeout(12000),
         })
 
         if (!response.ok) {
@@ -233,7 +236,7 @@ export async function POST(req: NextRequest) {
         const text = result.candidates?.[0]?.content?.parts?.[0]?.text
 
         if (text && text.trim().length > 0) {
-          return NextResponse.json({ reply: text.trim(), model: `Google ${model}` })
+          return NextResponse.json({ reply: text.trim(), model: 'FluxAI' })
         }
       } catch (err) {
         console.warn(`Chat: model ${model} threw:`, err)
@@ -241,7 +244,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ error: 'Semua model Gemini tidak tersedia. Coba lagi nanti.' }, { status: 503 })
+    return NextResponse.json({ error: 'Layanan AI saat ini tidak tersedia. Coba lagi nanti.' }, { status: 503 })
 
   } catch (err: any) {
     console.error('Chat AI route error:', err)
