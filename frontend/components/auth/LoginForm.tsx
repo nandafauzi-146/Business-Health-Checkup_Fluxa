@@ -380,7 +380,7 @@ export default function LoginForm({ registrationStatus }: { registrationStatus?:
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role, approval_status')
+        .select('role, approval_status, registration_path')
         .eq('id', user.id)
         .single()
 
@@ -397,6 +397,17 @@ export default function LoginForm({ registrationStatus }: { registrationStatus?:
           setError('Profil akses akun tidak dapat dibaca. Pastikan profil akun tersedia dan hubungi administrator.')
         }
 
+        return
+      }
+
+      if (
+        profile.role === 'owner' &&
+        profile.approval_status === 'pending' &&
+        profile.registration_path === 'subscribe'
+      ) {
+        setSuccess('Login berhasil. Mengarahkan Anda ke pembayaran langganan...')
+        router.replace('/owner/langganan?onboard=1')
+        router.refresh()
         return
       }
 

@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     // 1. Fetch all subscription payments for comprehensive reporting
     let allPaymentsQuery = admin
       .from('subscription_payments')
-      .select('id, order_id, owner_id, plan_name, amount, status, gateway_transaction_id, created_at, paid_at')
+      .select('id, order_id, owner_id, plan_name, duration_days, amount, status, gateway_transaction_id, subscription_id, created_at, paid_at')
       .order('created_at', { ascending: false })
 
     if (start) allPaymentsQuery = allPaymentsQuery.gte('created_at', start)
@@ -63,6 +63,13 @@ export async function GET(request: Request) {
       ? await admin.from('profiles').select('id, full_name, email, phone').in('id', ownerIds)
       : { data: [] }
     const profileMap = new Map((profilesData ?? []).map((p) => [p.id, p]))
+
+    // 2b. Fetch Subscriptions for activation and expiration details
+    const subscriptionIds = [...new Set(allPayments.map((p) => p.subscription_id).filter(Boolean))]
+    const { data: subsData } = subscriptionIds.length
+      ? await admin.from('subscriptions').select('id, owner_id, current_period_start, current_period_end, status').in('id', subscriptionIds)
+      : { data: [] }
+    const subMap = new Map((subsData ?? []).map((s) => [s.id, s]))
 
     // 3. Fetch Recorded External Expenses and Withdrawals (FR-04 Reporting Only)
     let expensesQuery = admin
@@ -170,11 +177,15 @@ export async function GET(request: Request) {
     // 7. Filtered Enriched Transactions List
     let enriched = allPayments.map((p) => {
       const profile = profileMap.get(p.owner_id)
+      const sub = p.subscription_id ? subMap.get(p.subscription_id) : null
       return {
         ...p,
         customerName: profile?.full_name ?? 'Owner FLUXA',
         customerEmail: profile?.email ?? '',
         customerPhone: profile?.phone ?? '',
+        subscriptionPeriodStart: sub?.current_period_start ?? null,
+        subscriptionPeriodEnd: sub?.current_period_end ?? null,
+        subscriptionStatus: sub?.status ?? null,
       }
     })
 
@@ -192,17 +203,19 @@ export async function GET(request: Request) {
     // CSV Export
     if (params.get('format') === 'csv') {
       const rows = [
-        ['Order ID', 'ID Gateway', 'Nama Customer / Bisnis', 'Email', 'Paket', 'Nominal (IDR)', 'Status', 'Tanggal Transaksi', 'Tanggal Pembayaran'],
+        ['Order ID', 'ID Gateway', 'Nama Customer / Bisnis', 'Email', 'Paket', 'Durasi (Hari)', 'Nominal (IDR)', 'Status', 'Tanggal Transaksi', 'Tanggal Pembayaran', 'Aktif Hingga'],
         ...enriched.map((row) => [
           row.order_id,
           row.gateway_transaction_id || '-',
           row.customerName,
           row.customerEmail,
           row.plan_name,
+          row.duration_days ?? 30,
           row.amount,
           row.status,
           row.created_at,
           row.paid_at || '-',
+          row.subscriptionPeriodEnd || '-',
         ]),
       ]
       const csv = rows.map((row) => row.map(csvCell).join(',')).join('\r\n')
