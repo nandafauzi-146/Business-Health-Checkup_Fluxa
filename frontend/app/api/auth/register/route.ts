@@ -75,6 +75,7 @@ export async function POST(request: Request) {
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email: normalizedEmail,
       password,
+      email_confirm: true,
       user_metadata: {
         full_name: full_name.trim(),
         phone: normalizedPhone,
