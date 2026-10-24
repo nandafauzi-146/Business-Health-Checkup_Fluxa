@@ -80,7 +80,7 @@ export async function GET(request: Request) {
 
     // Fetch latest payments for subscribe registrations
     const ownerIds = (profiles || []).map((p) => p.id)
-    let paymentsMap: Record<string, { status: string; plan_name: string; amount: number; paid_at: string | null; created_at: string }> = {}
+    const paymentsMap: Record<string, { status: string; plan_name: string; amount: number; paid_at: string | null; created_at: string }> = {}
 
     if (ownerIds.length > 0) {
       const { data: payments } = await adminClient

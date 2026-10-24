@@ -5,11 +5,14 @@ import {
   Check,
   CheckCircle2,
   Clock,
+  Copy,
   DollarSign,
   Edit3,
+  ExternalLink,
   Eye,
   HelpCircle,
   Layers,
+  Link as LinkIcon,
   Package,
   Plus,
   RefreshCw,
@@ -29,6 +32,11 @@ type Plan = {
   max_users: number
   features: string[]
   is_active: boolean
+  payment_link_url?: string | null
+  payment_link_id?: string | null
+  payment_link_status?: 'synced' | 'failed' | 'unlinked'
+  payment_link_updated_at?: string | null
+  payment_link_error?: string | null
 }
 
 const initialForm = {
@@ -58,6 +66,35 @@ export default function SuperAdminPlans() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [showPreview, setShowPreview] = useState(true)
+  const [syncingId, setSyncingId] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  async function syncPaymentLink(planId: string) {
+    setSyncingId(planId)
+    setError('')
+    setNotice('')
+    try {
+      const res = await fetch('/api/super-admin/plans/payment-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId }),
+      })
+      const data = (await res.json()) as { message?: string; error?: string }
+      if (!res.ok) throw new Error(data.error || 'Gagal sinkronisasi link Midtrans.')
+      setNotice(data.message || 'Midtrans Payment Link berhasil diperbarui.')
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal sinkronisasi link Midtrans.')
+    } finally {
+      setSyncingId(null)
+    }
+  }
+
+  function copyPaymentLink(planId: string, url: string) {
+    void navigator.clipboard.writeText(url)
+    setCopiedId(planId)
+    window.setTimeout(() => setCopiedId(null), 2500)
+  }
 
   const load = useCallback(async () => {
     const response = await fetch('/api/super-admin/plans', { cache: 'no-store' })
@@ -602,6 +639,7 @@ export default function SuperAdminPlans() {
                   <th>Durasi</th>
                   <th>Batas Pengguna</th>
                   <th>Fitur Unggulan</th>
+                  <th>Midtrans Payment Link</th>
                   <th>Status</th>
                   <th style={{ textAlign: 'right' }}>Aksi</th>
                 </tr>
@@ -634,6 +672,69 @@ export default function SuperAdminPlans() {
                       <span style={{ fontSize: '11px', color: 'var(--mute)' }}>
                         {plan.features?.length ?? 0} fitur
                       </span>
+                    </td>
+                    <td>
+                      {plan.price <= 0 ? (
+                        <span style={{ fontSize: '11px', color: 'var(--mute)' }}>Paket Gratis</span>
+                      ) : plan.payment_link_url ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                          <span
+                            className={styles.badge}
+                            style={{
+                              background: plan.payment_link_status === 'synced' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                              color: plan.payment_link_status === 'synced' ? '#4ade80' : '#f87171',
+                              border: `1px solid ${plan.payment_link_status === 'synced' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                              fontSize: '10px',
+                              padding: '2px 6px',
+                              alignSelf: 'flex-start',
+                            }}
+                          >
+                            {plan.payment_link_status === 'synced' ? 'Link Midtrans Aktif' : 'Gagal Sinkron'}
+                          </span>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <button
+                              type="button"
+                              onClick={() => copyPaymentLink(plan.id, plan.payment_link_url!)}
+                              className={styles.secondaryButton}
+                              style={{ padding: '2px 8px', fontSize: '10px', minHeight: '24px' }}
+                              title="Salin Link Pembayaran"
+                            >
+                              {copiedId === plan.id ? <Check size={11} color="var(--ok)" /> : <Copy size={11} />}
+                              {copiedId === plan.id ? 'Tersalin' : 'Salin'}
+                            </button>
+                            <a
+                              href={plan.payment_link_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={styles.secondaryButton}
+                              style={{ padding: '2px 8px', fontSize: '10px', minHeight: '24px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              title="Buka Link di Tab Baru"
+                            >
+                              <ExternalLink size={11} /> Buka
+                            </a>
+                            <button
+                              type="button"
+                              disabled={syncingId === plan.id}
+                              onClick={() => void syncPaymentLink(plan.id)}
+                              className={styles.secondaryButton}
+                              style={{ padding: '2px 6px', fontSize: '10px', minHeight: '24px' }}
+                              title="Regenerate / Sinkron Ulang Link"
+                            >
+                              <RefreshCw size={11} className={syncingId === plan.id ? styles.spin : ''} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={syncingId === plan.id}
+                          onClick={() => void syncPaymentLink(plan.id)}
+                          className={styles.secondaryButton}
+                          style={{ padding: '3px 8px', fontSize: '11px', minHeight: '26px', color: '#38bdf8' }}
+                        >
+                          <LinkIcon size={12} /> {syncingId === plan.id ? 'Membuat Link...' : 'Buat Link Midtrans'}
+                        </button>
+                      )}
                     </td>
                     <td>
                       <span className={`${styles.badge} ${plan.is_active ? styles.status_active : styles.status_expired}`}>

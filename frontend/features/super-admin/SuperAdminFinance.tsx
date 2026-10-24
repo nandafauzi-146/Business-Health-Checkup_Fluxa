@@ -66,6 +66,7 @@ type Transaction = {
   order_id: string
   owner_id: string
   plan_name: string
+  duration_days?: number
   amount: number
   status: string
   gateway_transaction_id: string | null
@@ -74,6 +75,9 @@ type Transaction = {
   customerName: string
   customerEmail: string
   customerPhone: string
+  subscriptionPeriodStart?: string | null
+  subscriptionPeriodEnd?: string | null
+  subscriptionStatus?: string | null
 }
 
 type ExpenseRecord = {
@@ -610,6 +614,7 @@ export default function SuperAdminFinance() {
                         <th>Nominal</th>
                         <th>Tanggal Transaksi</th>
                         <th>Waktu Konfirmasi Bayar</th>
+                        <th>Masa Aktif / Kedaluwarsa</th>
                         <th>Status</th>
                       </tr>
                     </thead>
@@ -634,6 +639,16 @@ export default function SuperAdminFinance() {
                             </td>
                             <td>{dateTime.format(new Date(t.created_at))}</td>
                             <td>{t.paid_at ? dateTime.format(new Date(t.paid_at)) : '—'}</td>
+                            <td>
+                              {t.subscriptionPeriodEnd ? (
+                                <div>
+                                  <span style={{ fontSize: '12px', fontWeight: 600 }}>Hingga {dateOnly.format(new Date(t.subscriptionPeriodEnd))}</span>
+                                  <small style={{ color: 'var(--mute)' }}>{t.duration_days ?? 30} hari</small>
+                                </div>
+                              ) : (
+                                <span style={{ color: 'var(--mute)' }}>—</span>
+                              )}
+                            </td>
                             <td>
                               <span className={`${styles.badge} ${styles[statusConfig.tone] ?? ''}`}>
                                 {statusConfig.label}

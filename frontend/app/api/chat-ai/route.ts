@@ -104,6 +104,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Fitur ini hanya tersedia untuk Owner yang disetujui.' }, { status: 403 })
     }
 
+    // Exclude AI Agent from free trial: require active paid subscription
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('status, current_period_end')
+      .eq('owner_id', user.id)
+      .maybeSingle()
+
+    const hasActivePaidSubscription = Boolean(
+      subscription &&
+      ['active', 'cancelled'].includes(subscription.status) &&
+      new Date(subscription.current_period_end).getTime() > Date.now()
+    )
+
+    if (!hasActivePaidSubscription) {
+      return NextResponse.json(
+        {
+          error: 'Asisten AI (FluxAI) adalah fitur premium eksklusif paket berbayar dan tidak tercakup dalam free trial. Silakan aktifkan langganan Anda di menu Langganan.',
+        },
+        { status: 403 }
+      )
+    }
+
     const now = new Date()
     const dateParts = new Intl.DateTimeFormat('en-US', {
       timeZone: 'Asia/Jakarta',
