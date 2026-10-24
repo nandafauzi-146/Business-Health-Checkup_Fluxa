@@ -82,9 +82,9 @@ export async function GET(request: Request) {
             console.error('Error creating profile for Google OAuth user:', insertError)
           }
 
-          // Arahkan ke layar pengajuan trial diterima
+          // Arahkan ke layar pilihan akses (Trial vs Bayar Langganan)
           return NextResponse.redirect(
-            `${origin}/register?step=trial_submitted&name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(userEmail)}`
+            `${origin}/register?step=choice&name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(userEmail)}&fromGoogle=1${phone ? `&phone=${encodeURIComponent(phone)}` : ''}`
           )
         }
 

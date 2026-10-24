@@ -3327,6 +3327,169 @@ tr:hover td,
   text-transform: uppercase;
   white-space: nowrap;
 }
+
+/* Registration Plan Selection Screen */
+.register-plans-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+.register-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  width: 100%;
+  margin-top: 8px;
+}
+.register-plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(116, 151, 226, .18);
+  background: rgba(18, 29, 49, .75);
+  backdrop-filter: blur(12px);
+  transition: all 220ms ease;
+  text-align: left;
+}
+.register-plan-card:hover {
+  border-color: rgba(105, 223, 255, .45);
+  background: rgba(24, 38, 64, .88);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .35);
+}
+.register-plan-card.is-featured {
+  border-color: rgba(99, 102, 241, .6);
+  background: linear-gradient(155deg, rgba(30, 27, 75, .75), rgba(18, 29, 49, .88));
+  box-shadow: 0 8px 24px rgba(99, 102, 241, .2);
+}
+.register-plan-card.is-featured:hover {
+  border-color: rgba(129, 140, 248, .8);
+  box-shadow: 0 14px 34px rgba(99, 102, 241, .35);
+}
+.register-plan-badge {
+  position: absolute;
+  top: -10px;
+  right: 14px;
+  background: #6366f1;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, .4);
+}
+.register-plan-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0 0 4px;
+}
+.register-plan-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin: 0 0 12px;
+  min-height: 30px;
+}
+.register-plan-price-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+.register-plan-price {
+  font-size: 20px;
+  font-weight: 800;
+  color: #38bdf8;
+  letter-spacing: -.02em;
+}
+.register-plan-duration {
+  font-size: 11px;
+  color: #94a3b8;
+}
+.register-plan-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #a5b4fc;
+  margin-bottom: 12px;
+}
+.register-plan-features {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+.register-plan-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 11px;
+  color: #cbd5e1;
+  line-height: 1.35;
+}
+.register-plan-features li svg {
+  color: #34d399;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.register-plan-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 180ms ease;
+  border: 1px solid rgba(99, 102, 241, .4);
+  background: rgba(99, 102, 241, .2);
+  color: #e0e7ff;
+}
+.register-plan-btn:hover {
+  background: #6366f1;
+  color: #ffffff;
+  border-color: #6366f1;
+}
+.register-plan-card.is-featured .register-plan-btn {
+  background: #6366f1;
+  color: #ffffff;
+  border: none;
+}
+.register-plan-card.is-featured .register-plan-btn:hover {
+  background: #4f46e5;
+}
+.register-plans-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 0;
+  margin-top: 8px;
+  transition: color 150ms ease;
+}
+.register-plans-back:hover {
+  color: #e2e8f0;
+}
 .login-submit {
   position: relative;
   display: flex;

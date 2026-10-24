@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import Image from 'next/image'
 import {
   ArrowLeft,
@@ -25,13 +25,73 @@ import { getUserFacingError } from '@/lib/user-facing-error'
 import { createClient } from '@/lib/supabase/client'
 import { AnimatedBackground, AuthIntro, useAuthIntro } from './AuthVisuals'
 
-type RegisterStep = 'form' | 'choice' | 'trial_submitted'
+declare global {
+  interface Window {
+    snap?: {
+      pay: (
+        token: string,
+        callbacks?: {
+          onSuccess?: (result: unknown) => void
+          onPending?: (result: unknown) => void
+          onError?: (result: unknown) => void
+          onClose?: () => void
+        }
+      ) => void
+    }
+  }
+}
+
+type RegisterStep = 'form' | 'choice' | 'plans' | 'trial_submitted'
+
+type PlanItem = {
+  id: string
+  name: string
+  description: string
+  price: number
+  duration_days: number
+  max_users: number
+  features: string[]
+}
+
+const DEFAULT_PLANS: PlanItem[] = [
+  {
+    id: '96b79b9e-4408-4e0a-b934-51fe349c421f',
+    name: 'Starter',
+    description: 'Untuk usaha rintisan yang ingin pencatatan rapi dan tertata.',
+    price: 49000,
+    duration_days: 30,
+    max_users: 1,
+    features: ['Kasir praktis & pencatatan transaksi', 'Manajemen produk & stok persediaan', 'Ringkasan laporan penjualan harian'],
+  },
+  {
+    id: '2a325a98-0b1d-42e4-ac1a-15fd13793e77',
+    name: 'Growth',
+    description: 'Untuk bisnis berkembang dengan insight diagnosis kesehatan AI.',
+    price: 99000,
+    duration_days: 30,
+    max_users: 3,
+    features: ['Semua fitur Starter', 'Diagnosis Kesehatan Bisnis berbantu AI', 'FluxAI Chat Assistant', 'Analisis arus kas & piutang'],
+  },
+  {
+    id: '0596ced8-c02c-4707-bdae-3cf680be6d17',
+    name: 'Pro Business',
+    description: 'Untuk operasional lengkap dengan multi-user dan prioritas.',
+    price: 199000,
+    duration_days: 30,
+    max_users: 10,
+    features: ['Semua fitur Growth', 'Dukungan hingga 10 pengguna tim', 'Laporan keuangan terperinci', 'Prioritas dukungan pelanggan'],
+  },
+]
+
+const money = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
 
 interface RegisterFormProps {
   initialStep?: RegisterStep
   initialEmail?: string
   initialName?: string
+  initialPhone?: string
   initialError?: string
+  isGoogleUser?: boolean
 }
 
 function GoogleIcon({ className }: { className?: string }) {
@@ -61,19 +121,40 @@ export default function RegisterForm({
   initialStep = 'form',
   initialEmail = '',
   initialName = '',
+  initialPhone = '',
   initialError = '',
+  isGoogleUser = false,
 }: RegisterFormProps) {
   const router = useRouter()
   const { phase, introSymbolRef, introNameRef, brandLogoRef, brandNameRef } = useAuthIntro()
   const [fullName, setFullName] = useState(initialName)
   const [email, setEmail] = useState(initialEmail)
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState(initialPhone)
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState(initialError)
   const [step, setStep] = useState<RegisterStep>(initialStep)
+  const [plans, setPlans] = useState<PlanItem[]>([])
+  const [loadingPlans, setLoadingPlans] = useState(false)
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
+
+  // Load Midtrans Snap script dynamically for direct popup during registration
+  useEffect(() => {
+    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'SB-Mid-client-Mid-client-Y0m-zSVhzrH2fZwg'
+    const snapScriptUrl = 'https://app.sandbox.midtrans.com/snap/snap.js'
+    const scriptId = 'midtrans-snap-script'
+    let script = document.getElementById(scriptId) as HTMLScriptElement | null
+    if (!script) {
+      script = document.createElement('script')
+      script.id = scriptId
+      script.src = snapScriptUrl
+      script.setAttribute('data-client-key', clientKey)
+      script.async = true
+      document.body.appendChild(script)
+    }
+  }, [])
 
   const clearError = () => setError('')
 
@@ -140,8 +221,167 @@ export default function RegisterForm({
     setStep('choice')
   }
 
+  async function loadPlans() {
+    setLoadingPlans(true)
+    try {
+      const res = await fetch('/api/subscription/plans')
+      const json = await res.json() as { plans?: PlanItem[] }
+      if (json.plans && json.plans.length > 0) {
+        setPlans(json.plans)
+      } else {
+        setPlans(DEFAULT_PLANS)
+      }
+    } catch {
+      setPlans(DEFAULT_PLANS)
+    } finally {
+      setLoadingPlans(false)
+    }
+  }
+
+  function handleOpenPlans() {
+    clearError()
+    setStep('plans')
+    if (plans.length === 0) {
+      void loadPlans()
+    }
+  }
+
+  async function handleSelectPlanAndPay(plan: PlanItem) {
+    clearError()
+
+    if (!phone || phone.trim().length < 8) {
+      setError('Mohon masukkan nomor handphone / WhatsApp yang valid untuk penerbitan tagihan pembayaran Midtrans.')
+      return
+    }
+
+    setLoading(true)
+    setSelectedPlanId(plan.id)
+
+    try {
+      let accessToken = ''
+
+      // 1. If not a Google OAuth user, register the account and log in
+      if (!isGoogleUser) {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            full_name: fullName.trim(),
+            email: email.trim().toLowerCase(),
+            phone: phone.trim() || null,
+            password,
+            registration_path: 'subscribe',
+          }),
+        })
+
+        const result: { error?: string; success?: boolean; registrationPath?: string } =
+          await response.json().catch(() => ({}))
+
+        if (!response.ok) {
+          const errMsg = String(result?.error || '').toLowerCase()
+          if (!errMsg.includes('terdaftar') && !errMsg.includes('already registered')) {
+            throw new Error(result.error || 'Pendaftaran belum dapat diproses.')
+          }
+        }
+
+        const supabase = createClient()
+        if (password) {
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: email.trim().toLowerCase(),
+            password,
+          })
+          if (signInError) {
+            throw new Error(signInError.message || 'Gagal masuk ke akun pendaftaran.')
+          }
+          if (signInData?.session?.access_token) {
+            accessToken = signInData.session.access_token
+          }
+        }
+      } else {
+        const supabase = createClient()
+        const { data: sessionData } = await supabase.auth.getSession()
+        if (sessionData?.session?.access_token) {
+          accessToken = sessionData.session.access_token
+        }
+      }
+
+      // 2. Create Midtrans Snap transaction with customer details (Nama, Email, No HP)
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`
+      }
+
+      const subRes = await fetch('/api/subscription', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          planId: plan.id,
+          name: fullName.trim(),
+          email: email.trim().toLowerCase(),
+          phone: phone.trim(),
+        }),
+      })
+
+      const subData = (await subRes.json()) as {
+        orderId?: string
+        snapToken?: string
+        paymentUrl?: string
+        error?: string
+      }
+
+      if (!subRes.ok) {
+        throw new Error(subData.error || 'Transaksi pembayaran belum dapat dibuat oleh Midtrans.')
+      }
+
+      // 3. Open Midtrans Snap popup directly!
+      const snapPay = typeof window !== 'undefined' ? window.snap?.pay : undefined
+      if (subData.snapToken && snapPay) {
+        snapPay(subData.snapToken, {
+          onSuccess: (res: unknown) => {
+            const resObj = res as Record<string, unknown> | undefined
+            const oid = typeof resObj?.order_id === 'string' ? resObj.order_id : subData.orderId
+            router.push(`/payment/finish?order_id=${encodeURIComponent(oid || '')}&status=success`)
+          },
+          onPending: (res: unknown) => {
+            const resObj = res as Record<string, unknown> | undefined
+            const oid = typeof resObj?.order_id === 'string' ? resObj.order_id : subData.orderId
+            router.push(`/payment/finish?order_id=${encodeURIComponent(oid || '')}&status=pending`)
+          },
+          onError: (res: unknown) => {
+            const resObj = res as Record<string, unknown> | undefined
+            const oid = typeof resObj?.order_id === 'string' ? resObj.order_id : subData.orderId
+            router.push(`/payment/finish?order_id=${encodeURIComponent(oid || '')}&status=failed`)
+          },
+          onClose: () => {
+            if (subData.orderId) {
+              router.push(`/payment/finish?order_id=${encodeURIComponent(subData.orderId)}`)
+            } else {
+              router.push(`/owner/langganan?onboard=1&planId=${plan.id}`)
+            }
+          },
+        })
+      } else if (subData.paymentUrl) {
+        window.location.assign(subData.paymentUrl)
+      } else {
+        router.push(`/owner/langganan?onboard=1&planId=${plan.id}`)
+      }
+    } catch (registrationError) {
+      console.error('Registration and checkout processing failed.', registrationError)
+      setError(getUserFacingError(registrationError, 'Pendaftaran belum dapat diproses. Silakan periksa data dan coba lagi.'))
+    } finally {
+      setLoading(false)
+      setSelectedPlanId(null)
+    }
+  }
+
   async function handleSelectPath(path: 'subscribe' | 'trial') {
     clearError()
+
+    if (path === 'subscribe') {
+      handleOpenPlans()
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -164,23 +404,7 @@ export default function RegisterForm({
         throw new Error(result.error || 'Pendaftaran belum dapat diproses.')
       }
 
-      if (path === 'trial') {
-        setStep('trial_submitted')
-      } else {
-        // Direct subscription: sign in automatically and redirect to subscription checkout
-        const supabase = createClient()
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: email.trim().toLowerCase(),
-          password,
-        })
-
-        if (signInError) {
-          // If auto sign-in has a minor hiccup, send to login with direct prompt
-          router.push('/login?registered=subscribe')
-        } else {
-          router.push('/langganan?onboard=1')
-        }
-      }
+      setStep('trial_submitted')
     } catch (registrationError) {
       console.error('Registration processing failed.', registrationError)
       setError(getUserFacingError(registrationError, 'Pendaftaran belum dapat diproses. Silakan periksa data dan coba lagi.'))
@@ -259,13 +483,13 @@ export default function RegisterForm({
             {/* Card 1: Subscribe Now */}
             <div
               className="register-choice-card is-featured"
-              onClick={() => !loading && void handleSelectPath('subscribe')}
+              onClick={() => !loading && handleOpenPlans()}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
-                  if (!loading) void handleSelectPath('subscribe')
+                  if (!loading) handleOpenPlans()
                 }
               }}
             >
@@ -287,11 +511,7 @@ export default function RegisterForm({
                 <li><Check size={13} /> Tanpa menunggu persetujuan manual Super Admin</li>
               </ul>
               <div className="register-choice-action action-instant">
-                {loading ? (
-                  <><LoaderCircle size={15} className="login-spinner" /> Memproses...</>
-                ) : (
-                  <>Pilih Paket & Bayar Sekarang <ArrowRight size={15} /></>
-                )}
+                Pilih Paket & Bayar Sekarang <ArrowRight size={15} />
               </div>
             </div>
 
@@ -347,6 +567,182 @@ export default function RegisterForm({
           >
             <ArrowLeft size={15} aria-hidden="true" />
             Ubah data pendaftaran
+          </button>
+        </section>
+      )}
+
+      {/* Screen 2.5: Select Available Subscription Plans */}
+      {step === 'plans' && (
+        <section
+          className={`login-card register-card is-${phase}`}
+          aria-labelledby="plans-title"
+          aria-hidden={phase !== 'login'}
+          inert={phase !== 'login'}
+          style={{ width: 'min(100%, 880px)' }}
+        >
+          <header className="login-brand login-stagger">
+            <div className="login-brand-logo" ref={brandLogoRef}>
+              <Image src="/Fluxa-Logo.webp" alt="" aria-hidden="true" width={42} height={42} priority />
+            </div>
+            <div>
+              <p className="login-brand-name" ref={brandNameRef}>Fluxa</p>
+              <p className="login-brand-tagline">Kasir + Business Health AI</p>
+            </div>
+          </header>
+
+          <div className="login-welcome register-welcome">
+            <span className="register-eyebrow">PILIH PAKET LANGGANAN</span>
+            <h1 id="plans-title">Pilih Paket Terbaik untuk Usaha Anda</h1>
+            <p>Pilih paket langganan untuk bisnis Anda, {fullName.trim()}. Setelah memilih paket, pop-up pembayaran Midtrans Sandbox akan langsung terbuka.</p>
+          </div>
+
+          {error && <p className="login-feedback login-feedback-error" role="alert">{error}</p>}
+
+          {/* Customer Contact Details (Sent to Midtrans API) */}
+          <div style={{
+            background: 'rgba(18, 29, 49, 0.75)',
+            border: '1px solid rgba(116, 151, 226, 0.18)',
+            borderRadius: 14,
+            padding: '14px 18px',
+            marginBottom: 16,
+            textAlign: 'left',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#f8fafc' }}>
+                Data Pemesan untuk Tagihan Midtrans
+              </span>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                Nama, Email &amp; WhatsApp
+              </span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 4 }}>
+                  Nama Lengkap
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Nama Lengkap"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 4 }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="nama@email.com"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 4 }}>
+                  No. WhatsApp / HP {(!phone || phone.trim() === '') && <span style={{ color: '#f87171' }}>* (Wajib)</span>}
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="08xxxxxxxxxx"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: (!phone || phone.trim() === '') ? '1.5px solid #ef4444' : '1px solid rgba(255, 255, 255, 0.12)',
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {loadingPlans ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0', gap: 10, color: '#94a3b8' }}>
+              <LoaderCircle size={22} className="login-spinner" />
+              <span>Memuat paket langganan aktif...</span>
+            </div>
+          ) : (
+            <div className="register-plans-grid">
+              {(plans.length > 0 ? plans : DEFAULT_PLANS).map((plan) => {
+                const isGrowth = plan.name.toLowerCase().includes('growth')
+                const isThisLoading = loading && selectedPlanId === plan.id
+                return (
+                  <div
+                    key={plan.id}
+                    className={`register-plan-card ${isGrowth ? 'is-featured' : ''}`}
+                  >
+                    {isGrowth && <span className="register-plan-badge">Rekomendasi</span>}
+                    <div>
+                      <h3 className="register-plan-name">{plan.name}</h3>
+                      <p className="register-plan-desc">{plan.description}</p>
+                      <div className="register-plan-price-wrap">
+                        <span className="register-plan-price">{money.format(plan.price)}</span>
+                        <span className="register-plan-duration">/ {plan.duration_days} hari</span>
+                      </div>
+                      <div className="register-plan-meta">
+                        <UserRound size={13} />
+                        <span>Kapasitas {plan.max_users} pengguna tim</span>
+                      </div>
+                      <ul className="register-plan-features">
+                        {(plan.features || []).map((feat, idx) => (
+                          <li key={idx}>
+                            <Check size={13} />
+                            <span>{feat}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <button
+                      type="button"
+                      className="register-plan-btn"
+                      onClick={() => void handleSelectPlanAndPay(plan)}
+                      disabled={loading}
+                    >
+                      {isThisLoading ? (
+                        <><LoaderCircle size={15} className="login-spinner" /> Memproses...</>
+                      ) : (
+                        <>Pilih & Bayar Paket Ini <ArrowRight size={14} /></>
+                      )}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="register-plans-back"
+            onClick={() => {
+              clearError()
+              setStep('choice')
+            }}
+            disabled={loading}
+          >
+            <ArrowLeft size={15} /> Kembali ke Pilihan Akses
           </button>
         </section>
       )}

@@ -4,6 +4,10 @@ import {
   requireSuperAdmin,
   writeSuperAdminAudit,
 } from '@/lib/supabase/super-admin'
+import {
+  getStoredPaymentLinks,
+  syncPlanPaymentLink,
+} from '@/lib/plan-payment-link'
 
 function parsePlan(body: unknown) {
   if (!body || typeof body !== 'object') return null
@@ -36,11 +40,28 @@ export async function GET() {
     const auth = await requireSuperAdmin()
     if (auth.response) return auth.response
     const admin = getSuperAdminServiceClient()
-    const { data, error } = await admin.from('subscription_plans')
-      .select('id, name, description, price, duration_days, max_users, features, is_active, created_at, updated_at')
-      .order('created_at', { ascending: false })
+    const [{ data: plans, error }, storedLinks] = await Promise.all([
+      admin.from('subscription_plans')
+        .select('id, name, description, price, duration_days, max_users, features, is_active, created_at, updated_at')
+        .order('created_at', { ascending: false }),
+      getStoredPaymentLinks(admin),
+    ])
     if (error) throw error
-    return NextResponse.json({ plans: data ?? [] })
+
+    const enrichedPlans = (plans ?? []).map((plan) => {
+      const linkInfo = storedLinks[plan.id]
+      return {
+        ...plan,
+        payment_link_url: linkInfo?.payment_link_url ?? null,
+        payment_link_id: linkInfo?.payment_link_id ?? null,
+        payment_link_order_id: linkInfo?.payment_link_order_id ?? null,
+        payment_link_status: linkInfo?.payment_link_status ?? (plan.price > 0 ? 'unlinked' : 'unlinked'),
+        payment_link_updated_at: linkInfo?.payment_link_updated_at ?? null,
+        payment_link_error: linkInfo?.payment_link_error ?? null,
+      }
+    })
+
+    return NextResponse.json({ plans: enrichedPlans })
   } catch (error) {
     console.error('Unable to load subscription plans.', error)
     return NextResponse.json({ error: 'Daftar paket belum dapat dimuat.' }, { status: 500 })
@@ -61,15 +82,35 @@ export async function POST(request: Request) {
       .select('id, name, description, price, duration_days, max_users, features, is_active')
       .single()
     if (error) throw error
+
+    // Automatically attempt to create Midtrans Payment Link if plan has price > 0
+    let paymentLinkInfo = null
+    if (data.price > 0) {
+      try {
+        paymentLinkInfo = await syncPlanPaymentLink(admin, data.id)
+      } catch (plErr) {
+        console.error('Auto payment link creation failed for plan:', data.id, plErr)
+      }
+    }
+
     const auditRecorded = await writeSuperAdminAudit(
       admin,
       auth.actorId,
       'SUPER_ADMIN_PLAN_CREATED',
       data.id,
       {},
-      { name: data.name, price: String(data.price), duration_days: String(data.duration_days) },
+      {
+        name: data.name,
+        price: String(data.price),
+        duration_days: String(data.duration_days),
+        payment_link_status: paymentLinkInfo?.payment_link_status ?? 'unlinked',
+      },
     )
-    return NextResponse.json({ plan: data, auditRecorded }, { status: 201 })
+
+    return NextResponse.json({
+      plan: { ...data, ...paymentLinkInfo },
+      auditRecorded,
+    }, { status: 201 })
   } catch (error) {
     console.error('Unable to create subscription plan.', error)
     return NextResponse.json({ error: 'Paket belum dapat disimpan.' }, { status: 500 })
@@ -109,15 +150,30 @@ export async function PATCH(request: Request) {
       .single()
     if (error) throw error
 
+    // If name or price changed, Midtrans does not support in-place PATCH for payment links.
+    // Trigger safe regeneration of Payment Link with updated values:
+    let paymentLinkInfo = null
+    const priceOrNameChanged =
+      ('name' in update && update.name !== previous.name) ||
+      ('price' in update && update.price !== previous.price)
+
+    if (priceOrNameChanged && data.price > 0) {
+      try {
+        paymentLinkInfo = await syncPlanPaymentLink(admin, data.id, { forceNew: true })
+      } catch (plErr) {
+        console.error('Auto payment link update failed for plan:', data.id, plErr)
+      }
+    }
+
     const auditRecorded = await writeSuperAdminAudit(
       admin,
       auth.actorId,
       'SUPER_ADMIN_PLAN_UPDATED',
       data.id,
       { name: previous.name, price: String(previous.price), duration_days: String(previous.duration_days), is_active: String(previous.is_active) },
-      { name: data.name, price: String(data.price), duration_days: String(data.duration_days), is_active: String(data.is_active) },
+      { name: data.name, price: String(data.price), duration_days: String(data.duration_days), is_active: String(data.is_active), payment_link_status: paymentLinkInfo?.payment_link_status ?? 'unchanged' },
     )
-    return NextResponse.json({ plan: data, auditRecorded })
+    return NextResponse.json({ plan: { ...data, ...paymentLinkInfo }, auditRecorded })
   } catch (error) {
     console.error('Unable to update subscription plan.', error)
     return NextResponse.json({ error: 'Perubahan paket belum dapat disimpan.' }, { status: 500 })

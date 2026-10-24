@@ -85,14 +85,14 @@ export async function GET(request: Request) {
     }
 
     if (params.get('format') === 'csv') {
-      let countQuery = applyFilters(adminClient.from('audit_logs').select('id', { count: 'exact', head: true }))
+      const countQuery = applyFilters(adminClient.from('audit_logs').select('id', { count: 'exact', head: true }))
       const { count, error: countError } = await countQuery
       if (countError) throw countError
       if ((count ?? 0) > 10000) {
         return NextResponse.json({ error: 'Ekspor melebihi 10.000 catatan. Persempit filter.' }, { status: 413 })
       }
 
-      let exportQuery = applyFilters(
+      const exportQuery = applyFilters(
         adminClient.from('audit_logs')
           .select('id, user_id, action, table_name, record_id, old_data, new_data, ip_address, created_at')
           .order('created_at', { ascending: false })
@@ -135,7 +135,7 @@ export async function GET(request: Request) {
       })
     }
 
-    let query = applyFilters(
+    const query = applyFilters(
       adminClient.from('audit_logs')
         .select('id, user_id, action, table_name, record_id, old_data, new_data, ip_address, created_at', { count: 'exact' })
         .order('created_at', { ascending: false })

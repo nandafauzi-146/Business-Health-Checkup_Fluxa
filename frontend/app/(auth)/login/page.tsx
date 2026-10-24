@@ -23,9 +23,17 @@ export default async function LoginPage({
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, approval_status")
+      .select("role, approval_status, registration_path")
       .eq("id", user.id)
       .single();
+
+    if (
+      profile?.role === "owner" &&
+      profile?.approval_status === "pending" &&
+      profile?.registration_path === "subscribe"
+    ) {
+      redirect("/owner/langganan?onboard=1");
+    }
 
     if (
       profile?.approval_status === "pending" ||
