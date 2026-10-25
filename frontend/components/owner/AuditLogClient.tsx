@@ -646,7 +646,7 @@ export default function AuditLogClient({
   return (
     <div>
       <PageHeader
-        title="Audit Log Operasional"
+        title="Aktifitas Operasional"
         subtitle="Rekaman aktivitas Owner, Admin, dan Kasir pada usaha Anda."
         actions={
           <button

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
 import {
   fetchMidtransTransactionStatus,
   getMidtransConfig,
@@ -8,14 +7,10 @@ import {
   midtransAuthorization,
 } from '@/lib/midtrans'
 import { applySubscriptionPayment } from '@/lib/subscription-payment-sync'
+import { getSupabaseAdminClient } from '@backend/index'
 
 function getServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !serviceKey) throw new Error('Konfigurasi Supabase server belum lengkap.')
-  return createSupabaseAdminClient(url, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
+  return getSupabaseAdminClient()
 }
 
 async function requireOwner(request?: Request) {
