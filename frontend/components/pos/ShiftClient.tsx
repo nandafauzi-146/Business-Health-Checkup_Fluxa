@@ -1,16 +1,28 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Clock, DollarSign, Check, X, TrendingUp, TrendingDown,
   AlertCircle, Users, Activity, ShieldCheck, Search,
   Calendar, Eye, Receipt, Printer, ArrowRight, Sparkles,
-  CheckCircle2, AlertTriangle, Layers, RefreshCw
+  CheckCircle2, AlertTriangle, Layers, RefreshCw, ShoppingCart
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag, KpiCard } from '@/components/ui/Cards'
 import { BukaShiftModal, TutupShiftModal } from '@/components/pos/KasMasukModal'
+
+export interface ShiftSaleItem {
+  id: string
+  invoice_number: string
+  created_at: string
+  total_amount: number
+  discount: number
+  final_amount: number
+  payment_method: string
+  payment_status: string
+  status: string
+}
 
 function formatRp(n: number) {
   return 'Rp ' + new Intl.NumberFormat('id-ID').format(n)
@@ -81,6 +93,81 @@ export default function ShiftClient({
   const [selectedDetail, setSelectedDetail] = useState<ShiftItem | null>(null)
   const [searchCashier, setSearchCashier] = useState('')
   const [filterTab, setFilterTab] = useState<'all' | 'active' | 'closed' | 'discrepancy'>('all')
+
+  const [shiftSales, setShiftSales] = useState<ShiftSaleItem[]>([])
+  const [loadingSales, setLoadingSales] = useState(false)
+
+  useEffect(() => {
+    if (!selectedDetail?.id) {
+      setShiftSales([])
+      setLoadingSales(false)
+      return
+    }
+
+    let isMounted = true
+    const fetchSales = async () => {
+      setLoadingSales(true)
+      try {
+        const { data, error } = await supabase
+          .from('sales')
+          .select('id, invoice_number, created_at, total_amount, discount, final_amount, payment_method, payment_status, status')
+          .eq('shift_id', selectedDetail.id)
+          .order('created_at', { ascending: false })
+
+        if (!isMounted) return
+
+        if (!error && data && data.length > 0) {
+          setShiftSales(data as ShiftSaleItem[])
+        } else {
+          // Fallback: match by cashier and time range if shift_id was unlinked
+          if (selectedDetail.cashier_id && selectedDetail.opened_at) {
+            let query = supabase
+              .from('sales')
+              .select('id, invoice_number, created_at, total_amount, discount, final_amount, payment_method, payment_status, status')
+              .eq('cashier_id', selectedDetail.cashier_id)
+              .gte('created_at', selectedDetail.opened_at)
+
+            if (selectedDetail.closed_at) {
+              query = query.lte('created_at', selectedDetail.closed_at)
+            }
+            const fallbackRes = await query.order('created_at', { ascending: false })
+            if (isMounted && fallbackRes.data) {
+              setShiftSales(fallbackRes.data as ShiftSaleItem[])
+              return
+            }
+          }
+          setShiftSales([])
+        }
+      } catch (err) {
+        console.warn('Gagal memuat transaksi shift:', err)
+        if (isMounted) setShiftSales([])
+      } finally {
+        if (isMounted) setLoadingSales(false)
+      }
+    }
+
+    void fetchSales()
+    return () => {
+      isMounted = false
+    }
+  }, [selectedDetail?.id, selectedDetail?.cashier_id, selectedDetail?.opened_at, selectedDetail?.closed_at, supabase])
+
+  const shiftSalesSummary = useMemo(() => {
+    const completed = shiftSales.filter(s => s.status === 'completed')
+    const totalTransactions = completed.length
+    const totalOmzet = completed.reduce((acc, s) => acc + (s.final_amount || 0), 0)
+    const cashTotal = completed.filter(s => s.payment_method === 'cash').reduce((acc, s) => acc + (s.final_amount || 0), 0)
+    const nonCashTotal = completed.filter(s => s.payment_method !== 'cash').reduce((acc, s) => acc + (s.final_amount || 0), 0)
+    const voidCount = shiftSales.filter(s => s.status === 'voided').length
+
+    return {
+      totalTransactions,
+      totalOmzet,
+      cashTotal,
+      nonCashTotal,
+      voidCount
+    }
+  }, [shiftSales])
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -705,9 +792,9 @@ export default function ShiftClient({
             background: 'var(--panel)',
             border: '1px solid var(--line)',
             borderRadius: 20,
-            padding: 'clamp(18px, 4vw, 28px) clamp(16px, 4vw, 26px)',
+            padding: 'clamp(18px, 4vw, 24px) clamp(16px, 4vw, 22px)',
             width: '100%',
-            maxWidth: 480,
+            maxWidth: 540,
             maxHeight: 'calc(100dvh - 32px)',
             overflowY: 'auto',
             boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
@@ -723,16 +810,18 @@ export default function ShiftClient({
               <button
                 onClick={() => setSelectedDetail(null)}
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--mute)' }}
+                aria-label="Tutup modal"
               >
                 <X size={18} />
               </button>
             </div>
 
+            {/* Info Petugas & Waktu */}
             <div style={{
               background: 'var(--bg)',
               borderRadius: 14,
-              padding: 16,
-              marginBottom: 16,
+              padding: 14,
+              marginBottom: 14,
               border: '1px solid var(--line)'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
@@ -755,7 +844,8 @@ export default function ShiftClient({
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
+            {/* Rekonsiliasi Kas Laci */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5 }}>
                 <span style={{ color: 'var(--mute)' }}>Kas Modal Awal:</span>
                 <span style={{ fontWeight: 600 }}>{formatRp(selectedDetail.initial_cash || 0)}</span>
@@ -764,23 +854,150 @@ export default function ShiftClient({
                 <span style={{ color: 'var(--mute)' }}>Estimasi Kas Sistem:</span>
                 <span style={{ fontWeight: 600, color: 'var(--acc)' }}>{formatRp(selectedDetail.expected_cash || 0)}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, borderTop: '1px dashed var(--line)', paddingTop: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, borderTop: '1px dashed var(--line)', paddingTop: 9 }}>
                 <span style={{ color: 'var(--ink)', fontWeight: 600 }}>Kas Fisik Terhitung:</span>
                 <span style={{ fontWeight: 800, fontSize: 15 }}>{formatRp(selectedDetail.final_cash || 0)}</span>
               </div>
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                padding: '10px 12px',
+                padding: '9px 12px',
                 borderRadius: 10,
                 background: (selectedDetail.difference || 0) === 0 ? 'var(--oks)' : (selectedDetail.difference || 0) > 0 ? 'var(--accs)' : 'var(--bads)',
                 color: (selectedDetail.difference || 0) === 0 ? 'var(--ok)' : (selectedDetail.difference || 0) > 0 ? 'var(--acc)' : 'var(--bad)',
                 fontWeight: 700,
-                fontSize: 14
+                fontSize: 13.5
               }}>
                 <span>Selisih Rekonsiliasi:</span>
                 <span>{(selectedDetail.difference || 0) >= 0 ? '+' : ''}{formatRp(selectedDetail.difference || 0)}</span>
               </div>
+            </div>
+
+            {/* Rincian Transaksi Penjualan Shift */}
+            <div style={{
+              background: 'var(--bg)',
+              borderRadius: 14,
+              padding: 14,
+              marginBottom: 16,
+              border: '1px solid var(--line)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <ShoppingCart size={15} color="var(--acc)" />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
+                    Rincian Transaksi Penjualan
+                  </span>
+                </div>
+                {!loadingSales && (
+                  <span style={{
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: 6,
+                    background: shiftSalesSummary.totalTransactions > 0 ? 'var(--oks)' : 'var(--panel)',
+                    color: shiftSalesSummary.totalTransactions > 0 ? 'var(--ok)' : 'var(--mute)'
+                  }}>
+                    {shiftSalesSummary.totalTransactions} Transaksi
+                  </span>
+                )}
+              </div>
+
+              {loadingSales ? (
+                <div style={{ textAlign: 'center', padding: '14px 0', fontSize: 12.5, color: 'var(--mute)' }}>
+                  Memuat data transaksi shift...
+                </div>
+              ) : shiftSales.length === 0 ? (
+                <div style={{
+                  padding: '12px',
+                  borderRadius: 8,
+                  background: 'var(--panel)',
+                  border: '1px dashed var(--line)',
+                  textAlign: 'center',
+                  fontSize: 12,
+                  color: 'var(--mute)'
+                }}>
+                  Belum ada transaksi penjualan pada sesi shift ini.
+                </div>
+              ) : (
+                <>
+                  {/* Grid Ringkasan Omzet & Cara Bayar */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: 8,
+                    marginBottom: 10
+                  }}>
+                    <div style={{ background: 'var(--panel)', padding: '8px 10px', borderRadius: 10, border: '1px solid var(--line)' }}>
+                      <div style={{ fontSize: 11, color: 'var(--mute)', fontWeight: 600, marginBottom: 2 }}>Tunai (Masuk Kas Laci)</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ok)' }}>
+                        +{formatRp(shiftSalesSummary.cashTotal)}
+                      </div>
+                    </div>
+                    <div style={{ background: 'var(--panel)', padding: '8px 10px', borderRadius: 10, border: '1px solid var(--line)' }}>
+                      <div style={{ fontSize: 11, color: 'var(--mute)', fontWeight: 600, marginBottom: 2 }}>Non-Tunai / QRIS / TF</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--acc)' }}>
+                        {formatRp(shiftSalesSummary.nonCashTotal)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* List Transaksi */}
+                  <div style={{
+                    maxHeight: 180,
+                    overflowY: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                    paddingRight: 2
+                  }}>
+                    {shiftSales.map((sale) => (
+                      <div
+                        key={sale.id}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '7px 9px',
+                          borderRadius: 8,
+                          background: 'var(--panel)',
+                          border: '1px solid var(--line)',
+                          fontSize: 12
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, color: 'var(--ink)', fontSize: 12 }}>
+                            {sale.invoice_number || 'INV-DRAFT'}
+                          </div>
+                          <div style={{ fontSize: 10.5, color: 'var(--mute)', marginTop: 1 }}>
+                            {new Date(sale.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} •{' '}
+                            <span style={{
+                              fontWeight: 600,
+                              textTransform: 'uppercase',
+                              color: sale.payment_method === 'cash' ? 'var(--ok)' : 'var(--acc)'
+                            }}>
+                              {sale.payment_method === 'cash' ? 'Tunai' : sale.payment_method.toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{
+                            fontWeight: 700,
+                            color: sale.status === 'voided' ? 'var(--mute)' : 'var(--ink)',
+                            textDecoration: sale.status === 'voided' ? 'line-through' : 'none'
+                          }}>
+                            {formatRp(sale.final_amount || 0)}
+                          </div>
+                          {sale.status === 'voided' ? (
+                            <span style={{ fontSize: 9.5, color: 'var(--bad)', fontWeight: 600 }}>VOID</span>
+                          ) : (
+                            <span style={{ fontSize: 9.5, color: 'var(--ok)', fontWeight: 600 }}>LUNAS</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             {selectedDetail.note && (
@@ -790,7 +1007,7 @@ export default function ShiftClient({
                 padding: '10px 12px',
                 borderRadius: 10,
                 color: 'var(--mute)',
-                marginBottom: 18
+                marginBottom: 16
               }}>
                 <strong>Catatan Kasir:</strong> {selectedDetail.note}
               </div>

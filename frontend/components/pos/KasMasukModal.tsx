@@ -454,6 +454,8 @@ export function TutupShiftModal({ activeShift, onSuccess, onCancel }: TutupShift
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [cashSales, setCashSales] = useState<number>(0)
+  const [nonCashSales, setNonCashSales] = useState<number>(0)
+  const [salesCount, setSalesCount] = useState<number>(0)
   const [salesLoaded, setSalesLoaded] = useState(false)
 
   const kasAwal = activeShift?.initial_cash || 0
@@ -468,14 +470,16 @@ export function TutupShiftModal({ activeShift, onSuccess, onCancel }: TutupShift
       try {
         const { data, error: sErr } = await supabase
           .from('sales')
-          .select('final_amount')
+          .select('final_amount, payment_method, status')
           .eq('shift_id', activeShift.id)
-          .eq('payment_method', 'cash')
           .eq('status', 'completed')
 
         if (data && data.length > 0) {
-          const total = data.reduce((acc, curr) => acc + (curr.final_amount || 0), 0)
-          setCashSales(total)
+          const cash = data.filter(d => d.payment_method === 'cash').reduce((acc, curr) => acc + (curr.final_amount || 0), 0)
+          const nonCash = data.filter(d => d.payment_method !== 'cash').reduce((acc, curr) => acc + (curr.final_amount || 0), 0)
+          setCashSales(cash)
+          setNonCashSales(nonCash)
+          setSalesCount(data.length)
         }
       } catch (err) {
         console.warn('Gagal memuat penjualan tunai shift:', err)
@@ -485,7 +489,7 @@ export function TutupShiftModal({ activeShift, onSuccess, onCancel }: TutupShift
     }
 
     fetchShiftCashSales()
-  }, [activeShift?.id])
+  }, [activeShift?.id, supabase])
 
   // Kas sistem = Kas Awal + Penjualan Tunai
   const estimasiKasSistem = kasAwal + cashSales
@@ -629,9 +633,26 @@ export function TutupShiftModal({ activeShift, onSuccess, onCancel }: TutupShift
               Penjualan Tunai
             </div>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ok)' }}>
-              +{formatRp(cashSales)}
+              +{formatRp(cashSales)} {salesCount > 0 && <span style={{ fontSize: 11, color: 'var(--mute)', fontWeight: 500 }}>({salesCount} Trx)</span>}
             </div>
           </div>
+          {nonCashSales > 0 && (
+            <div style={{
+              gridColumn: '1 / -1',
+              fontSize: 11.5,
+              color: 'var(--mute)',
+              background: 'var(--panel)',
+              padding: '7px 11px',
+              borderRadius: 8,
+              border: '1px solid var(--line)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span>Penjualan Non-Tunai (QRIS / Transfer):</span>
+              <strong style={{ color: 'var(--acc)', fontSize: 12 }}>{formatRp(nonCashSales)}</strong>
+            </div>
+          )}
           <div style={{
             gridColumn: '1 / -1',
             borderTop: '1px solid var(--line)',

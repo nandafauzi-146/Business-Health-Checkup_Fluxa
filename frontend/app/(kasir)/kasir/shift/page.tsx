@@ -22,6 +22,6 @@ export default async function ShiftRedirectPage() {
     }
   }
 
-  // Kasir tidak memiliki halaman kelola shift mandiri, langsung diarahkan ke kasir POS
+  // Halaman kelola shift eksklusif untuk Admin dan Owner. Kasir diarahkan langsung ke kasir POS.
   redirect('/kasir')
 }
