@@ -30,9 +30,34 @@ type WithViewRelationships<T> = {
 export interface Database {
   public: {
     Tables: WithTableRelationships<{
+      businesses: {
+        Row: {
+          id: string;
+          owner_id: string;
+          name: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          owner_id: string;
+          name: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          owner_id?: string;
+          name?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;
+          business_id: string | null;
           full_name: string;
           role: UserRole;
           phone: string | null;
@@ -50,6 +75,7 @@ export interface Database {
         };
         Insert: {
           id: string;
+          business_id?: string | null;
           full_name: string;
           role?: UserRole;
           phone?: string | null;
@@ -67,6 +93,7 @@ export interface Database {
         };
         Update: {
           id?: string;
+          business_id?: string | null;
           full_name?: string;
           role?: UserRole;
           phone?: string | null;
@@ -87,6 +114,7 @@ export interface Database {
       categories: {
         Row: {
           id: string;
+          business_id: string | null;
           name: string;
           description: string | null;
           created_at: string;
@@ -94,6 +122,7 @@ export interface Database {
         };
         Insert: {
           id?: string;
+          business_id?: string | null;
           name: string;
           description?: string | null;
           created_at?: string;

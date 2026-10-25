@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { getUserFacingError } from '@/lib/user-facing-error'
 import { createClient } from '@/lib/supabase/client'
+import { getAbsoluteUrl } from '@/lib/site-url'
 import { AnimatedBackground, AuthIntro, useAuthIntro } from './AuthVisuals'
 
 declare global {
@@ -167,7 +168,7 @@ export default function RegisterForm({
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?source=register&role=owner`,
+          redirectTo: getAbsoluteUrl('/auth/callback?source=register&role=owner'),
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

@@ -7,12 +7,26 @@ export default async function AdminPenggunaPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Sesuai aturan: Admin HANYA bisa melihat dan mengelola akun kasir
-  const { data: users } = await supabase
+  // Dapatkan business_id dari profile pemanggil
+  const { data: callerProfile } = await supabase
     .from('profiles')
-    .select('id, full_name, role, phone, email, created_at')
+    .select('business_id, role')
+    .eq('id', user?.id || '')
+    .maybeSingle()
+
+  const businessId = (callerProfile as any)?.business_id || null
+
+  // Sesuai aturan: Admin HANYA bisa melihat dan mengelola akun kasir di bisnis yang sama
+  let query = supabase
+    .from('profiles')
+    .select('id, full_name, role, phone, email, created_at, business_id')
     .eq('role', 'kasir')
-    .order('created_at', { ascending: false })
+
+  if (businessId) {
+    query = query.eq('business_id', businessId)
+  }
+
+  const { data: users } = await query.order('created_at', { ascending: false })
 
   return <UsersManagementClient initialUsers={users || []} roleScope="kasir" currentUserId={user?.id} />
 }
