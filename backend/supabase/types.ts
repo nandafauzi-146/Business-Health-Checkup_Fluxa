@@ -1,4 +1,4 @@
 // backend/supabase/types.ts
-// Re-export dari frontend/lib/supabase/types.ts untuk menjaga satu sumber kebenaran (single source of truth)
-export * from '../../frontend/lib/supabase/types';
-export type { Database, Json } from '../../frontend/lib/supabase/types';
+// Lokasi kanonik tipe database telah dipindah ke database/types/index.ts.
+// File ini sekarang hanya berfungsi sebagai re-export backward-compat.
+export * from '../../database/types';
