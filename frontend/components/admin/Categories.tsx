@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Plus, Search, Layers, Edit, Trash2, X, Check, Folder } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard } from '@/components/ui/Cards'
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
 import { createClient } from '@/lib/supabase/client'
 import { getUserFacingError } from '@/lib/user-facing-error'
 
@@ -21,6 +22,10 @@ export default function CategoriesClient({ initialCategories }: { initialCategor
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [formData, setFormData] = useState({ name: '', description: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; category: Category | null }>({
+    isOpen: false,
+    category: null
+  })
   const [notification, setNotification] = useState<{ type: 'ok' | 'bad'; text: string } | null>(null)
 
   const supabase = createClient()
@@ -97,9 +102,15 @@ export default function CategoriesClient({ initialCategories }: { initialCategor
     }
   }
 
-  const handleDelete = async (cat: Category) => {
-    if (!confirm(`Hapus kategori "${cat.name}"? Produk dalam kategori ini akan menjadi tanpa kategori.`)) return
+  const handleDelete = (cat: Category) => {
+    setDeleteConfirm({ isOpen: true, category: cat })
+  }
 
+  const confirmDelete = async () => {
+    const cat = deleteConfirm.category
+    if (!cat) return
+
+    setIsSubmitting(true)
     try {
       const { error } = await supabase
         .from('categories')
@@ -113,6 +124,9 @@ export default function CategoriesClient({ initialCategories }: { initialCategor
     } catch (err: unknown) {
       console.error('Error deleting category:', err)
       showNotification(getUserFacingError(err, `Kategori "${cat.name}" belum dapat dihapus. Silakan coba lagi.`), 'bad')
+    } finally {
+      setIsSubmitting(false)
+      setDeleteConfirm({ isOpen: false, category: null })
     }
   }
 
@@ -310,6 +324,19 @@ export default function CategoriesClient({ initialCategories }: { initialCategor
           </div>
         </div>
       )}
+
+      <ConfirmationDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, category: null })}
+        onConfirm={confirmDelete}
+        title="Konfirmasi Hapus Kategori"
+        message={`Apakah Anda yakin ingin menghapus kategori "${deleteConfirm.category?.name}"? Produk dalam kategori ini akan menjadi tanpa kategori. Tindakan ini tidak dapat dibatalkan.`}
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        variant="danger"
+        icon="delete"
+        isLoading={isSubmitting}
+      />
     </div>
   )
 }

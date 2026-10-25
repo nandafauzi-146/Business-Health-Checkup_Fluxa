@@ -508,8 +508,7 @@ export default function DebtReceivablesClient({
                 color: typeFilter === 'payable' ? 'var(--bad)' : 'var(--mute)',
                 boxShadow: typeFilter === 'payable' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
               }}
-            >
-              🔴 Hutang Toko
+            > 🧾 Hutang Toko
             </button>
             <button
               type="button"
@@ -526,7 +525,7 @@ export default function DebtReceivablesClient({
                 boxShadow: typeFilter === 'receivable' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
               }}
             >
-              🟢 Piutang Usaha
+              💰 Piutang Usaha
             </button>
           </div>
 
@@ -769,7 +768,7 @@ export default function DebtReceivablesClient({
                       gap: 4
                     }}
                   >
-                    <span style={{ fontSize: 15 }}>🔴 Hutang Toko</span>
+                    <span style={{ fontSize: 15 }}>🧾 Hutang Toko</span>
                     <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--mute)' }}>
                       Kewajiban keluar (supplier, sewa, utilitas)
                     </span>
@@ -792,7 +791,7 @@ export default function DebtReceivablesClient({
                       gap: 4
                     }}
                   >
-                    <span style={{ fontSize: 15 }}>🟢 Piutang Usaha</span>
+                    <span style={{ fontSize: 15 }}>💰 Piutang Usaha</span>
                     <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--mute)' }}>
                       Hak tagih masuk (konsinyasi mitra, pesanan B2B)
                     </span>

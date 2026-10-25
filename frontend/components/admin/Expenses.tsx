@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Plus, Search, DollarSign, Calendar, Trash2, Tag, ArrowUpRight, X, Check, TrendingDown } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, FormatRupiah } from '@/components/ui/Cards'
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
 import { createClient } from '@/lib/supabase/client'
 import { getUserFacingError } from '@/lib/user-facing-error'
 
@@ -38,6 +39,10 @@ export default function ExpensesClient({
     amount: '',
     description: '',
     expense_date: new Date().toISOString().split('T')[0]
+  })
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; expense: Expense | null }>({
+    isOpen: false,
+    expense: null
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [notification, setNotification] = useState<{ type: 'ok' | 'bad'; text: string } | null>(null)
@@ -126,9 +131,15 @@ export default function ExpensesClient({
     }
   }
 
-  const handleDelete = async (exp: Expense) => {
-    if (!confirm(`Hapus catatan biaya "${exp.description}" sebesar Rp ${exp.amount.toLocaleString('id-ID')}?`)) return
+  const handleDelete = (exp: Expense) => {
+    setDeleteConfirm({ isOpen: true, expense: exp })
+  }
 
+  const confirmDelete = async () => {
+    const exp = deleteConfirm.expense
+    if (!exp) return
+
+    setIsSubmitting(true)
     try {
       const { error } = await supabase
         .from('expenses')
@@ -142,6 +153,9 @@ export default function ExpensesClient({
     } catch (err: unknown) {
       console.error('Error deleting expense:', err)
       showNotification(getUserFacingError(err, 'Catatan biaya belum dapat dihapus. Silakan coba lagi.'), 'bad')
+    } finally {
+      setIsSubmitting(false)
+      setDeleteConfirm({ isOpen: false, expense: null })
     }
   }
 
@@ -404,6 +418,19 @@ export default function ExpensesClient({
           </div>
         </div>
       )}
+
+      <ConfirmationDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, expense: null })}
+        onConfirm={confirmDelete}
+        title="Konfirmasi Hapus Biaya"
+        message={`Apakah Anda yakin ingin menghapus catatan biaya "${deleteConfirm.expense?.description}" sebesar Rp ${deleteConfirm.expense?.amount.toLocaleString('id-ID')}? Tindakan ini tidak dapat dibatalkan.`}
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        variant="danger"
+        icon="delete"
+        isLoading={isSubmitting}
+      />
     </div>
   )
 }

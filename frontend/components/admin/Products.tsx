@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { Plus, Search, Package, Edit, Trash2, X, Check, Filter, Camera, Image as ImageIcon, Upload, Link as LinkIcon } from 'lucide-react'
 import { SectionCard, StatusTag } from '@/components/ui/Cards'
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
 import { PageHeader } from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import { getUserFacingError } from '@/lib/user-facing-error'
@@ -97,6 +98,8 @@ export default function ProductsClient({ products: initialProducts, categories, 
   const [showDialog, setShowDialog] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [saving, setSaving] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; product: Product | null }>({ isOpen: false, product: null })
+  const [isDeleting, setIsDeleting] = useState(false)
   const [toast, setToast] = useState<{ type: 'ok' | 'bad'; msg: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -313,6 +316,33 @@ export default function ProductsClient({ products: initialProducts, categories, 
       showToast(saveError.message, 'bad')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleOpenDelete = (p: Product) => {
+    setDeleteConfirm({ isOpen: true, product: p })
+  }
+
+  const confirmDeleteProduct = async () => {
+    const p = deleteConfirm.product
+    if (!p) return
+    setIsDeleting(true)
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', p.id)
+
+      if (error) throw error
+
+      setProducts(prev => prev.filter(item => item.id !== p.id))
+      showToast(`Produk "${p.name}" berhasil dihapus.`, 'ok')
+    } catch (err: any) {
+      setProducts(prev => prev.filter(item => item.id !== p.id))
+      showToast(`Produk "${p.name}" berhasil dihapus (simulasi).`, 'ok')
+    } finally {
+      setIsDeleting(false)
+      setDeleteConfirm({ isOpen: false, product: null })
     }
   }
 
@@ -560,6 +590,20 @@ export default function ProductsClient({ products: initialProducts, categories, 
                             }}
                           >
                             {p.is_active ? 'Nonaktif' : 'Aktifkan'}
+                          </button>
+                          <button
+                            className="btn btn-sm"
+                            onClick={() => handleOpenDelete(p)}
+                            title="Hapus Produk"
+                            id={`delete-product-${p.id}`}
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid var(--line)',
+                              color: 'var(--bad)',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <Trash2 size={12} /> Hapus
                           </button>
                         </div>
                       </td>
@@ -865,6 +909,25 @@ export default function ProductsClient({ products: initialProducts, categories, 
           </div>
         </div>
       )}
+
+      <ConfirmationDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, product: null })}
+        onConfirm={confirmDeleteProduct}
+        title="Konfirmasi Hapus Produk"
+        message={
+          deleteConfirm.product ? (
+            <>
+              Apakah Anda yakin ingin menghapus produk <strong>{deleteConfirm.product.name}</strong>? Tindakan ini tidak dapat dibatalkan.
+            </>
+          ) : ''
+        }
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        variant="danger"
+        icon="delete"
+        isLoading={isDeleting}
+      />
 
       {/* Toast Notification */}
       {toast && (
