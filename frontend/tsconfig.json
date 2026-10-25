@@ -31,6 +31,9 @@
       ],
       "@backend/*": [
         "../backend/*"
+      ],
+      "@database/*": [
+        "../database/*"
       ]
     }
   },
@@ -42,6 +45,7 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts",
     "../intelligence/**/*.ts",
+    "../database/**/*.ts",
     "../.next/types/**/*.ts",
     "../.next/dev/types/**/*.ts"
   ],

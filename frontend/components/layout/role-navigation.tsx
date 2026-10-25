@@ -91,7 +91,7 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
         { icon: <Activity size={16} />, label: 'Buka / Tutup Shift', href: '/owner/shift' },
         { icon: <Package size={16} />, label: 'Monitoring Stok', href: '/owner/stok' },
         { icon: <Users size={16} />, label: 'Kelola Pengguna', href: '/owner/pengguna' },
-        { icon: <FileText size={16} />, label: 'Audit Log', href: '/owner/audit' },
+        { icon: <FileText size={16} />, label: 'Aktifitas', href: '/owner/audit' },
         { icon: <CreditCard size={16} />, label: 'Langganan', href: '/owner/langganan' },
       ]
     }

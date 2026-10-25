@@ -1,29 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createClient as createSupabaseAdminClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 import { getUserFacingError } from "@/lib/user-facing-error";
+import { getSupabaseAdminClient } from "@backend/index";
 
 function getErrorMessage(error: unknown, fallback: string) {
   return getUserFacingError(error, fallback);
 }
 
 function getAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url || !serviceKey) {
-    throw new Error(
-      "Supabase Service Role Key atau URL belum dikonfigurasi di server.",
-    );
-  }
-
-  return createSupabaseAdminClient(url, serviceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
+  return getSupabaseAdminClient();
 }
 
 // POST: Tambah akun staf (Admin hanya boleh buat kasir)

@@ -4,13 +4,11 @@ Fluxa adalah platform sistem kasir pintar (Point of Sales) dan diagnosis kesehat
 
 ---
 
-## Arsitektur 3-Pilar Modular
-
-Proyek ini disusun secara terorganisir ke dalam 3 pilar utama:
+## Arsitektur 4-Pilar Modular
 
 ```
 fluxa/
-├── frontend/                     # Pilar 1: Aplikasi Web Next.js (App Router + Tailwind)
+├── frontend/                     # Pilar 1: Aplikasi Web Next.js (App Router)
 │   ├── app/                      # Route groups Next.js App Router & API handlers
 │   │   ├── (admin)/admin/        # Modul operasional toko Admin (produk, stok, transaksi, biaya, dll.)
 │   │   ├── (kasir)/kasir/        # Antarmuka kasir POS cepat & responsif
@@ -35,43 +33,60 @@ fluxa/
 │   ├── public/                   # Aset produksi statis (Fluxa-Logo.webp)
 │   └── proxy.ts                  # Next.js 16 session proxy / refresh handler
 │
-├── backend/                      # Pilar 2: Database Supabase & Data Engine
+├── backend/                      # Pilar 2: Service Layer & Supabase Adapters
+│   ├── index.ts                  # Barrel export (@backend/*)
 │   ├── supabase/
-│   │   ├── migrations/           # File migrasi terurut (0001_... s/d 0018_...)
-│   │   ├── seed.sql              # Data dummy produk, kategori, pelanggan, transaksi
-│   │   ├── combined_setup.sql    # Skrip inisialisasi menyeluruh
-│   │   └── types.ts              # TypeScript Database Schema Types
+│   │   ├── admin.ts              # getSupabaseAdminClient — SATU-SATUNYA akses service role
+│   │   └── types.ts              # Re-export backward-compat → database/types
+│   ├── services/
+│   │   └── financial-context.service.ts  # Agregasi data finansial bisnis dari Supabase
 │   └── scripts/
-│       └── seed-demo-accounts.mjs# Script inisialisasi 3 akun demo (Owner, Admin, Kasir)
+│       └── seed-demo-accounts.mjs        # Inisialisasi 3 akun demo (Owner, Admin, Kasir)
 │
-└── intelligence/                 # Pilar 3: Mesin Diagnosis Kesehatan Bisnis & AI Advisor
-    ├── services/business-health/
-    │   ├── types.ts              # Interface input finansial & metrik diagnosis
-    │   ├── calculator.ts         # Kalkulator margin, current ratio, runway kas, dan skor kesehatan
-    │   └── evaluator.ts          # Rules engine diagnosis & pembuatan rekomendasi aksi terarah
-    ├── ai/
-    │   ├── prompts.ts            # System prompt & template prompt UMKM advisor
-    │   └── client.ts             # AI client wrapper dengan fallback analisis heuristik cerdas
-    └── index.ts                  # Public API barrel export modul intelligence
+├── intelligence/                 # Pilar 3: Mesin Diagnosis Kesehatan Bisnis & AI Advisor
+│   ├── index.ts                  # Barrel export (@intelligence/*)
+│   ├── ai/
+│   │   ├── client.ts             # Google Gemini client wrapper
+│   │   ├── prompts.ts            # System prompt & template diagnosis eksekutif
+│   │   └── chat.ts               # FluxAI conversational assistant & context builder
+│   └── services/business-health/
+│       ├── types.ts              # Interface finansial & metrik 6 dimensi
+│       ├── calculator.ts         # Kalkulasi margin, current ratio, runway, skor komposit
+│       └── evaluator.ts          # Rules engine diagnosis & rekomendasi aksi taktis
+│
+└── database/                     # Pilar 4: Skema, Migrasi SQL & Tipe Database
+    ├── types/
+    │   └── index.ts              # Kanonik tipe Database & Json (@database/types)
+    └── supabase/
+        ├── migrations/           # 27 file migrasi SQL terurut (0001 s/d 0027)
+        ├── seed.sql              # Data dummy untuk lingkungan pengembangan
+        └── combined_setup.sql    # Skrip inisialisasi menyeluruh (dev only)
 ```
+
+**Arah dependency yang benar:**
+```
+frontend  →  backend  →  intelligence
+                      →  database
+```
+`intelligence/` dan `database/` tidak boleh mengimpor dari `backend/` atau `frontend/app`.
 
 ---
 
 ## Menjalankan Proyek
 
-### 1. Menjalankan Server Development
+### 1. Server Development
 ```bash
 npm run dev
 ```
-Aplikasi frontend akan aktif di [http://localhost:3000](http://localhost:3000).
+Aplikasi frontend aktif di [http://localhost:3000](http://localhost:3000).
 
-### 2. Membangun Aplikasi untuk Produksi
+### 2. Build Produksi
 ```bash
 npm run build
 ```
 
 ### 3. Inisialisasi Akun Demo
-Membuat / memperbarui 3 akun demo (Owner, Admin, Kasir) ke database Supabase:
+Membuat / memperbarui 3 akun demo ke database Supabase:
 ```bash
 npm run seed:accounts
 ```
@@ -83,39 +98,83 @@ npm run seed:accounts
 | **Admin** | `admin@demo.local` | `Admin123!` |
 | **Kasir** | `kasir@demo.local` | `Kasir123!` |
 
-### Registrasi, Persetujuan, dan Trial
-Jalankan migrasi `backend/supabase/migrations/0018_registration_approval_trials.sql` pada proyek Supabase. Pendaftaran publik membuat akun Owner berstatus menunggu persetujuan; trial 7 hari mulai dihitung ketika Super Admin menyetujui akun di `/super-admin`.
+---
 
-Untuk bootstrap Super Admin pertama, buat atau gunakan akun operator di Supabase Auth, lalu jalankan sekali di SQL Editor dengan email akun tersebut:
+## Panduan Pengembangan
+
+### Migrasi Database
+
+Migrasi SQL berada di `database/supabase/migrations/` dengan urutan `0001` s/d `0027`:
+
+| File | Isi |
+|---|---|
+| `0001` | Extensions (UUID, pgcrypto) |
+| `0002` | Tabel utama (profiles, products, shifts, sales, dll) |
+| `0003` | Indexes performa query |
+| `0004` | Helper functions |
+| `0005` | Triggers audit & stok |
+| `0006` | Business functions (RPC: create_sale, close_shift, void_sale) |
+| `0007` | Row Level Security policies |
+| `0008` | Views (v_monthly_revenue_cogs, dll) |
+| `0009` | Adjust stock RPC |
+| `0010` | Promotions |
+| `0011` | Refund requests |
+| `0012` | Product image_url |
+| `0013` | Supplier payables |
+| `0014` | Disable customer receivables |
+| `0015` | Business debt & receivables |
+| `0016` | Comprehensive audit logging |
+| `0017` | Email field di profiles |
+| `0018` | Registration approval & trials |
+| `0019` | Security & transaction integrity (atomik checkout, void, refund) |
+| `0020` | Refund approval workflow |
+| `0021` | Debt categories |
+| `0022` | Subscriptions & Midtrans payment |
+| `0023` | Platform withdrawals |
+| `0024` | Platform expenses & reporting |
+| `0025` | Registration path & auto approve |
+| `0026` | Landing CMS content |
+| `0027` | Security hardening |
+
+**Aturan migrasi:**
+- Jangan ubah migrasi yang sudah diterapkan di database bersama (production/staging) — buat file baru.
+- Nomor migrasi harus unik. Migrasi terakhir saat ini: `0027`.
+- `combined_setup.sql` hanya untuk setup lokal — jangan jalankan di produksi.
+
+### Registrasi, Persetujuan, dan Trial
+
+Pendaftaran publik membuat akun Owner berstatus menunggu persetujuan; trial 7 hari mulai dihitung ketika Super Admin menyetujui akun di `/super-admin`.
+
+Untuk bootstrap Super Admin pertama, jalankan sekali di SQL Editor Supabase:
 ```sql
 update public.profiles
 set role = 'super_admin', approval_status = 'approved'
 where email = 'operator@example.com';
 ```
-Simpan `SUPABASE_SERVICE_ROLE_KEY` hanya di environment server aplikasi. Jangan pernah mengeksposnya sebagai variabel `NEXT_PUBLIC_*`.
 
-Untuk menyimpan foto produk, jalankan migrasi `backend/supabase/migrations/0020_ensure_product_image_url.sql` pada proyek Supabase yang dipakai aplikasi. Migrasi ini idempoten: memastikan kolom `image_url` ada pada tabel `products` lalu meminta PostgREST memuat ulang cache skema. Migrasi ini diperlukan meskipun file 0012 sudah ada di repository.
+### Paket, Pembayaran, dan Subscription (Midtrans)
 
-Jalankan migrasi `backend/supabase/migrations/0019_security_and_transaction_integrity.sql` pada proyek Supabase untuk mengunci perubahan role, memvalidasi checkout, menyediakan alur refund/pembayaran atomik, dan memakai metode pembayaran penjualan `cash` atau `non_cash`. Migrasi ini juga menghapus tabel `customers` serta relasi `customer_id` dari penjualan/piutang; riwayat invoice tidak lagi bergantung pada data pelanggan. Nilai metode pembayaran lama `qris`/`transfer` tetap tersimpan dan ditampilkan sebagai Non-Tunai.
-
-### Modul Super Admin
-Console Super Admin tersedia di `/super-admin` dengan ringkasan platform, manajemen pengguna, persetujuan pendaftaran, pengelolaan trial, audit log, dan profil operator. Akses serta setiap endpoint pengelolaan memvalidasi sesi Super Admin di server. Perubahan role, status auth, persetujuan, dan trial dicatat pada tabel `audit_logs`.
-
-### Paket, Pembayaran, dan Laporan Subscription
-Jalankan migrasi `backend/supabase/migrations/0019_subscriptions_and_midtrans.sql` setelah migrasi `0018`. Buat paket berbayar melalui `/super-admin/paket`; Owner dapat memilih paket di `/langganan`. Pembayaran diproses aman via Snap Midtrans, dan akses berbayar diaktifkan secara otomatis melalui webhook yang signature-nya divalidasi serta status transaksinya diverifikasi kembali ke Midtrans.
-
-Tambahkan konfigurasi berikut di environment server (jangan gunakan prefix `NEXT_PUBLIC_` untuk server key):
+Buat paket berbayar melalui `/super-admin/paket`; Owner memilih paket di `/langganan`. Pembayaran diproses via Snap Midtrans dengan webhook tervalidasi. Tambahkan di environment server:
 ```env
 MIDTRANS_SERVER_KEY=SB-Mid-server-...
 MIDTRANS_IS_PRODUCTION=false
 ```
-Di development lokal, simpan nilai tersebut di `frontend/.env.local` bersama `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY`. Laporan keuangan platform tersedia di `/super-admin/keuangan` dan dapat diekspor ke CSV.
+Laporan keuangan platform tersedia di `/super-admin/keuangan` dan dapat diekspor ke CSV.
+
+### Super Admin Console
+
+Tersedia di `/super-admin`: ringkasan platform, manajemen pengguna, persetujuan pendaftaran, pengelolaan trial, audit log, dan profil operator. Setiap perubahan role, status auth, dan persetujuan dicatat di tabel `audit_logs`.
 
 ---
 
-## Aturan Utama Pengembangan
-- **Mata Uang:** Seluruh kolom uang di database dan kalkulator bisnis menggunakan tipe `integer` rupiah utuh (bukan desimal/float).
-- **Integritas Transaksi:** Mutasi penjualan dan stok wajib melalui RPC Supabase (`create_sale`, `close_shift`, `void_sale`, `adjust_stock`).
-- **Akses Role:** Dibagi secara ketat menggunakan Row Level Security (RLS) pada tingkat database Supabase.
-- **Alur Aplikasi:** Pengguna diarahkan ke dashboard sesuai role (`/owner`, `/admin`, `/kasir`, `/super-admin`) setelah login; navigasi operasional menggunakan `Sidebar.tsx` dan `Topbar.tsx`.
-- **Checkout Kasir:** Pembukaan shift dan checkout menggunakan RPC Supabase (`open_shift`, `create_sale`); jangan mengubah stok atau membuat transaksi langsung dari frontend.
+## Aturan Utama
+
+| Topik | Aturan |
+|---|---|
+| **Mata Uang** | Semua kolom uang di database & kalkulator menggunakan `integer` rupiah utuh (bukan float) |
+| **Transaksi** | Mutasi penjualan & stok wajib via RPC Supabase (`create_sale`, `close_shift`, `void_sale`, `adjust_stock`) |
+| **Akses Role** | Dibagi ketat via Row Level Security (RLS) pada tingkat database Supabase |
+| **Service Role Key** | Hanya boleh diakses melalui `backend/supabase/admin.ts` — jangan pernah `NEXT_PUBLIC_*` |
+| **Tipe Database** | Import dari `@database/types` (kanonik) atau `@backend/index` (backward compat) |
+| **Modul Server** | `backend/` dan `intelligence/` hanya dijalankan di Node.js — tidak masuk bundle browser |
+| **AI & Angka** | Kalkulator TypeScript selalu menjadi sumber angka; AI digunakan untuk narasi & rekomendasi, bukan kalkulasi |
