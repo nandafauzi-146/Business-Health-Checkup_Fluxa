@@ -15,6 +15,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { getUserFacingError } from '@/lib/user-facing-error'
 import {
   Wallet, ShieldCheck, Check, TrendingUp, TrendingDown,
   Clock, AlertTriangle, FileText, LogOut, CheckCircle2,
@@ -34,7 +35,7 @@ interface BukaShiftModalProps {
   onCancel?: () => void
 }
 
-export function BukaShiftModal({ userId, onSuccess, onCancel }: BukaShiftModalProps) {
+export function BukaShiftModal({ onSuccess, onCancel }: BukaShiftModalProps) {
   const router = useRouter()
   const supabase = createClient()
   const [kasAwal, setKasAwal] = useState('')
@@ -55,46 +56,29 @@ export function BukaShiftModal({ userId, onSuccess, onCancel }: BukaShiftModalPr
     setLoading(true)
 
     try {
-      const { data, error: rpcErr } = await supabase.rpc('open_shift', {
+      const { data: shiftId, error: rpcErr } = await supabase.rpc('open_shift', {
         p_initial_cash: kasAwalNum,
         p_note: catatan.trim() || null,
       })
       if (rpcErr) throw rpcErr
 
       // Ambil data shift yang baru dibuka
-      const { data: shifts } = await supabase
+      if (!shiftId) throw new Error('Database tidak mengembalikan ID shift.')
+      const { data: finalShift, error: shiftError } = await supabase
         .from('shifts')
         .select('*')
-        .eq('cashier_id', userId)
-        .eq('status', 'open')
-        .order('opened_at', { ascending: false })
-        .limit(1)
-
-      const finalShift = shifts?.[0] || {
-        id: 'shift-' + Date.now(),
-        initial_cash: kasAwalNum,
-        opened_at: new Date().toISOString(),
-        status: 'open'
-      }
+        .eq('id', shiftId)
+        .single()
+      if (shiftError) throw shiftError
+      if (!finalShift) throw new Error('Shift berhasil dibuka tetapi datanya gagal dimuat.')
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('shift_changed', { detail: finalShift }))
       }
       onSuccess(finalShift)
       router.refresh()
-    } catch (err: any) {
-      // Demo mode fallback bila DB offline / demo akun
-      const demoShift = {
-        id: 'demo-shift-' + Date.now(),
-        initial_cash: kasAwalNum,
-        opened_at: new Date().toISOString(),
-        status: 'open'
-      }
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('shift_changed', { detail: demoShift }))
-      }
-      onSuccess(demoShift)
-      router.refresh()
+    } catch (err) {
+      setError(getUserFacingError(err, 'Shift belum dapat dibuka. Periksa kembali nominal kas awal dan coba lagi.'))
     } finally {
       setLoading(false)
     }
@@ -462,7 +446,7 @@ interface TutupShiftModalProps {
   onCancel: () => void
 }
 
-export function TutupShiftModal({ activeShift, userId, onSuccess, onCancel }: TutupShiftModalProps) {
+export function TutupShiftModal({ activeShift, onSuccess, onCancel }: TutupShiftModalProps) {
   const router = useRouter()
   const supabase = createClient()
   const [kasAkhir, setKasAkhir] = useState('')
@@ -534,13 +518,8 @@ export function TutupShiftModal({ activeShift, userId, onSuccess, onCancel }: Tu
       }
       onSuccess()
       router.refresh()
-    } catch (err: any) {
-      // Demo mode fallback — tutup shift & lanjutkan logout
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('shift_changed', { detail: null }))
-      }
-      onSuccess()
-      router.refresh()
+    } catch (err) {
+      setError(getUserFacingError(err, 'Shift belum dapat ditutup. Silakan periksa data kas dan coba lagi.'))
     } finally {
       setLoading(false)
     }

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag, KpiCard, FormatRupiah } from '@/components/ui/Cards'
+import { getUserFacingError } from '@/lib/user-facing-error'
 
 export interface Promotion {
   id: string
@@ -24,65 +25,18 @@ export interface Promotion {
   created_at?: string
 }
 
-const DEMO_PROMOTIONS: Promotion[] = [
-  {
-    id: 'p-1',
-    code: 'HEMAT10',
-    name: 'Diskon Belanja 10%',
-    type: 'percentage',
-    value: 10,
-    min_purchase: 50000,
-    max_discount: 25000,
-    start_date: '2026-10-01',
-    end_date: '2026-10-31',
-    is_active: true,
-    description: 'Diskon 10% minimal belanja Rp50.000, maksimal potongan Rp25.000'
-  },
-  {
-    id: 'p-2',
-    code: 'FLUXA20K',
-    name: 'Potongan Langsung Rp20.000',
-    type: 'fixed',
-    value: 20000,
-    min_purchase: 100000,
-    max_discount: null,
-    start_date: '2026-10-01',
-    end_date: null,
-    is_active: true,
-    description: 'Potongan langsung Rp20.000 untuk belanja di atas Rp100.000'
-  },
-  {
-    id: 'p-3',
-    code: 'MEMBER5K',
-    name: 'Spesial Member Baru',
-    type: 'fixed',
-    value: 5000,
-    min_purchase: 25000,
-    max_discount: null,
-    start_date: '2026-09-01',
-    end_date: null,
-    is_active: true,
-    description: 'Potongan Rp5.000 tanpa syarat khusus untuk pelanggan terdaftar'
-  },
-  {
-    id: 'p-4',
-    code: 'PROMOFLASH',
-    name: 'Flash Sale 25%',
-    type: 'percentage',
-    value: 25,
-    min_purchase: 75000,
-    max_discount: 50000,
-    start_date: '2026-10-05',
-    end_date: '2026-10-07',
-    is_active: false,
-    description: 'Flash sale terbatas akhir pekan'
-  }
-]
+function jakartaToday() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date())
+}
+
+function isAvailableToCashier(promotion: Promotion, today = jakartaToday()) {
+  return promotion.is_active &&
+    promotion.start_date <= today &&
+    (!promotion.end_date || promotion.end_date >= today)
+}
 
 export default function AdminDiscountsClient({ initialPromotions }: { initialPromotions: Promotion[] }) {
-  const [promotions, setPromotions] = useState<Promotion[]>(
-    initialPromotions.length > 0 ? initialPromotions : DEMO_PROMOTIONS
-  )
+  const [promotions, setPromotions] = useState<Promotion[]>(initialPromotions)
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState<'all' | 'active' | 'percentage' | 'fixed'>('all')
 
@@ -96,7 +50,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
     value: '',
     min_purchase: '0',
     max_discount: '',
-    start_date: new Date().toISOString().split('T')[0],
+    start_date: jakartaToday(),
     end_date: '',
     is_active: true,
     description: ''
@@ -104,18 +58,35 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [toast, setToast] = useState<{ text: string; type: 'ok' | 'bad' } | null>(null)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState('')
+
+  // Sinkronisasi promo aktif ke localStorage & event real-time → langsung aktif di POS Kasir
+  const syncToLocalStorage = (updated: Promotion[]) => {
+    try {
+      const active = updated.filter(p => isAvailableToCashier(p))
+      localStorage.setItem('fluxa_active_promotions', JSON.stringify(active))
+      window.dispatchEvent(new CustomEvent('fluxa_promotions_updated', { detail: active }))
+    } catch {}
+  }
 
   // Ambil promo terbaru dari server saat halaman dibuka
   useEffect(() => {
     const loadPromotions = async () => {
       try {
-        const res = await fetch('/api/admin/promotions')
+        const res = await fetch('/api/admin/promotions', { cache: 'no-store' })
         const data = await res.json()
-        if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+        if (!res.ok) {
+          setLoadError(getUserFacingError(data.error, 'Promo belum dapat dimuat. Silakan coba lagi.'))
+          return
+        }
+        if (Array.isArray(data.data)) {
           setPromotions(data.data)
+          setLoadError('')
           syncToLocalStorage(data.data)
         }
-      } catch {}
+      } catch (err) {
+        setLoadError(getUserFacingError(err, 'Promo belum dapat dimuat. Silakan coba lagi.'))
+      }
     }
     loadPromotions()
   }, [])
@@ -123,15 +94,6 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
   const showToast = (text: string, type: 'ok' | 'bad' = 'ok') => {
     setToast({ text, type })
     setTimeout(() => setToast(null), 3000)
-  }
-
-  // Sinkronisasi promo aktif ke localStorage & event real-time → langsung aktif di POS Kasir
-  const syncToLocalStorage = (updated: Promotion[]) => {
-    try {
-      const active = updated.filter(p => p.is_active)
-      localStorage.setItem('fluxa_active_promotions', JSON.stringify(active))
-      window.dispatchEvent(new CustomEvent('fluxa_promotions_updated', { detail: active }))
-    } catch {}
   }
 
   const handleCopyCode = (code: string) => {
@@ -151,7 +113,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
       value: '',
       min_purchase: '0',
       max_discount: '',
-      start_date: new Date().toISOString().split('T')[0],
+      start_date: jakartaToday(),
       end_date: '',
       is_active: true,
       description: ''
@@ -169,7 +131,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
       value: String(promo.value),
       min_purchase: String(promo.min_purchase || 0),
       max_discount: promo.max_discount ? String(promo.max_discount) : '',
-      start_date: promo.start_date || new Date().toISOString().split('T')[0],
+      start_date: promo.start_date || jakartaToday(),
       end_date: promo.end_date || '',
       is_active: promo.is_active,
       description: promo.description || ''
@@ -180,19 +142,21 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
   // Toggle Status Aktif Langsung
   const handleToggleActive = async (promo: Promotion) => {
     const nextStatus = !promo.is_active
-    const updated = promotions.map(p => p.id === promo.id ? { ...p, is_active: nextStatus } : p)
-    setPromotions(updated)
-    syncToLocalStorage(updated)
-
     try {
-      await fetch('/api/admin/promotions', {
+      const res = await fetch('/api/admin/promotions', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: promo.id, is_active: nextStatus })
       })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Gagal mengubah status promo.')
+
+      const updated = promotions.map(p => p.id === promo.id ? { ...p, is_active: nextStatus } : p)
+      setPromotions(updated)
+      syncToLocalStorage(updated)
       showToast(`Promo ${promo.code} kini ${nextStatus ? '✅ Aktif di terminal Kasir' : 'Dinonaktifkan'}.`, 'ok')
-    } catch {
-      showToast(`Status promo ${promo.code} diubah (simulasi).`, 'ok')
+    } catch (err) {
+      showToast(getUserFacingError(err, 'Status promo belum dapat diperbarui. Silakan coba lagi.'), 'bad')
     }
   }
 
@@ -200,15 +164,17 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
   const handleDelete = async (id: string, code: string) => {
     if (!confirm(`Yakin ingin menghapus promo "${code}"? Kasir tidak akan dapat menggunakannya lagi.`)) return
 
-    const updated = promotions.filter(p => p.id !== id)
-    setPromotions(updated)
-    syncToLocalStorage(updated)
-
     try {
-      await fetch(`/api/admin/promotions?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/admin/promotions?id=${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Gagal menghapus promo.')
+
+      const updated = promotions.filter(p => p.id !== id)
+      setPromotions(updated)
+      syncToLocalStorage(updated)
       showToast(`Promo ${code} berhasil dihapus.`, 'ok')
-    } catch {
-      showToast(`Promo ${code} dihapus (simulasi).`, 'ok')
+    } catch (err) {
+      showToast(getUserFacingError(err, 'Promo belum dapat dihapus. Silakan coba lagi.'), 'bad')
     }
   }
 
@@ -271,31 +237,18 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
         const data = await res.json()
         if (!res.ok) throw new Error(data.error)
 
-        const newPromo: Promotion = data.data || {
-          id: 'p-' + Date.now(),
-          ...payload
+        if (!data.data || typeof data.data.id !== 'string') {
+          throw new Error('Server tidak mengembalikan data promo yang tersimpan.')
         }
+        const newPromo: Promotion = data.data
         const updated = [newPromo, ...promotions]
         setPromotions(updated)
         syncToLocalStorage(updated)
         showToast(`✅ Promo ${cleanCode} berhasil dibuat dan otomatis aktif di POS Kasir!`, 'ok')
       }
       setModalOpen(false)
-    } catch (err: any) {
-      // Fallback local update (mode demo tanpa database)
-      if (editingPromo) {
-        const updated = promotions.map(p => p.id === editingPromo.id ? { ...p, ...payload } : p)
-        setPromotions(updated)
-        syncToLocalStorage(updated)
-        showToast(`✅ Promo ${cleanCode} diperbarui (mode demo) — Kasir dapat menggunakannya!`, 'ok')
-      } else {
-        const newPromo: Promotion = { id: 'demo-' + Date.now(), ...payload }
-        const updated = [newPromo, ...promotions]
-        setPromotions(updated)
-        syncToLocalStorage(updated)
-        showToast(`✅ Promo ${cleanCode} dibuat dan aktif di Kasir (mode demo)!`, 'ok')
-      }
-      setModalOpen(false)
+    } catch (err) {
+      showToast(getUserFacingError(err, 'Promo belum dapat disimpan. Silakan periksa data dan coba lagi.'), 'bad')
     } finally {
       setIsSubmitting(false)
     }
@@ -303,7 +256,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
 
   // Statistik KPI
   const stats = useMemo(() => {
-    const activeList = promotions.filter(p => p.is_active)
+    const activeList = promotions.filter(p => isAvailableToCashier(p))
     const percentageCount = promotions.filter(p => p.type === 'percentage').length
     const fixedCount = promotions.filter(p => p.type === 'fixed').length
     return {
@@ -317,7 +270,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
   // Filter Table
   const filteredPromotions = useMemo(() => {
     return promotions.filter(p => {
-      if (filterType === 'active' && !p.is_active) return false
+      if (filterType === 'active' && !isAvailableToCashier(p)) return false
       if (filterType === 'percentage' && p.type !== 'percentage') return false
       if (filterType === 'fixed' && p.type !== 'fixed') return false
 
@@ -347,6 +300,12 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
           </button>
         }
       />
+
+      {loadError && (
+        <div role="alert" style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 12, color: 'var(--bad)', background: 'var(--bads)', fontSize: 13 }}>
+          {loadError}
+        </div>
+      )}
 
       {/* Toast Alert */}
       {toast && (
@@ -440,7 +399,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
               {(['all', 'active', 'percentage', 'fixed'] as const).map(tab => {
                 const labels = {
                   all: 'Semua',
-                  active: 'Hanya Aktif',
+                  active: 'Tersedia di Kasir',
                   percentage: 'Persentase %',
                   fixed: 'Potongan Rp'
                 }
@@ -508,7 +467,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
                       key={promo.id}
                       style={{
                         borderBottom: '1px solid var(--line)',
-                        opacity: promo.is_active ? 1 : 0.65
+                        opacity: isAvailableToCashier(promo) ? 1 : 0.65
                       }}
                     >
                       {/* Kode Promo */}
@@ -598,7 +557,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
                           }}
                           title={promo.is_active ? 'Klik untuk nonaktifkan di kasir' : 'Klik untuk aktifkan di kasir'}
                         >
-                          {promo.is_active ? (
+                          {isAvailableToCashier(promo) ? (
                             <span style={{
                               padding: '3px 10px',
                               borderRadius: 99,
@@ -612,6 +571,17 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
                             }}>
                               <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ok)' }} />
                               Aktif di Kasir
+                            </span>
+                          ) : promo.is_active ? (
+                            <span style={{
+                              padding: '3px 10px',
+                              borderRadius: 99,
+                              background: 'var(--warns)',
+                              color: 'var(--warn)',
+                              fontWeight: 700,
+                              fontSize: 11.5,
+                            }}>
+                              Di luar periode
                             </span>
                           ) : (
                             <span style={{

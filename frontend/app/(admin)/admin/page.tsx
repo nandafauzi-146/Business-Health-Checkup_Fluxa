@@ -30,7 +30,7 @@ async function AdminDashboardData() {
 
   const recentSalesResult = await supabase
     .from('sales')
-    .select('id, invoice_number, total_amount, final_amount, payment_method, status, created_at, customers(name)')
+    .select('id, invoice_number, total_amount, final_amount, payment_method, status, created_at')
     .order('created_at', { ascending: false })
     .limit(8)
 
@@ -41,16 +41,14 @@ async function AdminDashboardData() {
 
   const voidedSalesResult = await supabase
     .from('sales')
-    .select('id, invoice_number, total_amount, final_amount, payment_method, status, void_reason, voided_at, created_at, profiles:cashier_id(full_name), customers(name)')
+    .select('id, invoice_number, total_amount, final_amount, payment_method, status, void_reason, voided_at, created_at, profiles:cashier_id(full_name)')
     .eq('status', 'voided')
     .order('voided_at', { ascending: false })
     .limit(6)
 
-  if (dailySalesResult.error) throw new Error(`Gagal memuat ringkasan omzet: ${dailySalesResult.error.message}`)
-  if (lowStockResult.error) throw new Error(`Gagal memuat peringatan stok: ${lowStockResult.error.message}`)
-  if (recentSalesResult.error) throw new Error(`Gagal memuat transaksi terbaru: ${recentSalesResult.error.message}`)
-  if (productsResult.error) throw new Error(`Gagal memuat jumlah produk aktif: ${productsResult.error.message}`)
-  if (voidedSalesResult.error) throw new Error(`Gagal memuat laporan pembatalan: ${voidedSalesResult.error.message}`)
+  if (dailySalesResult.error || lowStockResult.error || recentSalesResult.error || productsResult.error || voidedSalesResult.error) {
+    throw new Error('Data dashboard belum dapat dimuat. Silakan muat ulang halaman.')
+  }
 
   const dailySales = dailySalesResult.data
   const lowStockProducts = lowStockResult.data

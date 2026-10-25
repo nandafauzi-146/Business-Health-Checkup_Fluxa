@@ -5,6 +5,7 @@ import { Plus, Search, Layers, Edit, Trash2, X, Check, Folder } from 'lucide-rea
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard } from '@/components/ui/Cards'
 import { createClient } from '@/lib/supabase/client'
+import { getUserFacingError } from '@/lib/user-facing-error'
 
 interface Category {
   id: string
@@ -88,28 +89,9 @@ export default function CategoriesClient({ initialCategories }: { initialCategor
       }
 
       setModalOpen(false)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving category:', err)
-      // Fallback in case of offline / demo environment
-      if (editingCategory) {
-        setCategories(prev => prev.map(c => c.id === editingCategory.id ? {
-          ...c,
-          name: formData.name.trim(),
-          description: formData.description.trim() || null
-        } : c))
-        showNotification(`Kategori "${formData.name}" diperbarui (simulasi mode).`, 'ok')
-        setModalOpen(false)
-      } else {
-        const dummy: Category = {
-          id: Math.random().toString(),
-          name: formData.name.trim(),
-          description: formData.description.trim() || null,
-          created_at: new Date().toISOString()
-        }
-        setCategories(prev => [...prev, dummy])
-        showNotification(`Kategori "${formData.name}" ditambahkan (simulasi mode).`, 'ok')
-        setModalOpen(false)
-      }
+      showNotification(getUserFacingError(err, 'Kategori belum dapat disimpan. Silakan coba lagi.'), 'bad')
     } finally {
       setIsSubmitting(false)
     }
@@ -128,10 +110,9 @@ export default function CategoriesClient({ initialCategories }: { initialCategor
 
       setCategories(prev => prev.filter(c => c.id !== cat.id))
       showNotification(`Kategori "${cat.name}" berhasil dihapus.`, 'ok')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting category:', err)
-      setCategories(prev => prev.filter(c => c.id !== cat.id))
-      showNotification(`Kategori "${cat.name}" dihapus (simulasi mode).`, 'ok')
+      showNotification(getUserFacingError(err, `Kategori "${cat.name}" belum dapat dihapus. Silakan coba lagi.`), 'bad')
     }
   }
 

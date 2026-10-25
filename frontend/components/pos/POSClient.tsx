@@ -1,30 +1,47 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, X, Check, Wallet, Smartphone, ArrowRight, Tag, ChevronDown, Percent, DollarSign as DollarIcon, Flame, Zap, Sparkles } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, X, Check, Wallet, ArrowRight, Tag, ChevronDown, Percent, DollarSign as DollarIcon, Flame, Zap, Sparkles, Printer } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { BukaShiftModal } from '@/components/pos/KasMasukModal'
+import { getUserFacingError } from '@/lib/user-facing-error'
+import { fetchActivePromotions } from '@/lib/active-promotions'
 
 function formatRp(n: number) {
   return 'Rp' + new Intl.NumberFormat('id-ID').format(n)
 }
 
-const DEMO_PRODUCTS = [
-  { id: '1', name: 'Kopi Arabika 250g', categories: { name: 'Minuman' }, sell_price: 55000, stock: 12, unit: 'pcs', is_active: true, sku: 'KA-001', image_url: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=300&q=80' },
-  { id: '2', name: 'Gula Pasir 1kg', categories: { name: 'Bahan Baku' }, sell_price: 18000, stock: 30, unit: 'kg', is_active: true, sku: 'GP-001', image_url: 'https://images.unsplash.com/photo-1581441363689-1f3c3c414635?w=300&q=80' },
-  { id: '3', name: 'Susu UHT Full Cream', categories: { name: 'Minuman' }, sell_price: 22000, stock: 18, unit: 'liter', is_active: true, sku: 'SU-001', image_url: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300&q=80' },
-  { id: '4', name: 'Teh Hijau Celup', categories: { name: 'Minuman' }, sell_price: 14000, stock: 45, unit: 'kotak', is_active: true, sku: 'TH-001', image_url: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=300&q=80' },
-  { id: '5', name: 'Roti Tawar', categories: { name: 'Makanan' }, sell_price: 18000, stock: 8, unit: 'bungkus', is_active: true, sku: 'RT-001', image_url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&q=80' },
-  { id: '6', name: 'Minyak Goreng 2L', categories: { name: 'Bahan Baku' }, sell_price: 32000, stock: 15, unit: 'botol', is_active: true, sku: 'MG-001' },
-  { id: '7', name: 'Kecap Manis 140ml', categories: { name: 'Bahan Baku' }, sell_price: 8500, stock: 24, unit: 'botol', is_active: true, sku: 'KM-001' },
-  { id: '8', name: 'Indomie Goreng', categories: { name: 'Makanan' }, sell_price: 3500, stock: 100, unit: 'pcs', is_active: true, sku: 'IG-001' },
-]
+function getCheckoutErrorMessage(error: unknown) {
+  const code = error && typeof error === 'object' ? Reflect.get(error, 'code') : undefined
+
+  if (code === 'PGRST202' || code === '42883') {
+    return 'Transaksi tidak dapat diproses saat ini. Silakan coba lagi dalam beberapa saat.'
+  }
+  if (code === '23514') {
+    return 'Metode pembayaran tidak tersedia untuk transaksi saat ini. Silakan pilih metode lain atau coba lagi.'
+  }
+
+  return getUserFacingError(error, 'Transaksi gagal disimpan. Silakan coba lagi.')
+}
+
+function isLegacyCheckoutSignatureError(error: unknown) {
+  if (!error || typeof error !== 'object' || Reflect.get(error, 'code') !== 'PGRST202') {
+    return false
+  }
+
+  const description = ['message', 'details', 'hint']
+    .map(key => Reflect.get(error, key))
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ')
+
+  return description.includes('public.create_sale') && description.includes('p_customer_id')
+}
 
 const EMOJI_MAP: Record<string, string> = {
   'Minuman': '☕', 'Bahan Baku': '🧂', 'Makanan': '🍞', 'Lainnya': '📦'
 }
 
-type PayMethod = 'cash' | 'qris' | 'transfer'
+type PayMethod = 'cash' | 'non_cash'
 
 interface CartItem {
   product_id: string
@@ -34,6 +51,19 @@ interface CartItem {
   stock: number
   unit: string
   image_url?: string | null
+}
+
+interface CompletedReceipt {
+  transactionNumber: string | null
+  cashierName: string
+  createdAt: string
+  cart: CartItem[]
+  subtotal: number
+  discount: number
+  total: number
+  payMethod: PayMethod
+  cashReceived: number | null
+  change: number
 }
 
 interface Promotion {
@@ -50,14 +80,16 @@ interface Promotion {
 
 interface Props {
   products: any[]
-  customers: any[]
+  productsError: string | null
   activeShift: any
   userId: string
+  cashierName: string
 }
 
-export default function POSClient({ products: initialProducts, customers, activeShift: initialShift, userId }: Props) {
+export default function POSClient({ products: initialProducts, productsError: initialProductsError, activeShift: initialShift, userId, cashierName }: Props) {
   const supabase = createClient()
-  const products = initialProducts.length > 0 ? initialProducts : DEMO_PRODUCTS
+  const [products, setProducts] = useState<any[]>(initialProducts)
+  const [productsError, setProductsError] = useState<string | null>(initialProductsError)
 
   // Shift state — dikelola di sini agar BukaShiftModal bisa update tanpa reload
   const [activeShift, setActiveShift] = useState<any>(initialShift)
@@ -76,15 +108,54 @@ export default function POSClient({ products: initialProducts, customers, active
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua')
   const [payMethod, setPayMethod] = useState<PayMethod>('cash')
   const [discount, setDiscount] = useState('')
-  const [customerId, setCustomerId] = useState<string>('')
   const [showCheckout, setShowCheckout] = useState(false)
   const [cashInput, setCashInput] = useState('')
   const [processing, setProcessing] = useState(false)
-  const [receipt, setReceipt] = useState<any>(null)
+  const [receipt, setReceipt] = useState<CompletedReceipt | null>(null)
   const [toast, setToast] = useState('')
+
+  const refreshProducts = async () => {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, categories(name)')
+      .eq('is_active', true)
+      .order('name')
+
+    if (error) {
+      console.error('Could not refresh products for POS:', error)
+      setProductsError('Produk belum dapat dimuat. Silakan coba lagi.')
+      return
+    }
+    setProducts(data || [])
+    setProductsError(null)
+  }
+
+  useEffect(() => {
+    const handleRefresh = () => { void refreshProducts() }
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') handleRefresh()
+    }
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === 'fluxa_products_updated') handleRefresh()
+    }
+    const refreshInterval = window.setInterval(handleRefresh, 30_000)
+    window.addEventListener('focus', handleRefresh)
+    window.addEventListener('fluxa_products_updated', handleRefresh)
+    window.addEventListener('storage', handleStorage)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.clearInterval(refreshInterval)
+      window.removeEventListener('focus', handleRefresh)
+      window.removeEventListener('fluxa_products_updated', handleRefresh)
+      window.removeEventListener('storage', handleStorage)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [])
 
   // Promo state
   const [promotions, setPromotions] = useState<Promotion[]>([])
+  const [promoLoadError, setPromoLoadError] = useState('')
   const [isMounted, setIsMounted] = useState(false)
   const [selectedPromo, setSelectedPromo] = useState<Promotion | null>(null)
   const [promoCode, setPromoCode] = useState('')
@@ -122,47 +193,37 @@ export default function POSClient({ products: initialProducts, customers, active
   // Fetch promo aktif dari admin
   const fetchPromos = async () => {
     try {
-      const res = await fetch('/api/admin/promotions?active=true')
-      const data = await res.json()
-      const promos: Promotion[] = data.data || []
+      const promos: Promotion[] = await fetchActivePromotions(supabase)
       setPromotions(promos)
-      // Simpan ke localStorage agar sinkron lintas halaman
-      if (promos.length > 0) {
-        localStorage.setItem('fluxa_active_promotions', JSON.stringify(promos))
-      }
-    } catch {
-      // Coba dari localStorage sebagai fallback offline
+      setPromoLoadError('')
+      localStorage.setItem('fluxa_active_promotions', JSON.stringify(promos))
+    } catch (err) {
+      const message = getUserFacingError(err, 'Promo belum dapat dimuat. Silakan coba lagi.')
+      console.warn('Could not refresh active promotions; keeping the last available list:', message)
+      setPromoLoadError(message)
       try {
-        const cached = localStorage.getItem('fluxa_active_promotions')
-        if (cached) {
-          setPromotions(JSON.parse(cached))
-          return
+        const cachedPromotions: unknown = JSON.parse(localStorage.getItem('fluxa_active_promotions') || '[]')
+        if (Array.isArray(cachedPromotions)) {
+          setPromotions(current => current.length > 0 ? current : cachedPromotions)
         }
-      } catch { }
-      // Demo data hardcode
-      setPromotions([
-        { id: 'p-1', code: 'HEMAT10', name: 'Diskon Belanja 10%', type: 'percentage', value: 10, min_purchase: 50000, max_discount: 25000, is_active: true },
-        { id: 'p-2', code: 'FLUXA20K', name: 'Potongan Langsung Rp20.000', type: 'fixed', value: 20000, min_purchase: 100000, is_active: true },
-      ])
+      } catch (cacheError) {
+        console.error('Could not restore cached promotions:', cacheError)
+      }
     }
   }
 
   useEffect(() => {
     setIsMounted(true)
-    try {
-      const cached = localStorage.getItem('fluxa_active_promotions')
-      if (cached) {
-        setPromotions(JSON.parse(cached))
-      }
-    } catch { }
     fetchPromos()
 
     // Listen perubahan dari admin (localStorage event lintas tab)
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'fluxa_active_promotions' && e.newValue) {
+      if (e.key === 'fluxa_active_promotions') {
         try {
-          setPromotions(JSON.parse(e.newValue))
-        } catch { }
+          setPromotions(e.newValue ? JSON.parse(e.newValue) : [])
+        } catch (err) {
+          console.error('Could not sync cached promotions:', err)
+        }
       }
     }
 
@@ -180,13 +241,21 @@ export default function POSClient({ products: initialProducts, customers, active
       fetchPromos()
     }
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') fetchPromos()
+    }
+    const refreshInterval = window.setInterval(fetchPromos, 30_000)
+
     window.addEventListener('storage', handleStorage)
     window.addEventListener('fluxa_promotions_updated', handleCustomUpdate)
     window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => {
+      window.clearInterval(refreshInterval)
       window.removeEventListener('storage', handleStorage)
       window.removeEventListener('fluxa_promotions_updated', handleCustomUpdate)
       window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 
@@ -209,6 +278,7 @@ export default function POSClient({ products: initialProducts, customers, active
     } else {
       discAmt = promo.value
     }
+    discAmt = Math.min(subtotal, discAmt)
     setSelectedPromo(promo)
     setDiscount(String(discAmt))
     setPromoError('')
@@ -297,32 +367,59 @@ export default function POSClient({ products: initialProducts, customers, active
 
     setProcessing(true)
     try {
-      const { data, error } = await supabase.rpc('create_sale', {
+      const saleArgs = {
         p_shift_id: activeShift.id,
-        p_customer_id: customerId || null,
         p_payment_method: payMethod,
         p_discount: discountAmount,
         p_items: cart.map(c => ({ product_id: c.product_id, quantity: c.quantity }))
-      })
+      }
+      let { data, error } = await supabase.rpc('create_sale', saleArgs)
+      if (isLegacyCheckoutSignatureError(error)) {
+        const legacyArgs = {
+          ...saleArgs,
+          p_customer_id: null,
+        }
+        const legacyResult = await supabase.rpc('create_sale', legacyArgs)
+        data = legacyResult.data
+        error = legacyResult.error
+      }
       if (error) throw error
-      setReceipt({ saleId: data, cart: [...cart], total, payMethod, change: cashChange })
+      if (!data) throw new Error('Database tidak mengembalikan ID transaksi.')
+      const { data: savedSale, error: saleLookupError } = await supabase
+        .from('sales')
+        .select('invoice_number')
+        .eq('id', data)
+        .single()
+      if (saleLookupError) {
+        console.error('Checkout succeeded, but the transaction number could not be loaded:', saleLookupError.message)
+      }
+      setReceipt({
+        transactionNumber: savedSale?.invoice_number ?? null,
+        cashierName,
+        createdAt: new Date().toISOString(),
+        cart: [...cart],
+        subtotal,
+        discount: discountAmount,
+        total,
+        payMethod,
+        cashReceived: payMethod === 'cash' && cashInput ? Number(cashInput) : null,
+        change: cashChange,
+      })
       setCart([])
       setDiscount('')
       setSelectedPromo(null)
-      setCustomerId('')
       setCashInput('')
       setShowCheckout(false)
-    } catch (err: any) {
-      // Demo mode fallback
-      const fakeId = 'DEMO-' + Date.now()
-      setReceipt({ saleId: fakeId, cart: [...cart], total, payMethod, change: cashChange })
-      setCart([])
-      setDiscount('')
-      setSelectedPromo(null)
-      setCustomerId('')
-      setCashInput('')
-      setShowCheckout(false)
-      showToast('Demo: Transaksi berhasil (simulasi)')
+    } catch (err: unknown) {
+      const errorDetails = err && typeof err === 'object'
+        ? Object.fromEntries(
+            [...new Set([...Object.getOwnPropertyNames(err), 'code', 'message', 'details', 'hint'])]
+              .map(key => [key, Reflect.get(err, key)])
+              .filter(([, value]) => value !== undefined)
+          )
+        : { message: err instanceof Error ? err.message : String(err) }
+      console.error('Checkout failed:', JSON.stringify(errorDetails))
+      showToast(getCheckoutErrorMessage(err))
     } finally {
       setProcessing(false)
     }
@@ -330,8 +427,7 @@ export default function POSClient({ products: initialProducts, customers, active
 
   const payMethodOptions: { key: PayMethod, label: string, icon: React.ReactNode }[] = [
     { key: 'cash', label: 'Tunai', icon: <Wallet size={15} /> },
-    { key: 'qris', label: 'QRIS', icon: <Smartphone size={15} /> },
-    { key: 'transfer', label: 'Transfer', icon: <ArrowRight size={15} /> },
+    { key: 'non_cash', label: 'Non-Tunai', icon: <CreditCard size={15} /> },
   ]
 
   // Jika belum ada shift aktif, tampilkan modal Buka Shift (blocking fullscreen)
@@ -456,6 +552,12 @@ export default function POSClient({ products: initialProducts, customers, active
           </span>
         </div>
 
+        {isMounted && promoLoadError && (
+          <div role="alert" style={{ marginBottom: 12, padding: '10px 12px', borderRadius: 10, color: 'var(--bad)', background: 'var(--bads)', fontSize: 12 }}>
+            {promoLoadError}
+          </div>
+        )}
+
         {/* Banner Promo Berjalan (Running Cards Marquee) */}
         {isMounted && promotions.length > 0 && (
           <div className="promo-running-bar" id="promo-running-ticker">
@@ -524,8 +626,17 @@ export default function POSClient({ products: initialProducts, customers, active
 
         {/* Product grid */}
         <div className="pos-products-scroll">
-          <div className="product-grid">
-            {filtered.map(p => {
+          {productsError && products.length === 0 ? (
+            <div role="alert" style={{ padding: 18, borderRadius: 10, color: 'var(--bad)', background: 'var(--bads)' }}>
+              Produk belum dapat dimuat. Silakan muat ulang halaman atau hubungi Admin.
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={{ padding: 24, textAlign: 'center', color: 'var(--mute)' }}>
+              {products.length === 0 ? 'Belum ada produk aktif. Tambahkan atau aktifkan produk dari halaman admin.' : 'Produk tidak ditemukan.'}
+            </div>
+          ) : (
+            <div className="product-grid">
+              {filtered.map(p => {
               const cartItem = cart.find(c => c.product_id === p.id)
               const cat = p.categories?.name || 'Lainnya'
               return (
@@ -582,8 +693,9 @@ export default function POSClient({ products: initialProducts, customers, active
                   </div>
                 </div>
               )
-            })}
-          </div>
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -891,16 +1003,6 @@ export default function POSClient({ products: initialProducts, customers, active
               </div>
             </div>
 
-            <div style={{ marginBottom: 14 }}>
-              <label className="label" htmlFor="customer-select">Pelanggan / Member (Opsional)</label>
-              <select id="customer-select" className="input" value={customerId} onChange={e => setCustomerId(e.target.value)}>
-                <option value="">Pelanggan Umum (Tanpa Member)</option>
-                {customers.map((c: any) => (
-                  <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
-                ))}
-              </select>
-            </div>
-
             {payMethod === 'cash' && (
               <div style={{ marginBottom: 14 }}>
                 <label className="label" htmlFor="cash-input">Uang diterima (Rp)</label>
@@ -933,31 +1035,77 @@ export default function POSClient({ products: initialProducts, customers, active
       {/* Receipt dialog */}
       {receipt && (
         <div className="dialog-overlay">
-          <div className="dialog" style={{ maxWidth: 380, textAlign: 'center' }}>
-            <div style={{ fontSize: 48, marginBottom: 8 }}>✅</div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Transaksi Berhasil!</h2>
-            <p style={{ color: 'var(--mute)', fontSize: 13, marginBottom: 16 }}>ID: <code style={{ background: 'var(--bg)', padding: '2px 6px', borderRadius: 4 }}>{receipt.saleId}</code></p>
+          <div className="dialog pos-receipt-dialog" style={{ maxWidth: 380, textAlign: 'center' }}>
+            <div className="pos-receipt-success">
+              <div style={{ fontSize: 48, marginBottom: 8 }}>✅</div>
+              <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Transaksi Berhasil!</h2>
+              <p style={{ color: 'var(--mute)', fontSize: 13, marginBottom: 16 }}>
+                No. Transaksi:{' '}
+                {receipt.transactionNumber
+                  ? <code style={{ background: 'var(--bg)', padding: '2px 6px', borderRadius: 4 }}>{receipt.transactionNumber}</code>
+                  : <span role="status">Belum tersedia, periksa Riwayat Transaksi.</span>}
+              </p>
+              <p style={{ color: 'var(--mute)', fontSize: 13, marginTop: -8, marginBottom: 16 }}>
+                Kasir: <strong style={{ color: 'var(--ink)' }}>{receipt.cashierName}</strong>
+              </p>
 
-            <div style={{ background: 'var(--bg)', borderRadius: 12, padding: '14px', marginBottom: 16, textAlign: 'left' }}>
-              {receipt.cart.map((c: CartItem) => (
-                <div key={c.product_id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
-                  <span>{c.name} × {c.quantity}</span>
-                  <span style={{ fontWeight: 600 }}>{formatRp(c.sell_price * c.quantity)}</span>
+              <div style={{ background: 'var(--bg)', borderRadius: 12, padding: '14px', marginBottom: 16, textAlign: 'left' }}>
+                {receipt.cart.map(item => (
+                  <div key={item.product_id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+                    <span>{item.name} × {item.quantity}</span>
+                    <span style={{ fontWeight: 600 }}>{formatRp(item.sell_price * item.quantity)}</span>
+                  </div>
+                ))}
+                <div style={{ borderTop: '1px solid var(--line)', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, color: 'var(--acc)' }}>
+                  <span>Total</span><span>{formatRp(receipt.total)}</span>
                 </div>
-              ))}
-              <div style={{ borderTop: '1px solid var(--line)', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, color: 'var(--acc)' }}>
-                <span>Total</span><span>{formatRp(receipt.total)}</span>
+                {receipt.change > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--ok)', marginTop: 4 }}>
+                    <span>Kembalian</span><span style={{ fontWeight: 700 }}>{formatRp(receipt.change)}</span>
+                  </div>
+                )}
               </div>
-              {receipt.change > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--ok)', marginTop: 4 }}>
-                  <span>Kembalian</span><span style={{ fontWeight: 700 }}>{formatRp(receipt.change)}</span>
-                </div>
-              )}
             </div>
 
-            <button id="new-transaction-btn" className="btn btn-primary" onClick={() => setReceipt(null)} style={{ width: '100%', justifyContent: 'center', height: 42 }}>
-              <ShoppingCart size={15} /> Transaksi Baru
-            </button>
+            <div className="pos-receipt-actions">
+              <button id="print-receipt-btn" className="btn btn-secondary" onClick={() => window.print()} disabled={!receipt.transactionNumber} style={{ flex: 1, justifyContent: 'center', height: 42 }}>
+                <Printer size={15} /> Cetak Struk
+              </button>
+              <button id="new-transaction-btn" className="btn btn-primary" onClick={() => setReceipt(null)} style={{ flex: 1, justifyContent: 'center', height: 42 }}>
+                <ShoppingCart size={15} /> Transaksi Baru
+              </button>
+            </div>
+          </div>
+          <div className="thermal-receipt" aria-hidden="true">
+            <header>
+              <strong>FLUXA POS</strong>
+              <span>Bukti Pembayaran</span>
+            </header>
+            <div className="thermal-receipt-meta">
+              <div>No. Transaksi: {receipt.transactionNumber || 'Belum tersedia'}</div>
+              <div>{new Date(receipt.createdAt).toLocaleString('id-ID')}</div>
+              <div>Kasir: {receipt.cashierName}</div>
+            </div>
+            <div className="thermal-receipt-items">
+              {receipt.cart.map(item => (
+                <div className="thermal-receipt-item" key={item.product_id}>
+                  <div>{item.name}</div>
+                  <div className="thermal-receipt-line">
+                    <span>{item.quantity} x {formatRp(item.sell_price)}</span>
+                    <span>{formatRp(item.sell_price * item.quantity)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="thermal-receipt-totals">
+              <div><span>Subtotal</span><span>{formatRp(receipt.subtotal)}</span></div>
+              {receipt.discount > 0 && <div><span>Diskon</span><span>-{formatRp(receipt.discount)}</span></div>}
+              <div className="thermal-receipt-total"><strong>TOTAL</strong><strong>{formatRp(receipt.total)}</strong></div>
+              <div><span>Metode</span><span>{receipt.payMethod === 'cash' ? 'Tunai' : 'Non-Tunai'}</span></div>
+              {receipt.cashReceived !== null && <div><span>Uang diterima</span><span>{formatRp(receipt.cashReceived)}</span></div>}
+              {receipt.cashReceived !== null && <div><span>Kembalian</span><span>{formatRp(receipt.change)}</span></div>}
+            </div>
+            <footer>Terima kasih atas kunjungan Anda</footer>
           </div>
         </div>
       )}

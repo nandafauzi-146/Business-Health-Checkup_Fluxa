@@ -1,5 +1,5 @@
-import RegistrationApprovals from '@/features/auth/RegistrationApprovals'
+import SuperAdminOverview from '@/features/super-admin/SuperAdminOverview'
 
 export default function SuperAdminPage() {
-  return <RegistrationApprovals />
+  return <SuperAdminOverview />
 }

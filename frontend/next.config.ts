@@ -1,7 +1,49 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Output directory: arahkan ke root .next agar sesuai ekspektasi Vercel
+  distDir: '../.next',
+
+  // Security: hide framework fingerprint
+  poweredByHeader: false,
+
+  // Performance: compress responses
+  compress: true,
+
+  // Image optimization: only allow trusted domains
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+    // Use WebP format by default
+    formats: ["image/webp", "image/avif"],
+  },
+
+  // Strict mode for catching bugs early
+  reactStrictMode: true,
+
+  async rewrites() {
+    return [
+      {
+        source: "/favicon.ico",
+        destination: "/Fluxa-Logo.webp",
+      },
+    ];
+  },
+
+  async redirects() {
+    return [
+      {
+        source: "/landingpage",
+        destination: "/",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

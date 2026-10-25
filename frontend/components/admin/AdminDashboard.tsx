@@ -11,9 +11,7 @@ import Link from 'next/link'
 type DailySale = Database['public']['Views']['v_daily_sales_summary']['Row']
 type LowStockProduct = Database['public']['Views']['v_low_stock_products']['Row']
 type SaleRow = Database['public']['Tables']['sales']['Row']
-type RecentSale = Pick<SaleRow, 'id' | 'invoice_number' | 'final_amount' | 'payment_method' | 'status' | 'created_at'> & {
-  customers: { name: string } | { name: string }[] | null
-}
+type RecentSale = Pick<SaleRow, 'id' | 'invoice_number' | 'final_amount' | 'payment_method' | 'status' | 'created_at'>
 type VoidedSale = Pick<
   SaleRow,
   'id' | 'invoice_number' | 'final_amount' | 'void_reason' | 'voided_at' | 'created_at'
@@ -86,28 +84,11 @@ function formatRp(n: number) {
 
 const payMethodLabel: Record<string, { label: string; bg: string; color: string }> = {
   cash: { label: 'Tunai', bg: 'var(--oks)', color: 'var(--ok)' },
-  qris: { label: 'QRIS', bg: 'var(--accs)', color: 'var(--acc)' },
-  transfer: { label: 'Transfer', bg: 'rgba(138, 63, 252, 0.12)', color: '#8A3FFC' },
-  credit: { label: 'Non-tunai', bg: 'var(--warns)', color: 'var(--warn)' }
+  non_cash: { label: 'Non-Tunai', bg: 'var(--accs)', color: 'var(--acc)' },
+  qris: { label: 'Non-Tunai', bg: 'var(--accs)', color: 'var(--acc)' },
+  transfer: { label: 'Non-Tunai', bg: 'var(--accs)', color: 'var(--acc)' },
+  credit: { label: 'Kasbon', bg: 'var(--warns)', color: 'var(--warn)' }
 }
-
-const DEMO_DAILY_SALES: DailySale[] = [
-  { sale_date: '2026-10-11', total_revenue: 1250000, transaction_count: 14, cash_revenue: 750000, non_cash_revenue: 500000, credit_revenue: 0 },
-  { sale_date: '2026-10-12', total_revenue: 1420000, transaction_count: 16, cash_revenue: 820000, non_cash_revenue: 600000, credit_revenue: 0 },
-  { sale_date: '2026-10-13', total_revenue: 1180000, transaction_count: 12, cash_revenue: 680000, non_cash_revenue: 500000, credit_revenue: 0 },
-  { sale_date: '2026-10-14', total_revenue: 1650000, transaction_count: 18, cash_revenue: 950000, non_cash_revenue: 700000, credit_revenue: 0 },
-  { sale_date: '2026-10-15', total_revenue: 1890000, transaction_count: 21, cash_revenue: 1100000, non_cash_revenue: 790000, credit_revenue: 0 },
-  { sale_date: '2026-10-16', total_revenue: 1720000, transaction_count: 19, cash_revenue: 980000, non_cash_revenue: 740000, credit_revenue: 0 },
-  { sale_date: '2026-10-17', total_revenue: 1540000, transaction_count: 17, cash_revenue: 890000, non_cash_revenue: 650000, credit_revenue: 0 },
-]
-
-const DEMO_RECENT_SALES: RecentSale[] = [
-  { id: 's-1', invoice_number: 'INV-20261017-89A1', final_amount: 145000, payment_method: 'cash', status: 'completed', created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(), customers: { name: 'Budi Santoso' } },
-  { id: 's-2', invoice_number: 'INV-20261017-71F9', final_amount: 92000, payment_method: 'qris', status: 'completed', created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(), customers: null },
-  { id: 's-3', invoice_number: 'INV-20261017-32D8', final_amount: 210000, payment_method: 'transfer', status: 'completed', created_at: new Date(Date.now() - 1000 * 60 * 110).toISOString(), customers: { name: 'Siti Rahmawati' } },
-  { id: 's-4', invoice_number: 'INV-20261017-55E2', final_amount: 65000, payment_method: 'cash', status: 'completed', created_at: new Date(Date.now() - 1000 * 60 * 180).toISOString(), customers: null },
-  { id: 's-5', invoice_number: 'INV-20261017-19B4', final_amount: 120000, payment_method: 'qris', status: 'completed', created_at: new Date(Date.now() - 1000 * 60 * 240).toISOString(), customers: { name: 'Warung Bu Joko' } },
-]
 
 interface Props {
   dailySales: DailySale[]
@@ -126,21 +107,19 @@ export default function AdminDashboardClient({
   todaySummary,
   totalProducts
 }: Props) {
-  const isDemo = (!dailySales || dailySales.length === 0) && (!recentSales || recentSales.length === 0)
-  const daily = isDemo ? DEMO_DAILY_SALES : dailySales
+  const daily = dailySales
   const lowStock = lowStockProducts
-  const sales = isDemo ? DEMO_RECENT_SALES : recentSales
+  const sales = recentSales
   const voidList = voidedSales
   const prefersReducedMotion = usePrefersReducedMotion()
 
-  // Ambil summary hari ini: dari database atau dari demo data
-  const activeToday = todaySummary ?? (isDemo ? DEMO_DAILY_SALES[DEMO_DAILY_SALES.length - 1] : null)
+  const activeToday = todaySummary
   const revenue = activeToday ? Number(activeToday.total_revenue) : 0
   const transactionCount = activeToday ? Number(activeToday.transaction_count) : 0
   const averageBasket = revenue > 0 && transactionCount > 0
     ? Math.round(revenue / transactionCount)
     : 0
-  const productsCount = totalProducts ?? 7
+  const productsCount = totalProducts ?? 0
 
   return (
     <div className="admin-dashboard">
@@ -184,7 +163,7 @@ export default function AdminDashboardClient({
           value={averageBasket}
           format={formatRp}
           icon={<TrendingUp size={16} />}
-          description="Per nota transaksi hari ini"
+          description="Per transaksi hari ini"
         />
       </div>
 
@@ -245,8 +224,7 @@ export default function AdminDashboardClient({
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>Invoice</th>
-                      <th>Pelanggan</th>
+                      <th>No. Transaksi</th>
                       <th>Metode</th>
                       <th>Total</th>
                       <th style={{ textAlign: 'right' }}>Status</th>
@@ -262,9 +240,6 @@ export default function AdminDashboardClient({
                             <span style={{ fontWeight: 600, fontSize: 12.5, fontFamily: 'monospace', color: 'var(--acc)' }}>
                               {s.invoice_number}
                             </span>
-                          </td>
-                          <td style={{ fontSize: 13 }}>
-                            {(Array.isArray(s.customers) ? s.customers[0]?.name : s.customers?.name) || <span style={{ color: 'var(--mute)', fontStyle: 'italic' }}>Umum</span>}
                           </td>
                           <td>
                             <span style={{

@@ -43,6 +43,8 @@ export interface Database {
           reviewed_at: string | null;
           trial_started_at: string | null;
           trial_ends_at: string | null;
+          registration_path: "subscribe" | "trial" | null;
+          rejection_reason: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -58,6 +60,8 @@ export interface Database {
           reviewed_at?: string | null;
           trial_started_at?: string | null;
           trial_ends_at?: string | null;
+          registration_path?: "subscribe" | "trial" | null;
+          rejection_reason?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -73,6 +77,8 @@ export interface Database {
           reviewed_at?: string | null;
           trial_started_at?: string | null;
           trial_ends_at?: string | null;
+          registration_path?: "subscribe" | "trial" | null;
+          rejection_reason?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -153,33 +159,6 @@ export interface Database {
         };
         Relationships: [];
       };
-      customers: {
-        Row: {
-          id: string;
-          name: string;
-          phone: string | null;
-          address: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          name: string;
-          phone?: string | null;
-          address?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          name?: string;
-          phone?: string | null;
-          address?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
       shifts: {
         Row: {
           id: string;
@@ -231,11 +210,10 @@ export interface Database {
           invoice_number: string;
           shift_id: string | null;
           cashier_id: string;
-          customer_id: string | null;
           total_amount: number;
           discount: number;
           final_amount: number;
-          payment_method: "cash" | "qris" | "transfer" | "credit";
+          payment_method: "cash" | "non_cash";
           payment_status: "paid" | "unpaid" | "partial";
           status: "completed" | "voided";
           void_reason: string | null;
@@ -249,11 +227,10 @@ export interface Database {
           invoice_number: string;
           shift_id?: string | null;
           cashier_id: string;
-          customer_id?: string | null;
           total_amount: number;
           discount?: number;
           final_amount: number;
-          payment_method: "cash" | "qris" | "transfer" | "credit";
+          payment_method: "cash" | "non_cash";
           payment_status?: "paid" | "unpaid" | "partial";
           status?: "completed" | "voided";
           void_reason?: string | null;
@@ -267,11 +244,10 @@ export interface Database {
           invoice_number?: string;
           shift_id?: string | null;
           cashier_id?: string;
-          customer_id?: string | null;
           total_amount?: number;
           discount?: number;
           final_amount?: number;
-          payment_method?: "cash" | "qris" | "transfer" | "credit";
+          payment_method?: "cash" | "non_cash";
           payment_status?: "paid" | "unpaid" | "partial";
           status?: "completed" | "voided";
           void_reason?: string | null;
@@ -408,7 +384,6 @@ export interface Database {
       receivables: {
         Row: {
           id: string;
-          customer_id: string;
           sale_id: string | null;
           total_amount: number;
           paid_amount: number;
@@ -421,7 +396,6 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          customer_id: string;
           sale_id?: string | null;
           total_amount: number;
           paid_amount?: number;
@@ -433,7 +407,6 @@ export interface Database {
         };
         Update: {
           id?: string;
-          customer_id?: string;
           sale_id?: string | null;
           total_amount?: number;
           paid_amount?: number;
@@ -450,7 +423,7 @@ export interface Database {
           receivable_id: string;
           amount: number;
           payment_date: string;
-          payment_method: "cash" | "qris" | "transfer";
+          payment_method: "cash" | "non_cash";
           note: string | null;
           created_by: string;
           created_at: string;
@@ -460,7 +433,7 @@ export interface Database {
           receivable_id: string;
           amount: number;
           payment_date?: string;
-          payment_method: "cash" | "qris" | "transfer";
+          payment_method: "cash" | "non_cash";
           note?: string | null;
           created_by: string;
           created_at?: string;
@@ -470,7 +443,7 @@ export interface Database {
           receivable_id?: string;
           amount?: number;
           payment_date?: string;
-          payment_method?: "cash" | "qris" | "transfer";
+          payment_method?: "cash" | "non_cash";
           note?: string | null;
           created_by?: string;
           created_at?: string;
@@ -562,6 +535,191 @@ export interface Database {
           created_at?: string;
         };
       };
+      subscription_plans: {
+        Row: {
+          id: string;
+          name: string;
+          description: string;
+          price: number;
+          duration_days: number;
+          max_users: number;
+          features: Json;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          description?: string;
+          price: number;
+          duration_days: number;
+          max_users?: number;
+          features?: Json;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          description?: string;
+          price?: number;
+          duration_days?: number;
+          max_users?: number;
+          features?: Json;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      subscriptions: {
+        Row: {
+          id: string;
+          owner_id: string;
+          plan_id: string;
+          status: "trialing" | "active" | "past_due" | "expired" | "cancelled" | "suspended";
+          current_period_start: string;
+          current_period_end: string;
+          cancel_at_period_end: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          owner_id: string;
+          plan_id: string;
+          status: "trialing" | "active" | "past_due" | "expired" | "cancelled" | "suspended";
+          current_period_start: string;
+          current_period_end: string;
+          cancel_at_period_end?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          owner_id?: string;
+          plan_id?: string;
+          status?: "trialing" | "active" | "past_due" | "expired" | "cancelled" | "suspended";
+          current_period_start?: string;
+          current_period_end?: string;
+          cancel_at_period_end?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      subscription_payments: {
+        Row: {
+          id: string;
+          order_id: string;
+          owner_id: string;
+          plan_id: string;
+          subscription_id: string | null;
+          plan_name: string;
+          duration_days: number;
+          amount: number;
+          currency: string;
+          status: "pending" | "success" | "failed" | "expired" | "cancelled" | "refunded";
+          gateway: string;
+          gateway_transaction_id: string | null;
+          snap_token: string | null;
+          snap_url: string | null;
+          expires_at: string | null;
+          paid_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          owner_id: string;
+          plan_id: string;
+          subscription_id?: string | null;
+          plan_name: string;
+          duration_days: number;
+          amount: number;
+          currency?: string;
+          status?: "pending" | "success" | "failed" | "expired" | "cancelled" | "refunded";
+          gateway?: string;
+          gateway_transaction_id?: string | null;
+          snap_token?: string | null;
+          snap_url?: string | null;
+          expires_at?: string | null;
+          paid_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          owner_id?: string;
+          plan_id?: string;
+          subscription_id?: string | null;
+          plan_name?: string;
+          duration_days?: number;
+          amount?: number;
+          currency?: string;
+          status?: "pending" | "success" | "failed" | "expired" | "cancelled" | "refunded";
+          gateway?: string;
+          gateway_transaction_id?: string | null;
+          snap_token?: string | null;
+          snap_url?: string | null;
+          expires_at?: string | null;
+          paid_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      platform_withdrawals: {
+        Row: {
+          id: string;
+          amount: number;
+          currency: string;
+          status: "pending" | "approved" | "rejected" | "completed" | "cancelled";
+          reference_number: string;
+          destination: string;
+          category: string;
+          transaction_date: string;
+          notes: string;
+          created_by: string;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          amount: number;
+          currency?: string;
+          status?: "pending" | "approved" | "rejected" | "completed" | "cancelled";
+          reference_number: string;
+          destination: string;
+          category?: string;
+          transaction_date?: string;
+          notes?: string;
+          created_by: string;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          amount?: number;
+          currency?: string;
+          status?: "pending" | "approved" | "rejected" | "completed" | "cancelled";
+          reference_number?: string;
+          destination?: string;
+          category?: string;
+          transaction_date?: string;
+          notes?: string;
+          created_by?: string;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     }>;
     Views: WithViewRelationships<{
       v_monthly_revenue_cogs: {
@@ -615,10 +773,10 @@ export interface Database {
       create_sale: {
         Args: {
           p_shift_id: string;
-          p_customer_id: string | null;
-          p_payment_method: "cash" | "qris" | "transfer" | "credit";
+          p_payment_method: "cash" | "non_cash";
           p_discount?: number;
           p_items: { product_id: string; quantity: number }[] | Json;
+          p_customer_id?: string | null;
         };
         Returns: string;
       };

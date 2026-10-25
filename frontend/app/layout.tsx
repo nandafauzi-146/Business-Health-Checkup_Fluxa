@@ -10,8 +10,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Fluxa \u2014 Kasir & Diagnosis Kesehatan Bisnis UMKM",
+  title: "Fluxa — Kasir & Diagnosis Kesehatan Bisnis UMKM",
   description: "Sistem kasir (POS) terintegrasi dengan diagnosis kesehatan bisnis berbasis AI untuk UMKM. Setiap transaksi otomatis membentuk rapor finansial yang actionable.",
+  icons: {
+    icon: "/Fluxa-Logo.webp",
+    apple: "/Fluxa-Logo.webp",
+  },
 };
 
 export default function RootLayout({
