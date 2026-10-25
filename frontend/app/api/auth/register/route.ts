@@ -14,7 +14,26 @@ async function upsertRegistrationProfile(
   email: string,
   registrationPath: 'subscribe' | 'trial',
 ) {
-  const baseProfile = {
+  // Check or create business for new owner
+  let businessId: string | null = null
+  try {
+    const { data: business } = await adminClient
+      .from('businesses')
+      .insert({
+        owner_id: userId,
+        name: `Bisnis ${fullName}`,
+      })
+      .select('id')
+      .maybeSingle()
+
+    if (business?.id) {
+      businessId = business.id
+    }
+  } catch (bErr) {
+    console.warn('Note: businesses table may not be migrated yet:', bErr)
+  }
+
+  const baseProfile: Record<string, any> = {
     id: userId,
     full_name: fullName,
     role: 'owner',
@@ -22,6 +41,10 @@ async function upsertRegistrationProfile(
     email,
     registration_path: registrationPath,
     updated_at: new Date().toISOString(),
+  }
+
+  if (businessId) {
+    baseProfile.business_id = businessId
   }
 
   const profileWithApproval = {
