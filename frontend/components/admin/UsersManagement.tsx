@@ -5,6 +5,7 @@ import { Users, Search, Shield, Phone, Mail, UserCheck, ShieldCheck, UserCog, Pl
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag } from '@/components/ui/Cards'
 import { getUserFacingError } from '@/lib/user-facing-error'
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
 
 interface Profile {
   id: string
@@ -128,7 +129,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
   const handleOpenEdit = (user: Profile) => {
     // Admin hanya boleh edit akun kasir
     if (isKasirOnly && user.role !== 'kasir') {
-      alert('Anda hanya berwenang mengedit akun kasir.')
+      showNotification('Anda hanya berwenang mengedit akun kasir.', 'bad')
       return
     }
 
@@ -183,12 +184,12 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
   // 3. Handle Hapus User
   const handleOpenDelete = (user: Profile) => {
     if (isKasirOnly && user.role !== 'kasir') {
-      alert('Anda hanya berwenang menghapus akun kasir.')
+      showNotification('Anda hanya berwenang menghapus akun kasir.', 'bad')
       return
     }
 
     if (currentUserId && user.id === currentUserId) {
-      alert('Anda tidak dapat menghapus akun Anda sendiri.')
+      showNotification('Anda tidak dapat menghapus akun Anda sendiri.', 'bad')
       return
     }
 
@@ -255,7 +256,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
 
       <SectionCard title={isKasirOnly ? `Daftar Staf Kasir (${filtered.length})` : `Daftar Seluruh Pengguna & Staf (${filtered.length})`}>
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div className="search-bar" style={{ flex: 1, minWidth: 260 }}>
+          <div className="search-bar" style={{ flex: 1, minWidth: 'min(260px, 100%)' }}>
             <Search size={15} color="var(--mute)" />
             <input
               type="text"
@@ -294,9 +295,9 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
               <tr>
                 <th>Pengguna</th>
                 <th>Peran / Role</th>
-                <th>No. Telepon</th>
-                <th>Terdaftar Sejak</th>
-                <th>Status Akses</th>
+                <th className="hide-sm">No. Telepon</th>
+                <th className="hide-md">Terdaftar Sejak</th>
+                <th className="hide-sm">Status Akses</th>
                 <th style={{ textAlign: 'right' }}>Aksi Kelola</th>
               </tr>
             </thead>
@@ -363,7 +364,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
                           {roleCfg.label}
                         </span>
                       </td>
-                      <td style={{ fontSize: 13, color: 'var(--mute)' }}>
+                      <td className="hide-sm" style={{ fontSize: 13, color: 'var(--mute)' }}>
                         {u.phone ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--ink)' }}>
                             <Phone size={13} color="var(--mute)" />
@@ -373,10 +374,10 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
                           <span style={{ color: 'var(--mute)' }}>—</span>
                         )}
                       </td>
-                      <td style={{ fontSize: 12.5, color: 'var(--mute)' }}>
+                      <td className="hide-md" style={{ fontSize: 12.5, color: 'var(--mute)' }}>
                         {new Date(u.created_at).toLocaleDateString('id-ID', { dateStyle: 'medium' })}
                       </td>
-                      <td>
+                      <td className="hide-sm">
                         <StatusTag type="ok" label="Aktif" />
                       </td>
 
@@ -653,45 +654,24 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
       )}
 
       {/* Modal Konfirmasi Hapus Pengguna */}
-      {deleteModalOpen && deletingUser && (
-        <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && setDeleteModalOpen(false)}>
-          <div className="modal-content" style={{ maxWidth: 440 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--bad)' }}>
-                <AlertTriangle size={22} />
-                <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>Hapus Akun Pengguna</h3>
-              </div>
-              <button className="icon-btn" onClick={() => setDeleteModalOpen(false)} aria-label="Tutup dialog">
-                <X size={16} />
-              </button>
-            </div>
-
-            <p style={{ fontSize: 13, color: 'var(--mute)', lineHeight: 1.5, marginBottom: 18 }}>
-              Apakah Anda yakin ingin menghapus akun <strong>{deletingUser.full_name}</strong> ({deletingUser.role.toUpperCase()})? Setelah dihapus, pengguna ini tidak akan dapat login lagi ke sistem Fluxa.
-            </p>
-
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                onClick={() => setDeleteModalOpen(false)}
-                className="btn btn-secondary"
-                disabled={isSubmitting}
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteSubmit}
-                className="btn btn-danger"
-                disabled={isSubmitting}
-                style={{ background: 'var(--bad)', color: '#fff', border: 'none' }}
-              >
-                {isSubmitting ? 'Menghapus...' : 'Ya, Hapus Pengguna'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationDialog
+        isOpen={deleteModalOpen && Boolean(deletingUser)}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDeleteSubmit}
+        title="Konfirmasi Hapus Pengguna"
+        message={
+          deletingUser ? (
+            <>
+              Apakah Anda yakin ingin menghapus akun <strong>{deletingUser.full_name}</strong> ({deletingUser.role.toUpperCase()})? Setelah dihapus, pengguna ini tidak akan dapat login lagi ke sistem Fluxa. Tindakan ini tidak dapat dibatalkan.
+            </>
+          ) : ''
+        }
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        variant="danger"
+        icon="delete"
+        isLoading={isSubmitting}
+      />
     </div>
   )
 }

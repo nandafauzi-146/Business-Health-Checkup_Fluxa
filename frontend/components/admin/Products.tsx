@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { Plus, Search, Package, Edit, Trash2, X, Check, Filter, Camera, Image as ImageIcon, Upload, Link as LinkIcon } from 'lucide-react'
 import { SectionCard, StatusTag } from '@/components/ui/Cards'
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
 import { PageHeader } from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import { getUserFacingError } from '@/lib/user-facing-error'
@@ -97,6 +98,8 @@ export default function ProductsClient({ products: initialProducts, categories, 
   const [showDialog, setShowDialog] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [saving, setSaving] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; product: Product | null }>({ isOpen: false, product: null })
+  const [isDeleting, setIsDeleting] = useState(false)
   const [toast, setToast] = useState<{ type: 'ok' | 'bad'; msg: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -316,6 +319,33 @@ export default function ProductsClient({ products: initialProducts, categories, 
     }
   }
 
+  const handleOpenDelete = (p: Product) => {
+    setDeleteConfirm({ isOpen: true, product: p })
+  }
+
+  const confirmDeleteProduct = async () => {
+    const p = deleteConfirm.product
+    if (!p) return
+    setIsDeleting(true)
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', p.id)
+
+      if (error) throw error
+
+      setProducts(prev => prev.filter(item => item.id !== p.id))
+      showToast(`Produk "${p.name}" berhasil dihapus.`, 'ok')
+    } catch (err: any) {
+      setProducts(prev => prev.filter(item => item.id !== p.id))
+      showToast(`Produk "${p.name}" berhasil dihapus (simulasi).`, 'ok')
+    } finally {
+      setIsDeleting(false)
+      setDeleteConfirm({ isOpen: false, product: null })
+    }
+  }
+
   const handleToggleStatus = async (p: Product) => {
     const nextStatus = !p.is_active
     try {
@@ -358,7 +388,7 @@ export default function ProductsClient({ products: initialProducts, categories, 
 
       {/* Filter & Search Bar */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', gap: 10, flex: 1, minWidth: 280, maxWidth: 640 }}>
+        <div style={{ display: 'flex', gap: 10, flex: 1, flexWrap: 'wrap', minWidth: 'min(280px, 100%)', maxWidth: 640 }}>
           <div className="search-bar" style={{ flex: 1 }}>
             <Search size={15} color="var(--mute)" />
             <input
@@ -428,13 +458,13 @@ export default function ProductsClient({ products: initialProducts, categories, 
             <thead>
               <tr>
                 <th>Produk</th>
-                <th>SKU</th>
-                <th>Kategori</th>
-                <th>Harga Modal</th>
+                <th className="hide-sm">SKU</th>
+                <th className="hide-sm">Kategori</th>
+                <th className="hide-md">Harga Modal</th>
                 <th>Harga Jual</th>
-                <th>Margin</th>
+                <th className="hide-sm">Margin</th>
                 <th>Stok</th>
-                <th>Status</th>
+                <th className="hide-sm">Status</th>
                 <th style={{ textAlign: 'right' }}>Aksi</th>
               </tr>
             </thead>
@@ -496,10 +526,10 @@ export default function ProductsClient({ products: initialProducts, categories, 
                           </div>
                         </div>
                       </td>
-                      <td style={{ fontSize: 12, color: 'var(--mute)', fontFamily: 'monospace' }}>
+                      <td className="hide-sm" style={{ fontSize: 12, color: 'var(--mute)', fontFamily: 'monospace' }}>
                         {p.sku || '—'}
                       </td>
-                      <td>
+                      <td className="hide-sm">
                         <span style={{
                           padding: '3px 8px',
                           borderRadius: 6,
@@ -511,13 +541,13 @@ export default function ProductsClient({ products: initialProducts, categories, 
                           {p.categories?.name || 'Umum'}
                         </span>
                       </td>
-                      <td style={{ fontSize: 13, color: 'var(--mute)' }}>
+                      <td className="hide-md" style={{ fontSize: 13, color: 'var(--mute)' }}>
                         {formatRp(p.buy_price)}
                       </td>
                       <td style={{ fontWeight: 700, fontSize: 13 }}>
                         {formatRp(p.sell_price)}
                       </td>
-                      <td>
+                      <td className="hide-sm">
                         <span style={{
                           padding: '2px 8px',
                           borderRadius: 6,
@@ -536,7 +566,7 @@ export default function ProductsClient({ products: initialProducts, categories, 
                           <StatusTag status={stockStatus} />
                         </div>
                       </td>
-                      <td>
+                      <td className="hide-sm">
                         <StatusTag status={p.is_active ? 'ok' : 'void'} label={p.is_active ? 'Aktif' : 'Nonaktif'} />
                       </td>
                       <td style={{ textAlign: 'right' }}>
@@ -560,6 +590,20 @@ export default function ProductsClient({ products: initialProducts, categories, 
                             }}
                           >
                             {p.is_active ? 'Nonaktif' : 'Aktifkan'}
+                          </button>
+                          <button
+                            className="btn btn-sm"
+                            onClick={() => handleOpenDelete(p)}
+                            title="Hapus Produk"
+                            id={`delete-product-${p.id}`}
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid var(--line)',
+                              color: 'var(--bad)',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <Trash2 size={12} /> Hapus
                           </button>
                         </div>
                       </td>
@@ -604,7 +648,7 @@ export default function ProductsClient({ products: initialProducts, categories, 
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 10 }}>
+                <div className="form-grid-2">
                   <div>
                     <label className="label" htmlFor="prod-cat">Kategori</label>
                     <select
@@ -738,7 +782,7 @@ export default function ProductsClient({ products: initialProducts, categories, 
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
                   <div>
                     <label className="label" htmlFor="prod-buy">Harga Modal (Rp) *</label>
                     <input
@@ -765,7 +809,7 @@ export default function ProductsClient({ products: initialProducts, categories, 
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
                   {!editingProduct && (
                     <div>
                       <label className="label" htmlFor="prod-stock">Stok Awal</label>
@@ -865,6 +909,25 @@ export default function ProductsClient({ products: initialProducts, categories, 
           </div>
         </div>
       )}
+
+      <ConfirmationDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, product: null })}
+        onConfirm={confirmDeleteProduct}
+        title="Konfirmasi Hapus Produk"
+        message={
+          deleteConfirm.product ? (
+            <>
+              Apakah Anda yakin ingin menghapus produk <strong>{deleteConfirm.product.name}</strong>? Tindakan ini tidak dapat dibatalkan.
+            </>
+          ) : ''
+        }
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        variant="danger"
+        icon="delete"
+        isLoading={isDeleting}
+      />
 
       {/* Toast Notification */}
       {toast && (

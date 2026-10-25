@@ -9,6 +9,7 @@ import {
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag, KpiCard, FormatRupiah } from '@/components/ui/Cards'
 import { getUserFacingError } from '@/lib/user-facing-error'
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
 
 export interface Promotion {
   id: string
@@ -56,6 +57,11 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
     description: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id: string; code: string }>({
+    isOpen: false,
+    id: '',
+    code: ''
+  })
   const [toast, setToast] = useState<{ text: string; type: 'ok' | 'bad' } | null>(null)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [loadError, setLoadError] = useState('')
@@ -161,8 +167,13 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
   }
 
   // Hapus Promo
-  const handleDelete = async (id: string, code: string) => {
-    if (!confirm(`Yakin ingin menghapus promo "${code}"? Kasir tidak akan dapat menggunakannya lagi.`)) return
+  const handleDelete = (id: string, code: string) => {
+    setDeleteConfirm({ isOpen: true, id, code })
+  }
+
+  const confirmDelete = async () => {
+    const { id, code } = deleteConfirm
+    if (!id) return
 
     try {
       const res = await fetch(`/api/admin/promotions?id=${id}`, { method: 'DELETE' })
@@ -175,6 +186,8 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
       showToast(`Promo ${code} berhasil dihapus.`, 'ok')
     } catch (err) {
       showToast(getUserFacingError(err, 'Promo belum dapat dihapus. Silakan coba lagi.'), 'bad')
+    } finally {
+      setDeleteConfirm({ isOpen: false, id: '', code: '' })
     }
   }
 
@@ -285,7 +298,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
   }, [promotions, filterType, search])
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1400, margin: '0 auto' }}>
+    <div>
       <PageHeader
         title="Kelola Diskon & Promo"
         subtitle="Buat promo diskon harga atau persentase yang otomatis diteruskan dan aktif di terminal Kasir POS"
@@ -332,12 +345,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
       )}
 
       {/* KPI Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: 16,
-        marginBottom: 24
-      }}>
+      <div className="responsive-kpi">
         <div className="card" style={{ borderLeft: '4px solid var(--ok)', background: 'linear-gradient(135deg, var(--panel) 0%, var(--bg) 100%)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--mute)' }}>Promo Aktif di Kasir</span>
@@ -431,7 +439,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
             </div>
 
             {/* Search Input */}
-            <div className="search-pill" style={{ width: 220, padding: '5px 12px' }}>
+            <div className="search-pill toolbar-search" style={{ padding: '5px 12px' }}>
               <Search size={14} color="var(--mute)" />
               <input
                 placeholder="Cari kode / nama promo..."
@@ -457,9 +465,9 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
                   <th style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>KODE PROMO</th>
                   <th style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>NAMA PROMO</th>
                   <th style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>NILAI POTONGAN</th>
-                  <th style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>MIN. BELANJA</th>
-                  <th style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>PERIODE</th>
-                  <th style={{ textAlign: 'center', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>STATUS DI KASIR</th>
+                  <th className="hide-sm" style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>MIN. BELANJA</th>
+                  <th className="hide-md" style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>PERIODE</th>
+                  <th className="hide-sm" style={{ textAlign: 'center', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>STATUS DI KASIR</th>
                   <th style={{ textAlign: 'right', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>AKSI</th>
                 </tr>
               </thead>
@@ -504,7 +512,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
                       <td style={{ padding: '14px 14px' }}>
                         <div style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--ink)' }}>{promo.name}</div>
                         {promo.description && (
-                          <div style={{ fontSize: 11.5, color: 'var(--mute)', marginTop: 2, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: 11.5, color: 'var(--mute)', marginTop: 2, maxWidth: 'min(260px, 100%)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {promo.description}
                           </div>
                         )}
@@ -530,7 +538,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
                       </td>
 
                       {/* Min Belanja */}
-                      <td style={{ padding: '14px 14px', fontSize: 13 }}>
+                      <td className="hide-sm" style={{ padding: '14px 14px', fontSize: 13 }}>
                         {promo.min_purchase > 0 ? (
                           <span>Rp {promo.min_purchase.toLocaleString('id-ID')}</span>
                         ) : (
@@ -539,7 +547,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
                       </td>
 
                       {/* Periode */}
-                      <td style={{ padding: '14px 14px', fontSize: 12, color: 'var(--mute)' }}>
+                      <td className="hide-md" style={{ padding: '14px 14px', fontSize: 12, color: 'var(--mute)' }}>
                         <div>{new Date(promo.start_date).toLocaleDateString('id-ID')}</div>
                         {promo.end_date ? (
                           <div>s/d {new Date(promo.end_date).toLocaleDateString('id-ID')}</div>
@@ -549,7 +557,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
                       </td>
 
                       {/* Status Toggle */}
-                      <td style={{ padding: '14px 14px', textAlign: 'center' }}>
+                      <td className="hide-sm" style={{ padding: '14px 14px', textAlign: 'center' }}>
                         <button
                           onClick={() => handleToggleActive(promo)}
                           style={{
@@ -651,7 +659,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
             background: 'var(--panel)',
             border: '1px solid var(--line)',
             borderRadius: 20,
-            padding: '28px 28px',
+            padding: 'clamp(18px, 4vw, 28px)',
             width: '100%',
             maxWidth: 540,
             boxShadow: '0 24px 64px rgba(0,0,0,0.25)',
@@ -687,7 +695,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
 
             <form onSubmit={handleSubmitForm} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {/* Kode Promo & Nama Promo */}
-              <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 12 }}>
+              <div className="form-grid-code">
                 <div>
                   <label className="label">KODE PROMO *</label>
                   <input
@@ -714,7 +722,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
               {/* Tipe Diskon (Radio Button) */}
               <div>
                 <label className="label">TIPE DISKON *</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
                   <label style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -801,6 +809,11 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
                   placeholder="0 (Tanpa minimum)"
                   value={formData.min_purchase}
                   onChange={e => setFormData({ ...formData, min_purchase: e.target.value })}
+                  onFocus={e => {
+                    if (e.currentTarget.value === '0') {
+                      setFormData(current => ({ ...current, min_purchase: '' }))
+                    }
+                  }}
                   className="input"
                 />
                 <span style={{ fontSize: 11, color: 'var(--mute)', marginTop: 4, display: 'block' }}>
@@ -809,7 +822,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
               </div>
 
               {/* Tanggal Periode */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="form-grid-auto">
                 <div>
                   <label className="label">TANGGAL MULAI</label>
                   <input
@@ -875,6 +888,18 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
           </div>
         </div>
       )}
+
+      <ConfirmationDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, id: '', code: '' })}
+        onConfirm={confirmDelete}
+        title="Konfirmasi Hapus Promo"
+        message={`Apakah Anda yakin ingin menghapus promo "${deleteConfirm.code}"? Kasir tidak akan dapat menggunakannya lagi. Tindakan ini tidak dapat dibatalkan.`}
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        variant="danger"
+        icon="delete"
+      />
     </div>
   )
 }

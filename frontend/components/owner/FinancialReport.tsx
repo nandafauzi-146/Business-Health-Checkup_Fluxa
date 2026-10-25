@@ -36,7 +36,7 @@ export default function FinancialReportClient({ reports }: { reports: MonthlyDat
       />
 
       {/* Selector Bulan */}
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 20 }}>
+      <div className="toolbar-row">
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--mute)' }}>Pilih Periode Bulan:</span>
         <select
           value={selectedMonth}
@@ -57,7 +57,7 @@ export default function FinancialReportClient({ reports }: { reports: MonthlyDat
       {currentData && (
         <>
           {/* KPI Cards untuk Bulan Terpilih */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 20 }}>
+          <div className="responsive-kpi">
             <div className="kpi-card">
               <div className="kpi-icon" style={{ background: 'var(--accs)', color: 'var(--acc)' }}>
                 <DollarSign size={20} />
@@ -107,7 +107,7 @@ export default function FinancialReportClient({ reports }: { reports: MonthlyDat
           </div>
 
           {/* Rincian P&L Statement */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 20, marginBottom: 20 }}>
+          <div className="fin-split-grid">
             <SectionCard title="Ringkasan Laporan Laba Rugi (P&L)">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
