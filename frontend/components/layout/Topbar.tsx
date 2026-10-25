@@ -702,9 +702,8 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
             <div className="appearance-popover" role="menu" aria-label="Appearance">
               <strong>Appearance</strong>
               {([
-                ['light', 'Light'],
                 ['dark', 'Dark'],
-                ['system', 'System'],
+                ['light', 'Light'],
               ] as const).map(([value, label]) => (
                 <button
                   key={value}
