@@ -63,8 +63,6 @@ function PaymentFinishContent() {
   const retryCountRef = useRef(0)
   const verifyPaymentRef = useRef<((isSilent?: boolean) => Promise<void>) | null>(null)
 
-  const verifyPaymentRef = useRef<(isSilent?: boolean) => Promise<void>>(() => Promise.resolve())
-
   const verifyPayment = useCallback(async (isSilent = false) => {
     if (!isSilent) setCheckingAgain(true)
     setError('')
