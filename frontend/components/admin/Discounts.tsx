@@ -9,6 +9,7 @@ import {
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag, KpiCard, FormatRupiah } from '@/components/ui/Cards'
 import { getUserFacingError } from '@/lib/user-facing-error'
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
 
 export interface Promotion {
   id: string
@@ -56,6 +57,11 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
     description: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id: string; code: string }>({
+    isOpen: false,
+    id: '',
+    code: ''
+  })
   const [toast, setToast] = useState<{ text: string; type: 'ok' | 'bad' } | null>(null)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [loadError, setLoadError] = useState('')
@@ -161,8 +167,13 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
   }
 
   // Hapus Promo
-  const handleDelete = async (id: string, code: string) => {
-    if (!confirm(`Yakin ingin menghapus promo "${code}"? Kasir tidak akan dapat menggunakannya lagi.`)) return
+  const handleDelete = (id: string, code: string) => {
+    setDeleteConfirm({ isOpen: true, id, code })
+  }
+
+  const confirmDelete = async () => {
+    const { id, code } = deleteConfirm
+    if (!id) return
 
     try {
       const res = await fetch(`/api/admin/promotions?id=${id}`, { method: 'DELETE' })
@@ -175,6 +186,8 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
       showToast(`Promo ${code} berhasil dihapus.`, 'ok')
     } catch (err) {
       showToast(getUserFacingError(err, 'Promo belum dapat dihapus. Silakan coba lagi.'), 'bad')
+    } finally {
+      setDeleteConfirm({ isOpen: false, id: '', code: '' })
     }
   }
 
@@ -796,6 +809,11 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
                   placeholder="0 (Tanpa minimum)"
                   value={formData.min_purchase}
                   onChange={e => setFormData({ ...formData, min_purchase: e.target.value })}
+                  onFocus={e => {
+                    if (e.currentTarget.value === '0') {
+                      setFormData(current => ({ ...current, min_purchase: '' }))
+                    }
+                  }}
                   className="input"
                 />
                 <span style={{ fontSize: 11, color: 'var(--mute)', marginTop: 4, display: 'block' }}>
@@ -870,6 +888,18 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
           </div>
         </div>
       )}
+
+      <ConfirmationDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, id: '', code: '' })}
+        onConfirm={confirmDelete}
+        title="Konfirmasi Hapus Promo"
+        message={`Apakah Anda yakin ingin menghapus promo "${deleteConfirm.code}"? Kasir tidak akan dapat menggunakannya lagi. Tindakan ini tidak dapat dibatalkan.`}
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        variant="danger"
+        icon="delete"
+      />
     </div>
   )
 }

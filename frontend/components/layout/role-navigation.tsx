@@ -1,7 +1,7 @@
 import {
-  Activity, BarChart3, ClipboardList, CreditCard, DollarSign, FileText, Globe,
+  Activity, BarChart3, Building2, ClipboardList, CreditCard, DollarSign, FileText, Globe,
   Layers, LayoutDashboard, Package, Scale, Settings2, ShieldCheck, ShoppingCart,
-  Sparkles, Tag, TrendingUp, Users
+  Sparkles, Tag, Tags, TrendingUp, Users
 } from 'lucide-react'
 
 export type UserRole = 'kasir' | 'admin' | 'owner' | 'super_admin'
@@ -11,6 +11,7 @@ export interface NavItem {
   label: string
   href: string
   badge?: number
+  children?: NavItem[]
 }
 
 export interface NavGroup {
@@ -50,7 +51,15 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
       items: [
         { icon: <Tag size={16} />, label: 'Diskon & Promo', href: '/admin/diskon' },
         { icon: <DollarSign size={16} />, label: 'Biaya Operasional', href: '/admin/biaya' },
-        { icon: <Scale size={16} />, label: 'Hutang & Piutang', href: '/admin/hutang-piutang' },
+        {
+          icon: <Scale size={16} />,
+          label: 'Hutang & Piutang',
+          href: '/admin/hutang-piutang',
+          children: [
+            { icon: <Scale size={16} />, label: 'Daftar Hutang & Piutang', href: '/admin/hutang-piutang' },
+            { icon: <Tags size={16} />, label: 'Kelola Kategori', href: '/admin/hutang-piutang/kategori' },
+          ]
+        },
       ]
     },
     {
