@@ -5,6 +5,8 @@ import { Search, AlertTriangle, CheckCircle, XCircle, Eye, RefreshCw, X, ShieldA
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
 import { createClient } from '@/lib/supabase/client'
+import { getUserFacingError } from '@/lib/user-facing-error'
+import PendingRefundRequests from '@/components/admin/PendingRefundRequests'
 
 interface SaleItem {
   id: string
@@ -25,15 +27,16 @@ interface Sale {
   status: string
   void_reason?: string
   voided_at?: string
-  customer_name?: string
   cashier_name?: string
+  customer_name?: string
   items?: SaleItem[]
 }
 
 const paymentLabels: Record<string, { label: string; color: string; bg: string }> = {
   cash: { label: 'Tunai', color: 'var(--ok)', bg: 'var(--oks)' },
-  qris: { label: 'QRIS', color: 'var(--acc)', bg: 'var(--accs)' },
-  transfer: { label: 'Transfer', color: '#8A3FFC', bg: 'rgba(138, 63, 252, 0.12)' },
+  non_cash: { label: 'Non-Tunai', color: 'var(--acc)', bg: 'var(--accs)' },
+  qris: { label: 'Non-Tunai', color: 'var(--acc)', bg: 'var(--accs)' },
+  transfer: { label: 'Non-Tunai', color: 'var(--acc)', bg: 'var(--accs)' },
   credit: { label: 'Kasbon', color: 'var(--warn)', bg: 'var(--warns)' }
 }
 
@@ -51,7 +54,6 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
 
   const filteredSales = sales.filter(s => {
     const matchesSearch = s.invoice_number?.toLowerCase().includes(search.toLowerCase()) ||
-      s.customer_name?.toLowerCase().includes(search.toLowerCase()) ||
       s.payment_method?.toLowerCase().includes(search.toLowerCase())
 
     const matchesStatus = statusFilter === 'all' ? true : s.status === statusFilter
@@ -81,14 +83,9 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
       setSelectedSale(prev => prev ? { ...prev, status: 'voided' } : null)
       setVoidDialogOpen(false)
       setVoidReason('')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error voiding sale:', err)
-      // Demo fallback
-      showNotification(`Transaksi ${selectedSale.invoice_number} di-void (simulasi mode).`, 'ok')
-      setSales(prev => prev.map(s => s.id === selectedSale.id ? { ...s, status: 'voided' } : s))
-      setSelectedSale(prev => prev ? { ...prev, status: 'voided' } : null)
-      setVoidDialogOpen(false)
-      setVoidReason('')
+      showNotification(getUserFacingError(err, 'Transaksi belum dapat dibatalkan. Silakan coba lagi.'), 'bad')
     } finally {
       setIsSubmitting(false)
     }
@@ -100,6 +97,10 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
         title="Daftar Transaksi Kasir"
         subtitle="Monitoring transaksi penjualan POS, rincian produk, dan pembatalan (void) yang aman"
       />
+
+      <div style={{ marginBottom: 18 }}>
+        <PendingRefundRequests />
+      </div>
 
       {notification && (
         <div style={{
@@ -164,7 +165,7 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
                 <Search size={15} color="var(--mute)" />
                 <input
                   type="text"
-                  placeholder="Cari invoice, pelanggan, atau metode..."
+                  placeholder="Cari nomor transaksi atau metode pembayaran..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
@@ -364,10 +365,10 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
                 </div>
               )}
 
-              {/* Invoice Meta */}
+              {/* Transaction Meta */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13, marginBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 6, borderBottom: '1px solid var(--line)' }}>
-                  <span style={{ color: 'var(--mute)' }}>Invoice:</span>
+                  <span style={{ color: 'var(--mute)' }}>No. Transaksi:</span>
                   <span style={{ fontWeight: 700, fontFamily: 'monospace' }}>{selectedSale.invoice_number}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 6, borderBottom: '1px solid var(--line)' }}>
@@ -375,13 +376,9 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
                   <span>{new Date(selectedSale.created_at).toLocaleString('id-ID')}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 6, borderBottom: '1px solid var(--line)' }}>
-                  <span style={{ color: 'var(--mute)' }}>Pelanggan:</span>
-                  <span style={{ fontWeight: 600 }}>{selectedSale.customer_name || 'Pelanggan Umum'}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 6, borderBottom: '1px solid var(--line)' }}>
                   <span style={{ color: 'var(--mute)' }}>Metode Pembayaran:</span>
                   <span style={{ fontWeight: 700, textTransform: 'uppercase', color: 'var(--acc)' }}>
-                    {selectedSale.payment_method}
+                    {paymentLabels[selectedSale.payment_method]?.label || selectedSale.payment_method}
                   </span>
                 </div>
               </div>

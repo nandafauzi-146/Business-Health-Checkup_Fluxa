@@ -1,12 +1,15 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import LandingPage from '@/components/landing/LandingPage'
+import { getLandingCMSContent } from '@/lib/cms'
 
 export default async function RootPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/login')
+    const cmsContent = await getLandingCMSContent()
+    return <LandingPage content={cmsContent} />
   }
 
   const { data: profile } = await supabase

@@ -77,9 +77,13 @@ export default async function OwnerCashflowPage() {
       id: s.id,
       date: s.created_at,
       type: 'in',
-      title: `Penjualan ${s.invoice_number}`,
+      title: `Transaksi ${s.invoice_number}`,
       amount: s.final_amount,
-      method: s.payment_method
+      method: s.payment_method === 'cash'
+        ? 'Tunai'
+        : ['qris', 'transfer', 'non_cash'].includes(s.payment_method)
+          ? 'Non-Tunai'
+          : 'Kasbon'
     })),
     ...expenses.slice(0, 15).map((e: any) => ({
       id: e.id,

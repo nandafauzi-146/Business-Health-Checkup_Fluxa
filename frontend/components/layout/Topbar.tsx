@@ -10,6 +10,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from '@/components/layout/ThemeProvider'
 import { menuByRole } from '@/components/layout/role-navigation'
+import { createClient } from '@/lib/supabase/client'
+import { fetchActivePromotions } from '@/lib/active-promotions'
 
 export interface NotificationItem {
   id: string
@@ -24,32 +26,32 @@ export interface NotificationItem {
   actionLabel: string
   read: boolean
   isReport: boolean
+  timestamp?: string
+}
+
+interface ActivePromotion {
+  id: string
+  code: string
+  name: string
+  type: 'percentage' | 'fixed'
+  value: number
+  min_purchase: number
+  max_discount: number | null
+  created_at: string
+  updated_at: string
 }
 
 interface TopbarProps {
   title?: string
   subtitle?: string
   actions?: React.ReactNode
-  role?: 'kasir' | 'admin' | 'owner'
+  role?: 'kasir' | 'admin' | 'owner' | 'super_admin'
 }
 
-function getDefaultNotifications(role: 'kasir' | 'admin' | 'owner'): NotificationItem[] {
+function getDefaultNotifications(role: 'kasir' | 'admin' | 'owner' | 'super_admin'): NotificationItem[] {
+  if (role === 'super_admin') return []
   if (role === 'kasir') {
     return [
-      {
-        id: 'notif-k-1',
-        title: 'Voucher & Diskon Baru Aktif',
-        message: 'Admin telah merilis promo HEMAT10 & FLUXA20K. Tawarkan kepada pelanggan untuk mendongkrak penjualan kasir.',
-        time: '10 mnt lalu',
-        type: 'promo',
-        badge: 'Diskon Kasir',
-        badgeColor: 'var(--acc)',
-        badgeBg: 'var(--accs)',
-        link: '/kasir',
-        actionLabel: 'Buka POS & Terapkan',
-        read: false,
-        isReport: false,
-      },
       {
         id: 'notif-k-2',
         title: 'Pengingat Shift Kasir',
@@ -97,20 +99,6 @@ function getDefaultNotifications(role: 'kasir' | 'admin' | 'owner'): Notificatio
 
   if (role === 'admin') {
     return [
-      {
-        id: 'notif-a-1',
-        title: 'Laporan Refund Kasir (Perlu Audit)',
-        message: 'Kasir baru saja membatalkan transaksi INV-2026-003 (Rp75.000). Alasan: Salah input barang. Segera audit verifikasi.',
-        time: 'Baru saja',
-        type: 'refund',
-        badge: 'Laporan Kasir',
-        badgeColor: 'var(--bad)',
-        badgeBg: 'var(--bads)',
-        link: '/admin/transaksi',
-        actionLabel: 'Audit Transaksi',
-        read: false,
-        isReport: true,
-      },
       {
         id: 'notif-a-2',
         title: 'Peringatan Stok Kritis & Restock',
@@ -231,6 +219,28 @@ function getDefaultNotifications(role: 'kasir' | 'admin' | 'owner'): Notificatio
   ]
 }
 
+function formatRelativeTime(timestamp?: string) {
+  if (!timestamp) return 'Waktu tidak tersedia'
+  const elapsed = Math.max(0, Date.now() - new Date(timestamp).getTime())
+  const minutes = Math.floor(elapsed / 60_000)
+  if (minutes < 1) return 'Baru saja'
+  if (minutes < 60) return `${minutes} mnt lalu`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours} jam lalu`
+  const days = Math.floor(hours / 24)
+  return `${days} hari lalu`
+}
+
+function describePromotion(promotion: ActivePromotion) {
+  const discount = promotion.type === 'percentage'
+    ? `${promotion.value}%${promotion.max_discount ? ` (maks. Rp${new Intl.NumberFormat('id-ID').format(promotion.max_discount)})` : ''}`
+    : `Rp${new Intl.NumberFormat('id-ID').format(promotion.value)}`
+  const minimum = promotion.min_purchase > 0
+    ? `, min. belanja Rp${new Intl.NumberFormat('id-ID').format(promotion.min_purchase)}`
+    : ''
+  return `${promotion.name} (${promotion.code}) — ${discount}${minimum}`
+}
+
 export default function Topbar({ title, subtitle, actions, role }: TopbarProps) {
   const pathname = usePathname()
   const router = useRouter()
@@ -250,13 +260,14 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
   const { preference, isDark, setPreference } = useTheme()
 
   // Tentukan role efektif
-  const effectiveRole: 'kasir' | 'admin' | 'owner' = useMemo(() => {
+  const effectiveRole: 'kasir' | 'admin' | 'owner' | 'super_admin' = useMemo(() => {
     if (role) return role
+    if (pathname?.startsWith('/super-admin')) return 'super_admin'
     if (pathname?.startsWith('/owner')) return 'owner'
     if (pathname?.startsWith('/admin')) return 'admin'
     return 'kasir'
   }, [role, pathname])
-  const isDashboardPage = pathname === '/admin' || pathname === '/owner' || pathname === '/kasir'
+  const isDashboardPage = pathname === '/admin' || pathname === '/owner' || pathname === '/kasir' || pathname === '/super-admin'
   const isSearchPending = searchQuery !== deferredSearchQuery
   const searchableMenuItems = useMemo(
     () => menuByRole[effectiveRole].flatMap(group =>
@@ -318,7 +329,14 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
     try {
       const saved = localStorage.getItem(storageKey)
       if (saved) {
-        setNotifications(JSON.parse(saved))
+        const storedNotifications: NotificationItem[] = JSON.parse(saved)
+        const cleanedNotifications = effectiveRole === 'kasir'
+          ? storedNotifications.filter(item => item.type !== 'promo' && item.id !== 'notif-k-1')
+          : storedNotifications
+        setNotifications(cleanedNotifications)
+        if (cleanedNotifications.length !== storedNotifications.length) {
+          localStorage.setItem(storageKey, JSON.stringify(cleanedNotifications))
+        }
       } else {
         setNotifications(defaults)
       }
@@ -326,37 +344,185 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
       setNotifications(defaults)
     }
 
-    // Dengarkan event refund kasir baru (sinkronisasi laporan refund ke Admin & Owner)
-    const handleRefundCreated = (e: any) => {
-      const refund = e.detail
-      if (!refund) return
+    return undefined
+  }, [effectiveRole])
 
-      if (effectiveRole === 'admin' || effectiveRole === 'owner') {
-        setNotifications(prev => {
-          const newNotif: NotificationItem = {
-            id: `refund-${Date.now()}`,
-            title: effectiveRole === 'admin' ? '🚨 Laporan Refund Kasir Baru!' : '🛡️ Audit: Pembatalan Transaksi Kasir',
-            message: `Kasir membatalkan transaksi ${refund.invoice || 'penjualan'} (Rp${new Intl.NumberFormat('id-ID').format(refund.amount || 0)}). Alasan: ${refund.reason || 'Refund kasir'}.`,
-            time: 'Baru saja',
-            type: 'refund',
-            badge: effectiveRole === 'admin' ? 'Laporan Kasir' : 'Audit Integritas',
-            badgeColor: 'var(--bad)',
-            badgeBg: 'var(--bads)',
-            link: effectiveRole === 'admin' ? '/admin/transaksi' : '/owner/transaksi',
-            actionLabel: 'Audit Transaksi',
-            read: false,
-            isReport: true,
-          }
-          const updated = [newNotif, ...prev]
+  useEffect(() => {
+    if (effectiveRole !== 'admin') return
+
+    let active = true
+    let refreshing = false
+    const storageKey = 'fluxa_notifications_admin'
+
+    const refreshRefundNotifications = async () => {
+      if (refreshing) return
+      refreshing = true
+      try {
+        const response = await fetch('/api/admin/refund-requests', { cache: 'no-store' })
+        const result: {
+          requests?: {
+            id: string
+            status: string
+            sale?: { invoice_number?: string; final_amount?: number } | null
+            requester?: { full_name?: string } | null
+            reason?: string
+            created_at: string
+          }[]
+        } = await response.json()
+        if (!response.ok || !Array.isArray(result.requests) || !active) return
+
+        setNotifications(previous => {
+          const existingById = new Map(previous.map(notification => [notification.id, notification]))
+          const pendingNotifications: NotificationItem[] = result.requests!
+            .filter(request => request.status === 'pending')
+            .map(request => {
+              const id = `refund-request-${request.id}`
+              const existing = existingById.get(id)
+              const invoice = request.sale?.invoice_number || 'Transaksi'
+              const amount = typeof request.sale?.final_amount === 'number'
+                ? ` (Rp${new Intl.NumberFormat('id-ID').format(request.sale.final_amount)})`
+                : ''
+              return {
+                id,
+                title: 'Pengajuan Refund Menunggu Persetujuan',
+                message: `${request.requester?.full_name || 'Kasir'} mengajukan refund ${invoice}${amount}. Alasan: ${request.reason || 'Tidak dicantumkan'}.`,
+                time: formatRelativeTime(request.created_at),
+                timestamp: request.created_at,
+                type: 'refund',
+                badge: 'Perlu Persetujuan',
+                badgeColor: 'var(--bad)',
+                badgeBg: 'var(--bads)',
+                link: '/admin/transaksi',
+                actionLabel: 'Tinjau Pengajuan',
+                read: existing?.read ?? false,
+                isReport: true,
+              }
+            })
+          const retained = previous.filter(notification => notification.type !== 'refund')
+          const updated = [...pendingNotifications, ...retained]
           try { localStorage.setItem(storageKey, JSON.stringify(updated)) } catch {}
           return updated
         })
+      } catch (error) {
+        console.error('Could not refresh admin refund notifications:', error)
+      } finally {
+        refreshing = false
       }
     }
 
-    window.addEventListener('fluxa_refund_created', handleRefundCreated)
-    return () => window.removeEventListener('fluxa_refund_created', handleRefundCreated)
+    void refreshRefundNotifications()
+    const intervalId = window.setInterval(() => void refreshRefundNotifications(), 30_000)
+    window.addEventListener('focus', refreshRefundNotifications)
+    return () => {
+      active = false
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', refreshRefundNotifications)
+    }
   }, [effectiveRole])
+
+  useEffect(() => {
+    if (effectiveRole !== 'kasir') return
+
+    const supabase = createClient()
+    const storageKey = 'fluxa_notifications_kasir'
+    let isMounted = true
+    let refreshTimer: number | undefined
+    let isRefreshing = false
+
+    const refreshPromotionNotification = async () => {
+      if (isRefreshing) return
+      isRefreshing = true
+      try {
+        const activePromotions = await fetchActivePromotions(supabase)
+        if (!isMounted) return
+
+        window.dispatchEvent(new CustomEvent('fluxa_promotions_updated', { detail: activePromotions }))
+        const lastChangedPromotion = [...activePromotions]
+          .sort((first, second) => {
+            const firstTime = new Date(first.updated_at || first.created_at).getTime()
+            const secondTime = new Date(second.updated_at || second.created_at).getTime()
+            return secondTime - firstTime
+          })[0]
+        const signature = activePromotions
+          .map(promotion => `${promotion.id}:${promotion.code}:${promotion.name}:${promotion.type}:${promotion.value}:${promotion.min_purchase}:${promotion.max_discount ?? ''}`)
+          .sort()
+          .join('|')
+
+        setNotifications(previous => {
+          const existingNotification = previous.find(notification => notification.id === `promo-active-${signature}`)
+          const retained = previous.filter(notification =>
+            notification.type !== 'promo' && notification.id !== 'notif-k-1'
+          )
+          if (activePromotions.length === 0) {
+            localStorage.setItem(storageKey, JSON.stringify(retained))
+            return retained
+          }
+
+          const newNotification: NotificationItem = {
+            id: `promo-active-${signature}`,
+            title: 'Voucher & Diskon Aktif di Kasir',
+            message: `Promo yang saat ini tersedia di Kasir: ${activePromotions.map(describePromotion).join('; ')}.`,
+            time: formatRelativeTime(lastChangedPromotion?.updated_at || lastChangedPromotion?.created_at),
+            timestamp: lastChangedPromotion?.updated_at || lastChangedPromotion?.created_at,
+            type: 'promo',
+            badge: 'Diskon Kasir',
+            badgeColor: 'var(--acc)',
+            badgeBg: 'var(--accs)',
+            link: '/kasir',
+            actionLabel: 'Buka POS & Terapkan',
+            read: existingNotification?.read ?? false,
+            isReport: false,
+          }
+          const updated = [newNotification, ...retained]
+          localStorage.setItem(storageKey, JSON.stringify(updated))
+          return updated
+        })
+
+        if (activePromotions.length > 0) {
+          localStorage.setItem('fluxa_active_promotions', JSON.stringify(activePromotions))
+        } else {
+          localStorage.removeItem('fluxa_active_promotions')
+        }
+      } catch (error) {
+        console.error('Could not synchronize cashier promotions and notifications:', error)
+      } finally {
+        isRefreshing = false
+      }
+    }
+
+    const scheduleRefresh = () => {
+      if (refreshTimer !== undefined) window.clearTimeout(refreshTimer)
+      refreshTimer = window.setTimeout(() => void refreshPromotionNotification(), 150)
+    }
+    const channel = supabase
+      .channel('cashier-promotion-notifications')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'promotions' }, scheduleRefresh)
+      .subscribe(status => {
+        if (status === 'SUBSCRIBED') void refreshPromotionNotification()
+      })
+    const pollingTimer = window.setInterval(() => void refreshPromotionNotification(), 30_000)
+    const handleFocus = () => void refreshPromotionNotification()
+    window.addEventListener('focus', handleFocus)
+    void refreshPromotionNotification()
+
+    return () => {
+      isMounted = false
+      if (refreshTimer !== undefined) window.clearTimeout(refreshTimer)
+      window.clearInterval(pollingTimer)
+      window.removeEventListener('focus', handleFocus)
+      void supabase.removeChannel(channel)
+    }
+  }, [effectiveRole])
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNotifications(previous => previous.map(notification => notification.timestamp
+        ? { ...notification, time: formatRelativeTime(notification.timestamp) }
+        : notification
+      ))
+    }, 60_000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   // Tandai 1 notifikasi telah dibaca
   const markAsRead = (id: string) => {
@@ -428,6 +594,7 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
     kasir: { label: 'KASIR', color: 'var(--acc)', bg: 'var(--accs)', title: 'Pusat Notifikasi Kasir' },
     admin: { label: 'ADMIN', color: 'var(--acc)', bg: 'var(--accs)', title: 'Pusat Notifikasi & Laporan Admin' },
     owner: { label: 'OWNER', color: 'var(--acc)', bg: 'var(--accs)', title: 'Pusat Laporan & Intelijen Bisnis Owner' },
+    super_admin: { label: 'SUPER ADMIN', color: 'var(--acc)', bg: 'var(--accs)', title: 'Pusat Notifikasi Super Admin' },
   }[effectiveRole]
 
   return (

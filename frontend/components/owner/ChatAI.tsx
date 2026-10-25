@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Bot, X, Send, Minimize2, Maximize2, Sparkles, ChevronRight, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
+import { getUserFacingError } from '@/lib/user-facing-error'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -109,7 +110,7 @@ export default function ChatAI() {
       if (!res.ok || data.error) {
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: `⚠️ ${data.error || 'Terjadi kesalahan. Silakan coba lagi.'}`,
+          content: `⚠️ ${getUserFacingError(data.error, 'Layanan AI belum dapat memproses permintaan. Silakan coba lagi.')}`,
           timestamp: new Date(),
         }])
       } else {

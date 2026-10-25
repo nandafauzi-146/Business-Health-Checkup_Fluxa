@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import {
   Plus, Search, Building2, AlertCircle, CheckCircle, Clock, Calendar,
-  X, Check, CreditCard, ChevronDown, ArrowDownLeft, ArrowUpRight, Scale, Filter
+  X, Check, ArrowDownLeft, ArrowUpRight, Scale, Tags, Edit2, Trash2, Save
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
 import { createClient } from '@/lib/supabase/client'
+import { getUserFacingError } from '@/lib/user-facing-error'
 
 export interface DebtReceivableItem {
   id: string
@@ -24,87 +25,19 @@ export interface DebtReceivableItem {
   created_at: string
 }
 
-const CATEGORIES = [
-  'Supplier / Bahan Baku',
-  'Operasional & Sewa Ruko',
-  'Utilitas & Listrik Toko',
-  'Peralatan & Fasilitas',
-  'Pinjaman Modal Usaha',
-  'Konsinyasi & Kemitraan Toko',
-  'Lain-lain'
-]
+export interface DebtCategory {
+  id: string
+  name: string
+}
 
-const DEMO_DATA: DebtReceivableItem[] = [
-  {
-    id: 'd1',
-    type: 'payable',
-    party_name: 'Bpk. Hendro (Pemilik Ruko)',
-    category: 'Operasional & Sewa Ruko',
-    description: 'Sewa ruko toko semester 2 tahun 2026',
-    total_amount: 12000000,
-    paid_amount: 6000000,
-    remaining_amount: 6000000,
-    due_date: '2026-11-15',
-    status: 'partial',
-    note: 'Dicicil 2 tahap sesuai kesepakatan',
-    created_at: new Date(Date.now() - 86400000 * 7).toISOString()
-  },
-  {
-    id: 'd2',
-    type: 'payable',
-    party_name: 'CV Maju Jaya',
-    category: 'Supplier / Bahan Baku',
-    description: 'Beli tepung terigu 100kg & gula pasir 50kg',
-    total_amount: 1500000,
-    paid_amount: 500000,
-    remaining_amount: 1000000,
-    due_date: '2026-10-30',
-    status: 'partial',
-    note: 'Tempo 14 hari dari pengiriman',
-    created_at: new Date(Date.now() - 86400000 * 3).toISOString()
-  },
-  {
-    id: 'd3',
-    type: 'payable',
-    party_name: 'PLN & Utilitas Usaha',
-    category: 'Utilitas & Listrik Toko',
-    description: 'Tagihan listrik operasional toko bulan Oktober',
-    total_amount: 850000,
-    paid_amount: 0,
-    remaining_amount: 850000,
-    due_date: '2026-10-25',
-    status: 'unpaid',
-    note: 'Batas akhir pembayaran tgl 25',
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString()
-  },
-  {
-    id: 'd4',
-    type: 'receivable',
-    party_name: 'Toko Roti Bu Ani (Mitra Konsinyasi)',
-    category: 'Konsinyasi & Kemitraan Toko',
-    description: 'Titip jual produk kemasan 50 pcs di toko cabang mitra',
-    total_amount: 750000,
-    paid_amount: 250000,
-    remaining_amount: 500000,
-    due_date: '2026-10-28',
-    status: 'partial',
-    note: 'Pelunasan setiap akhir bulan',
-    created_at: new Date(Date.now() - 86400000 * 5).toISOString()
-  },
-  {
-    id: 'd5',
-    type: 'receivable',
-    party_name: 'Katering Sejahtera (Pesanan B2B)',
-    category: 'Lain-lain',
-    description: 'Pesanan bahan baku paket hajatan (tempo 14 hari)',
-    total_amount: 2400000,
-    paid_amount: 2400000,
-    remaining_amount: 0,
-    due_date: '2026-10-15',
-    status: 'paid',
-    note: 'Sudah lunas ditransfer via BCA',
-    created_at: new Date(Date.now() - 86400000 * 12).toISOString()
-  },
+const DEFAULT_CATEGORIES: DebtCategory[] = [
+  { id: 'default-1', name: 'Supplier / Bahan Baku' },
+  { id: 'default-2', name: 'Operasional & Sewa Ruko' },
+  { id: 'default-3', name: 'Utilitas & Listrik Toko' },
+  { id: 'default-4', name: 'Peralatan & Fasilitas' },
+  { id: 'default-5', name: 'Pinjaman Modal Usaha' },
+  { id: 'default-6', name: 'Konsinyasi & Kemitraan Toko' },
+  { id: 'default-7', name: 'Lain-lain' },
 ]
 
 function formatRp(n: number) {
@@ -118,11 +51,18 @@ function formatDate(d: string | null) {
 
 export default function DebtReceivablesClient({
   initialData,
+  initialCategories,
+  loadError,
 }: {
   initialData: DebtReceivableItem[]
+  initialCategories?: DebtCategory[]
+  loadError?: string | null
 }) {
   const supabase = createClient()
-  const [data, setData] = useState<DebtReceivableItem[]>(initialData.length > 0 ? initialData : DEMO_DATA)
+  const [data, setData] = useState<DebtReceivableItem[]>(initialData)
+  const [categories, setCategories] = useState<DebtCategory[]>(
+    initialCategories && initialCategories.length > 0 ? initialCategories : DEFAULT_CATEGORIES
+  )
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'payable' | 'receivable'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'unpaid' | 'partial' | 'paid'>('all')
@@ -133,7 +73,7 @@ export default function DebtReceivablesClient({
   const [form, setForm] = useState({
     type: 'payable' as 'payable' | 'receivable',
     party_name: '',
-    category: 'Supplier / Bahan Baku',
+    category: '',
     description: '',
     total_amount: '',
     due_date: '',
@@ -144,8 +84,15 @@ export default function DebtReceivablesClient({
   const [payOpen, setPayOpen] = useState(false)
   const [selected, setSelected] = useState<DebtReceivableItem | null>(null)
   const [payAmount, setPayAmount] = useState('')
-  const [payMethod, setPayMethod] = useState<'cash' | 'qris' | 'transfer'>('cash')
+  const [payMethod, setPayMethod] = useState<'cash' | 'non_cash'>('cash')
   const [payNote, setPayNote] = useState('')
+
+  // Category management modal
+  const [catOpen, setCatOpen] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
+  const [editingCatId, setEditingCatId] = useState<string | null>(null)
+  const [editingCatName, setEditingCatName] = useState('')
+  const [catSaving, setCatSaving] = useState(false)
 
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ type: 'ok' | 'bad'; msg: string } | null>(null)
@@ -190,9 +137,83 @@ export default function DebtReceivablesClient({
 
   const netBalance = totalPayableUnpaid - totalReceivableUnpaid
 
+  // ── Category Management Handlers ──────────────────────────────
+  const handleAddCategory = async () => {
+    const name = newCatName.trim()
+    if (!name) return
+    if (categories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+      showToast('Kategori dengan nama tersebut sudah ada', 'bad')
+      return
+    }
+    setCatSaving(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data: inserted, error } = await supabase
+        .from('debt_categories')
+        .insert({ name, created_by: user?.id })
+        .select('id, name')
+        .single()
+      if (error) throw error
+      setCategories(prev => [...prev, inserted].sort((a, b) => a.name.localeCompare(b.name)))
+      setNewCatName('')
+      showToast(`Kategori "${name}" berhasil ditambahkan`)
+    } catch (err) {
+      showToast(getUserFacingError(err, 'Kategori gagal ditambahkan.'), 'bad')
+    } finally {
+      setCatSaving(false)
+    }
+  }
+
+  const handleRenameCategory = async (id: string) => {
+    const name = editingCatName.trim()
+    if (!name) return
+    if (categories.some(c => c.name.toLowerCase() === name.toLowerCase() && c.id !== id)) {
+      showToast('Nama kategori sudah digunakan', 'bad')
+      return
+    }
+    setCatSaving(true)
+    try {
+      const { error } = await supabase
+        .from('debt_categories')
+        .update({ name })
+        .eq('id', id)
+      if (error) throw error
+      setCategories(prev =>
+        prev.map(c => c.id === id ? { ...c, name } : c).sort((a, b) => a.name.localeCompare(b.name))
+      )
+      setEditingCatId(null)
+      setEditingCatName('')
+      showToast(`Kategori berhasil diubah menjadi "${name}"`)
+    } catch (err) {
+      showToast(getUserFacingError(err, 'Gagal mengubah nama kategori.'), 'bad')
+    } finally {
+      setCatSaving(false)
+    }
+  }
+
+  const handleDeleteCategory = async (id: string, name: string) => {
+    const inUse = data.some(d => d.category === name)
+    if (inUse) {
+      showToast(`Kategori "${name}" masih digunakan oleh transaksi — tidak dapat dihapus`, 'bad')
+      return
+    }
+    setCatSaving(true)
+    try {
+      const { error } = await supabase.from('debt_categories').delete().eq('id', id)
+      if (error) throw error
+      setCategories(prev => prev.filter(c => c.id !== id))
+      showToast(`Kategori "${name}" berhasil dihapus`)
+    } catch (err) {
+      showToast(getUserFacingError(err, 'Gagal menghapus kategori.'), 'bad')
+    } finally {
+      setCatSaving(false)
+    }
+  }
+
   // Handle Add Item
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
+    const selectedCategory = form.category || (categories[0]?.name ?? 'Lain-lain')
     if (!form.party_name.trim() || !form.description.trim() || !form.total_amount) {
       showToast('Mohon lengkapi nama pihak, keterangan, dan total nominal', 'bad')
       return
@@ -207,48 +228,40 @@ export default function DebtReceivablesClient({
     setSaving(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Sesi login tidak ditemukan.')
+      const { data: inserted, error } = await supabase
+        .from('supplier_payables')
+        .insert({
+          supplier_name: form.party_name.trim(),
+          party_name: form.party_name.trim(),
+          type: form.type,
+          category: selectedCategory,
+          description: form.description.trim(),
+          total_amount: total,
+          paid_amount: 0,
+          due_date: form.due_date || null,
+          status: 'unpaid',
+          note: form.note.trim() || null,
+          created_by: user.id
+        })
+        .select('*')
+        .single()
+      if (error) throw error
+      if (!inserted) throw new Error('Database tidak mengembalikan data hutang/piutang.')
 
       const newItem: DebtReceivableItem = {
-        id: 'dr-' + Date.now(),
-        type: form.type,
-        party_name: form.party_name.trim(),
-        category: form.category,
-        description: form.description.trim(),
-        total_amount: total,
-        paid_amount: 0,
-        remaining_amount: total,
-        due_date: form.due_date || null,
-        status: 'unpaid',
-        note: form.note.trim() || null,
-        created_at: new Date().toISOString()
-      }
-
-      if (user) {
-        try {
-          const { data: inserted, error } = await supabase
-            .from('supplier_payables')
-            .insert({
-              supplier_name: newItem.party_name,
-              party_name: newItem.party_name,
-              type: newItem.type,
-              category: newItem.category,
-              description: newItem.description,
-              total_amount: newItem.total_amount,
-              paid_amount: 0,
-              due_date: newItem.due_date,
-              status: 'unpaid',
-              note: newItem.note,
-              created_by: user.id
-            })
-            .select('id')
-            .single()
-
-          if (!error && inserted) {
-            newItem.id = inserted.id
-          }
-        } catch {
-          // fallback client memory
-        }
+        id: inserted.id,
+        type: inserted.type,
+        party_name: inserted.party_name || inserted.supplier_name,
+        category: inserted.category,
+        description: inserted.description,
+        total_amount: inserted.total_amount,
+        paid_amount: inserted.paid_amount,
+        remaining_amount: inserted.total_amount - inserted.paid_amount,
+        due_date: inserted.due_date,
+        status: inserted.status,
+        note: inserted.note,
+        created_at: inserted.created_at
       }
 
       setData(prev => [newItem, ...prev])
@@ -263,6 +276,8 @@ export default function DebtReceivablesClient({
         due_date: '',
         note: ''
       })
+    } catch (err) {
+      showToast(getUserFacingError(err, 'Hutang atau piutang belum dapat disimpan. Silakan coba lagi.'), 'bad')
     } finally {
       setSaving(false)
     }
@@ -286,41 +301,23 @@ export default function DebtReceivablesClient({
 
     setSaving(true)
     try {
-      const newPaid = selected.paid_amount + amt
-      const newRemaining = selected.total_amount - newPaid
-      const newStatus = newRemaining === 0 ? 'paid' : 'partial'
-
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (user && !selected.id.startsWith('d') && !selected.id.startsWith('dr-')) {
-        try {
-          await supabase.from('supplier_payments').insert({
-            supplier_payable_id: selected.id,
-            amount: amt,
-            payment_method: payMethod,
-            note: payNote || null,
-            created_by: user.id
-          })
-
-          await supabase
-            .from('supplier_payables')
-            .update({
-              paid_amount: newPaid,
-              status: newStatus
-            })
-            .eq('id', selected.id)
-        } catch {
-          // ignore
-        }
-      }
+      const { data: payment, error } = await supabase.rpc('record_business_debt_payment', {
+        p_payable_id: selected.id,
+        p_amount: amt,
+        p_payment_method: payMethod,
+        p_note: payNote.trim() || null
+      })
+      if (error) throw error
+      if (!payment) throw new Error('Database tidak mengembalikan status pembayaran terbaru.')
+      const result = payment as { paid_amount: number; remaining_amount: number; status: DebtReceivableItem['status'] }
 
       setData(prev => prev.map(item => {
         if (item.id === selected.id) {
           return {
             ...item,
-            paid_amount: newPaid,
-            remaining_amount: newRemaining,
-            status: newStatus
+            paid_amount: result.paid_amount,
+            remaining_amount: result.remaining_amount,
+            status: result.status
           }
         }
         return item
@@ -332,6 +329,8 @@ export default function DebtReceivablesClient({
       setSelected(null)
       setPayAmount('')
       setPayNote('')
+    } catch (err) {
+      showToast(getUserFacingError(err, 'Pembayaran belum dapat dicatat. Silakan coba lagi.'), 'bad')
     } finally {
       setSaving(false)
     }
@@ -351,17 +350,37 @@ export default function DebtReceivablesClient({
         title="Hutang & Piutang Usaha"
         subtitle="Kelola seluruh kewajiban hutang toko (supplier, sewa ruko, utilitas operasional) serta piutang usaha (konsinyasi mitra, pesanan B2B)"
         actions={
-          <button
-            id="add-debt-receivable-btn"
-            className="btn btn-primary"
-            onClick={() => setAddOpen(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', fontWeight: 600 }}
-          >
-            <Plus size={16} />
-            Catat Hutang / Piutang
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              id="manage-categories-btn"
+              className="btn btn-secondary"
+              onClick={() => setCatOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px', fontWeight: 600 }}
+            >
+              <Tags size={15} />
+              Kelola Kategori
+            </button>
+            <button
+              id="add-debt-receivable-btn"
+              className="btn btn-primary"
+              onClick={() => {
+                setForm({ type: 'payable', party_name: '', category: categories[0]?.name ?? '', description: '', total_amount: '', due_date: '', note: '' })
+                setAddOpen(true)
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', fontWeight: 600 }}
+            >
+              <Plus size={16} />
+              Catat Hutang / Piutang
+            </button>
+          </div>
         }
       />
+
+      {loadError && (
+        <div role="alert" style={{ marginBottom: 16, padding: 12, borderRadius: 10, color: 'var(--bad)', background: 'var(--bads)' }}>
+          Data hutang dan piutang belum dapat dimuat. Silakan coba lagi.
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toast && (
@@ -519,8 +538,8 @@ export default function DebtReceivablesClient({
             style={{ width: 'auto', minWidth: 160 }}
           >
             <option value="all">Semua Kategori</option>
-            {CATEGORIES.map(c => (
-              <option key={c} value={c}>{c}</option>
+            {categories.map(c => (
+              <option key={c.id} value={c.name}>{c.name}</option>
             ))}
           </select>
 
@@ -798,17 +817,26 @@ export default function DebtReceivablesClient({
 
               {/* Kategori */}
               <div style={{ marginBottom: 14 }}>
-                <label className="label" htmlFor="category-select">
-                  Kategori Peruntukan <span style={{ color: 'var(--bad)' }}>*</span>
-                </label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <label className="label" htmlFor="category-select" style={{ marginBottom: 0 }}>
+                    Kategori Peruntukan <span style={{ color: 'var(--bad)' }}>*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => { setAddOpen(false); setTimeout(() => setCatOpen(true), 150) }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--acc)', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <Tags size={12} /> Kelola Kategori
+                  </button>
+                </div>
                 <select
                   id="category-select"
                   className="input"
-                  value={form.category}
+                  value={form.category || categories[0]?.name}
                   onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
                 >
-                  {CATEGORIES.map(c => (
-                    <option key={c} value={c}>{c}</option>
+                  {categories.map(c => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
                   ))}
                 </select>
               </div>
@@ -1006,16 +1034,15 @@ export default function DebtReceivablesClient({
                 <label className="label" style={{ marginBottom: 6, display: 'block' }}>
                   Metode {selected.type === 'payable' ? 'Pembayaran Kas' : 'Penerimaan Kas'}
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   {[
                     { id: 'cash', label: 'Tunai' },
-                    { id: 'transfer', label: 'Transfer' },
-                    { id: 'qris', label: 'QRIS' },
+                    { id: 'non_cash', label: 'Non-Tunai' },
                   ].map(m => (
                     <button
                       key={m.id}
                       type="button"
-                      onClick={() => setPayMethod(m.id as any)}
+                      onClick={() => setPayMethod(m.id as 'cash' | 'non_cash')}
                       style={{
                         padding: '9px',
                         borderRadius: 8,
@@ -1065,6 +1092,193 @@ export default function DebtReceivablesClient({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 3: Kelola Kategori */}
+      {catOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: 16
+        }}>
+          <div style={{
+            background: 'var(--panel)',
+            border: '1px solid var(--line)',
+            borderRadius: 14,
+            width: '100%',
+            maxWidth: 480,
+            boxShadow: '0 16px 40px rgba(0,0,0,0.25)',
+            overflow: 'hidden',
+            maxHeight: '85vh',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid var(--line)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexShrink: 0
+            }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Tags size={18} style={{ color: 'var(--acc)' }} />
+                  Kelola Kategori Hutang & Piutang
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--mute)', marginTop: 2 }}>
+                  {categories.length} kategori tersedia
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setCatOpen(false); setEditingCatId(null); setNewCatName('') }}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--mute)' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Add new category input */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)', flexShrink: 0 }}>
+              <label className="label" style={{ marginBottom: 6, display: 'block' }}>Tambah Kategori Baru</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  id="new-category-input"
+                  className="input"
+                  placeholder="Contoh: Biaya Pengiriman & Logistik"
+                  value={newCatName}
+                  onChange={e => setNewCatName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddCategory())}
+                  style={{ flex: 1 }}
+                />
+                <button
+                  id="add-category-btn"
+                  className="btn btn-primary"
+                  onClick={handleAddCategory}
+                  disabled={catSaving || !newCatName.trim()}
+                  style={{ padding: '9px 16px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}
+                >
+                  <Plus size={14} />
+                  Tambah
+                </button>
+              </div>
+            </div>
+
+            {/* Category list */}
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {categories.length === 0 ? (
+                <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--mute)' }}>
+                  Belum ada kategori. Tambahkan kategori pertama di atas.
+                </div>
+              ) : (
+                <ul style={{ listStyle: 'none', margin: 0, padding: '8px 0' }}>
+                  {categories.map((cat, idx) => (
+                    <li
+                      key={cat.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '10px 20px',
+                        borderBottom: idx < categories.length - 1 ? '1px solid var(--line)' : 'none',
+                        transition: 'background 0.15s'
+                      }}
+                    >
+                      <span style={{
+                        width: 28, height: 28, borderRadius: 8,
+                        background: 'var(--accs)', color: 'var(--acc)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 700, fontSize: 12, flexShrink: 0
+                      }}>
+                        {cat.name.charAt(0)}
+                      </span>
+
+                      {editingCatId === cat.id ? (
+                        <>
+                          <input
+                            className="input"
+                            value={editingCatName}
+                            onChange={e => setEditingCatName(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleRenameCategory(cat.id)
+                              if (e.key === 'Escape') { setEditingCatId(null); setEditingCatName('') }
+                            }}
+                            autoFocus
+                            style={{ flex: 1, padding: '6px 10px', fontSize: 13 }}
+                          />
+                          <button
+                            onClick={() => handleRenameCategory(cat.id)}
+                            disabled={catSaving}
+                            style={{ background: 'var(--oks)', border: 'none', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', color: 'var(--ok)', display: 'flex', alignItems: 'center' }}
+                            title="Simpan"
+                          >
+                            <Save size={14} />
+                          </button>
+                          <button
+                            onClick={() => { setEditingCatId(null); setEditingCatName('') }}
+                            style={{ background: 'var(--bg)', border: 'none', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', color: 'var(--mute)', display: 'flex', alignItems: 'center' }}
+                            title="Batal"
+                          >
+                            <X size={14} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span style={{ flex: 1, fontSize: 13.5, fontWeight: 500 }}>{cat.name}</span>
+                          <div style={{ display: 'flex', gap: 6, opacity: 0.7 }}>
+                            <button
+                              onClick={() => { setEditingCatId(cat.id); setEditingCatName(cat.name) }}
+                              style={{ background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', color: 'var(--ink)', display: 'flex', alignItems: 'center' }}
+                              title={`Ubah nama "${cat.name}"`}
+                            >
+                              <Edit2 size={13} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                              disabled={catSaving}
+                              style={{ background: 'transparent', border: '1px solid var(--line)', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', color: 'var(--bad)', display: 'flex', alignItems: 'center' }}
+                              title={`Hapus "${cat.name}"`}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: '12px 20px',
+              borderTop: '1px solid var(--line)',
+              flexShrink: 0,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span style={{ fontSize: 12, color: 'var(--mute)' }}>
+                💡 Kategori yang masih digunakan tidak dapat dihapus
+              </span>
+              <button
+                className="btn btn-secondary"
+                onClick={() => { setCatOpen(false); setEditingCatId(null); setNewCatName('') }}
+              >
+                Selesai
+              </button>
+            </div>
           </div>
         </div>
       )}
