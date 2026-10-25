@@ -62,6 +62,8 @@ function PaymentFinishContent() {
   const [checkingAgain, setCheckingAgain] = useState(false)
   const retryCountRef = useRef(0)
 
+  const verifyPaymentRef = useRef<(isSilent?: boolean) => Promise<void>>(() => Promise.resolve())
+
   const verifyPayment = useCallback(async (isSilent = false) => {
     if (!isSilent) setCheckingAgain(true)
     setError('')
@@ -93,7 +95,7 @@ function PaymentFinishContent() {
         // Try to wait for session to propagate, retry up to 3 times with delay
         if (retryCountRef.current < 3) {
           retryCountRef.current++
-          setTimeout(() => void verifyPayment(isSilent), 2000)
+          setTimeout(() => void verifyPaymentRef.current(isSilent), 2000)
           return
         }
         // After retries, redirect to login with return URL
@@ -124,6 +126,10 @@ function PaymentFinishContent() {
       setCheckingAgain(false)
     }
   }, [orderId, router])
+
+  useEffect(() => {
+    verifyPaymentRef.current = verifyPayment
+  }, [verifyPayment])
 
   useEffect(() => {
     void verifyPayment(false)
