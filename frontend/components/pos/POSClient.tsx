@@ -441,9 +441,9 @@ export default function POSClient({ products: initialProducts, productsError: in
   }
 
   return (
-    <div className="cashier-dashboard role-dashboard-enter" style={{ display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
+    <div className="cashier-dashboard role-dashboard-enter pos-shell">
       {/* Product panel */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20, overflow: 'hidden', borderRight: '1px solid var(--line)' }}>
+      <div className="pos-products">
         {/* Card Pemberitahuan Promo Muncul (Di Atas) */}
         {isMounted && showPromoAlert && promotions.length > 0 && (
           <div className="promo-top-card" id="promo-top-card">
@@ -512,7 +512,7 @@ export default function POSClient({ products: initialProducts, productsError: in
         <div style={{ marginBottom: 14 }}>
           <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>Kasir / POS</h1>
           {/* Search */}
-          <div className="search-pill" style={{ maxWidth: 400 }}>
+          <div className="search-pill" style={{ maxWidth: 'min(400px, 100%)' }}>
             <Search size={14} color="var(--mute)" />
             <input
               placeholder="Cari produk atau SKU..."
@@ -625,7 +625,7 @@ export default function POSClient({ products: initialProducts, productsError: in
         )}
 
         {/* Product grid */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div className="pos-products-scroll">
           {productsError && products.length === 0 ? (
             <div role="alert" style={{ padding: 18, borderRadius: 10, color: 'var(--bad)', background: 'var(--bads)' }}>
               Produk belum dapat dimuat. Silakan muat ulang halaman atau hubungi Admin.
@@ -700,7 +700,7 @@ export default function POSClient({ products: initialProducts, productsError: in
       </div>
 
       {/* Cart panel */}
-      <div style={{ width: 320, flexShrink: 0, display: 'flex', flexDirection: 'column', background: 'var(--panel)' }}>
+      <div className="pos-cart">
         {/* Cart header */}
         <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--line)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -723,7 +723,7 @@ export default function POSClient({ products: initialProducts, productsError: in
         </div>
 
         {/* Cart items */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+        <div className="pos-cart-items">
           {cart.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--mute)' }}>
               <ShoppingCart size={40} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
@@ -982,7 +982,7 @@ export default function POSClient({ products: initialProducts, productsError: in
             {/* Payment method */}
             <div style={{ marginBottom: 14 }}>
               <label className="label">Metode pembayaran</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div className="pay-method-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
                 {payMethodOptions.map(opt => (
                   <button
                     key={opt.key}

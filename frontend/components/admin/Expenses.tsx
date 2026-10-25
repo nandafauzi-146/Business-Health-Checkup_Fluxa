@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Plus, Search, DollarSign, Calendar, Trash2, Tag, ArrowUpRight, X, Check, TrendingDown } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, FormatRupiah } from '@/components/ui/Cards'
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
 import { createClient } from '@/lib/supabase/client'
 import { getUserFacingError } from '@/lib/user-facing-error'
 
@@ -38,6 +39,10 @@ export default function ExpensesClient({
     amount: '',
     description: '',
     expense_date: new Date().toISOString().split('T')[0]
+  })
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; expense: Expense | null }>({
+    isOpen: false,
+    expense: null
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [notification, setNotification] = useState<{ type: 'ok' | 'bad'; text: string } | null>(null)
@@ -126,9 +131,15 @@ export default function ExpensesClient({
     }
   }
 
-  const handleDelete = async (exp: Expense) => {
-    if (!confirm(`Hapus catatan biaya "${exp.description}" sebesar Rp ${exp.amount.toLocaleString('id-ID')}?`)) return
+  const handleDelete = (exp: Expense) => {
+    setDeleteConfirm({ isOpen: true, expense: exp })
+  }
 
+  const confirmDelete = async () => {
+    const exp = deleteConfirm.expense
+    if (!exp) return
+
+    setIsSubmitting(true)
     try {
       const { error } = await supabase
         .from('expenses')
@@ -142,6 +153,9 @@ export default function ExpensesClient({
     } catch (err: unknown) {
       console.error('Error deleting expense:', err)
       showNotification(getUserFacingError(err, 'Catatan biaya belum dapat dihapus. Silakan coba lagi.'), 'bad')
+    } finally {
+      setIsSubmitting(false)
+      setDeleteConfirm({ isOpen: false, expense: null })
     }
   }
 
@@ -177,12 +191,7 @@ export default function ExpensesClient({
       )}
 
       {/* KPI Cards Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: 14,
-        marginBottom: 20
-      }}>
+      <div className="responsive-kpi">
         <div className="kpi-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span className="kpi-label">Total Biaya Bulan Ini</span>
@@ -212,7 +221,7 @@ export default function ExpensesClient({
 
       <SectionCard title={`Riwayat Pengeluaran (${filtered.length})`}>
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-          <div className="search-bar" style={{ flex: 1, minWidth: 260 }}>
+          <div className="search-bar" style={{ flex: 1, minWidth: 'min(260px, 100%)' }}>
             <Search size={15} color="var(--mute)" />
             <input
               type="text"
@@ -257,7 +266,7 @@ export default function ExpensesClient({
               <tr>
                 <th>Tanggal</th>
                 <th>Deskripsi Pengeluaran</th>
-                <th>Kategori</th>
+                <th className="hide-sm">Kategori</th>
                 <th>Nominal</th>
                 <th style={{ textAlign: 'right' }}>Aksi</th>
               </tr>
@@ -279,7 +288,7 @@ export default function ExpensesClient({
                       </div>
                     </td>
                     <td style={{ fontWeight: 600 }}>{exp.description}</td>
-                    <td>
+                    <td className="hide-sm">
                       <span style={{
                         padding: '3px 9px',
                         borderRadius: 6,
@@ -409,6 +418,19 @@ export default function ExpensesClient({
           </div>
         </div>
       )}
+
+      <ConfirmationDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, expense: null })}
+        onConfirm={confirmDelete}
+        title="Konfirmasi Hapus Biaya"
+        message={`Apakah Anda yakin ingin menghapus catatan biaya "${deleteConfirm.expense?.description}" sebesar Rp ${deleteConfirm.expense?.amount.toLocaleString('id-ID')}? Tindakan ini tidak dapat dibatalkan.`}
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        variant="danger"
+        icon="delete"
+        isLoading={isSubmitting}
+      />
     </div>
   )
 }

@@ -31,6 +31,7 @@ interface Sale {
   void_reason?: string
   voided_at?: string
   cashier_name?: string
+  customer_name?: string
   refund_status?: 'pending' | 'approved' | 'rejected'
   refund_approver_name?: string | null
   items?: SaleItem[]
@@ -236,10 +237,10 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: selectedSale ? '1fr 390px' : '1fr', gap: 20 }}>
+      <div className={`detail-grid${selectedSale ? ' has-aside' : ''}`}>
         <div>
           <SectionCard>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
               <div className="search-bar" style={{ flex: 1 }}>
                 <Search size={15} color="var(--mute)" />
                 <input
@@ -266,10 +267,11 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>No. Transaksi</th>
-                    <th>Waktu</th>
-                    <th>Kasir</th>
-                    <th>Metode</th>
+                    <th>Invoice</th>
+                    <th className="hide-sm">Waktu</th>
+                    <th className="hide-md">Kasir</th>
+                    <th className="hide-sm">Pelanggan</th>
+                    <th className="hide-sm">Metode</th>
                     <th>Total</th>
                     <th>Status</th>
                     <th style={{ textAlign: 'right' }}>Aksi</th>
@@ -278,7 +280,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                 <tbody>
                   {filteredSales.length === 0 ? (
                     <tr>
-                      <td colSpan={7} style={{ textAlign: 'center', padding: '36px 0', color: 'var(--mute)' }}>
+                      <td colSpan={8} style={{ textAlign: 'center', padding: '36px 0', color: 'var(--mute)' }}>
                         Belum ada riwayat transaksi ditemukan
                       </td>
                     </tr>
@@ -291,11 +293,12 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                       return (
                         <tr key={sale.id} style={{ background: selectedSale?.id === sale.id ? 'var(--accs)' : undefined }}>
                           <td style={{ fontWeight: 600, fontFamily: 'monospace' }}>{sale.invoice_number}</td>
-                          <td style={{ fontSize: 13, color: 'var(--mute)' }}>
+                          <td className="hide-sm" style={{ fontSize: 13, color: 'var(--mute)' }}>
                             {new Date(sale.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
                           </td>
-                          <td style={{ fontSize: 13, color: 'var(--body)' }}>{sale.cashier_name || 'Kasir'}</td>
-                          <td>
+                          <td className="hide-md" style={{ fontSize: 13, color: 'var(--body)' }}>{sale.cashier_name || 'Kasir'}</td>
+                          <td className="hide-sm">{sale.customer_name || 'Umum'}</td>
+                          <td className="hide-sm">
                             <span style={{
                               display: 'inline-block',
                               padding: '2px 8px',
@@ -604,9 +607,11 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
             background: 'var(--panel)',
             border: '1px solid var(--line)',
             borderRadius: 20,
-            padding: '28px 26px',
+            padding: 'clamp(18px, 4vw, 28px) clamp(16px, 4vw, 26px)',
             width: '100%',
             maxWidth: 500,
+            maxHeight: 'calc(100dvh - 32px)',
+            overflowY: 'auto',
             boxShadow: '0 24px 64px rgba(0,0,0,0.25)',
             position: 'relative'
           }}>

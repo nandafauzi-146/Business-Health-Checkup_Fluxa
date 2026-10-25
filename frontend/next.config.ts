@@ -26,6 +26,8 @@ const nextConfig: NextConfig = {
   // Strict mode for catching bugs early
   reactStrictMode: true,
 
+  allowedDevOrigins: ["192.168.56.1"],
+
   async rewrites() {
     return [
       {

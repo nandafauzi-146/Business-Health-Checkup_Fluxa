@@ -766,35 +766,9 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
 
           {/* Dropdown Notifikasi & Laporan */}
           {notifOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 10px)',
-                right: 0,
-                width: 390,
-                maxWidth: '92vw',
-                background: 'var(--panel)',
-                border: '1px solid var(--line)',
-                borderRadius: 16,
-                boxShadow: '0 20px 50px rgba(0,0,0,0.18)',
-                zIndex: 9999,
-                overflow: 'hidden',
-                animation: 'fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
+            <div className="notif-dropdown">
               {/* Header Dropdown */}
-              <div
-                style={{
-                  padding: '14px 16px',
-                  borderBottom: '1px solid var(--line)',
-                  background: 'var(--panel)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
+              <div className="notif-dropdown-head">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>
                     Pusat Notifikasi & Laporan
@@ -1102,12 +1076,12 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
 
 export function PageHeader({ title, subtitle, actions }: TopbarProps) {
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+    <div className="page-header">
       <div>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--ink)' }}>{title}</h1>
-        {subtitle && <p style={{ color: 'var(--mute)', fontSize: 13, marginTop: 2 }}>{subtitle}</p>}
+        <h1>{title}</h1>
+        {subtitle && <p>{subtitle}</p>}
       </div>
-      {actions && <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>{actions}</div>}
+      {actions && <div className="page-header-actions">{actions}</div>}
     </div>
   )
 }

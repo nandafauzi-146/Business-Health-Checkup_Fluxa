@@ -193,7 +193,7 @@ export default function StockManagementClient({
         </div>
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="search-bar" style={{ minWidth: 260 }}>
+          <div className="search-bar" style={{ minWidth: 'min(260px, 100%)' }}>
             <Search size={15} color="var(--mute)" />
             <input
               type="text"
@@ -245,10 +245,10 @@ export default function StockManagementClient({
               <thead>
                 <tr>
                   <th>Nama Produk</th>
-                  <th>SKU</th>
-                  <th>Kategori</th>
+                  <th className="hide-sm">SKU</th>
+                  <th className="hide-sm">Kategori</th>
                   <th>Sisa Stok</th>
-                  <th>Batas Minimum</th>
+                  <th className="hide-md">Batas Minimum</th>
                   <th>Status Persediaan</th>
                   <th style={{ textAlign: 'right' }}>Aksi</th>
                 </tr>
@@ -291,10 +291,10 @@ export default function StockManagementClient({
                             </div>
                           </div>
                         </td>
-                        <td style={{ color: 'var(--mute)', fontFamily: 'monospace', fontSize: 12 }}>
+                        <td className="hide-sm" style={{ color: 'var(--mute)', fontFamily: 'monospace', fontSize: 12 }}>
                           {p.sku || '—'}
                         </td>
-                        <td>
+                        <td className="hide-sm">
                           <span style={{
                             padding: '3px 8px',
                             borderRadius: 6,
@@ -328,7 +328,7 @@ export default function StockManagementClient({
                             </div>
                           </div>
                         </td>
-                        <td style={{ fontSize: 13, color: 'var(--mute)' }}>
+                        <td className="hide-md" style={{ fontSize: 13, color: 'var(--mute)' }}>
                           {p.min_stock} {p.unit}
                         </td>
                         <td>
@@ -369,9 +369,9 @@ export default function StockManagementClient({
                   <th>Nama Produk</th>
                   <th>Tipe Mutasi</th>
                   <th>Perubahan Qty</th>
-                  <th>Stok Sebelum</th>
-                  <th>Stok Sesudah</th>
-                  <th>Catatan / Keterangan</th>
+                  <th className="hide-sm">Stok Sebelum</th>
+                  <th className="hide-md">Stok Sesudah</th>
+                  <th className="hide-sm">Catatan / Keterangan</th>
                 </tr>
               </thead>
               <tbody>
@@ -413,9 +413,9 @@ export default function StockManagementClient({
                             {isIn ? `+${Math.abs(m.quantity)}` : isOut ? `-${Math.abs(m.quantity)}` : m.quantity}
                           </span>
                         </td>
-                        <td style={{ color: 'var(--mute)', fontSize: 13 }}>{m.previous_stock}</td>
-                        <td style={{ fontWeight: 700, fontSize: 13 }}>{m.current_stock}</td>
-                        <td style={{ fontSize: 12.5, color: 'var(--mute)' }}>{m.note || '—'}</td>
+                        <td className="hide-sm" style={{ color: 'var(--mute)', fontSize: 13 }}>{m.previous_stock}</td>
+                        <td className="hide-md" style={{ fontWeight: 700, fontSize: 13 }}>{m.current_stock}</td>
+                        <td className="hide-sm" style={{ fontSize: 12.5, color: 'var(--mute)' }}>{m.note || '—'}</td>
                       </tr>
                     )
                   })
@@ -463,7 +463,7 @@ export default function StockManagementClient({
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
                   <label className="label">Jenis Penyesuaian *</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
                     <button
                       type="button"
                       onClick={() => setAdjustType('in')}

@@ -6,10 +6,11 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import BrandLogo from '@/components/ui/BrandLogo'
 import {
-  LogOut, ChevronRight, AlertCircle, Menu, PanelLeftClose, PanelLeftOpen, X
+  LogOut, ChevronRight, ChevronDown, AlertCircle, Menu, PanelLeftClose, PanelLeftOpen, X
 } from 'lucide-react'
 import { TutupShiftModal } from '@/components/pos/KasMasukModal'
-import { menuByRole, type UserRole } from '@/components/layout/role-navigation'
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
+import { menuByRole, type NavItem, type UserRole } from '@/components/layout/role-navigation'
 
 interface SidebarProps {
   role: UserRole
@@ -26,6 +27,8 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
   const [hoverOpen, setHoverOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [pendingRefundCount, setPendingRefundCount] = useState(0)
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const mobileTriggerRef = useRef<HTMLButtonElement>(null)
   const hoverCloseTimer = useRef<number | null>(null)
   const keyboardNavigationRef = useRef(false)
@@ -167,12 +170,40 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
         setShowTutupModal(true)
         return
       }
-      // Tidak ada shift aktif → langsung logout
+      // Tidak ada shift aktif → tampilkan konfirmasi logout
     }
-    doLogout()
+    setShowLogoutConfirm(true)
   }
 
   const groups = menuByRole[role] || menuByRole.kasir
+
+  // Cek apakah sebuah menu (atau submenu) sedang aktif.
+  // Cocokkan secara persis, atau sebagai prefiks direktori (href + '/')
+  // agar '/admin/hutang-piutang' tidak ikut aktif saat berada di '/admin/hutang-piutang/kategori'.
+  const isItemActive = (href: string, siblings: NavItem[] = []) => {
+    if (pathname === href) return true
+    const rootHref = role === 'super_admin' ? '/super-admin' : '/' + role
+    if (href === rootHref) return false
+
+    const betterMatch = siblings.some(s =>
+      s.href !== href &&
+      (pathname === s.href || pathname.startsWith(s.href + '/')) &&
+      s.href.length > href.length
+    )
+    if (betterMatch) return false
+
+    return pathname.startsWith(href + '/')
+  }
+
+  const groupHasActiveChild = (item: NavItem) =>
+    (item.children ?? []).some(child => isItemActive(child.href, item.children))
+
+  // Grup tetap terbuka saat salah satu submenu aktif, selain itu mengikuti toggle pengguna.
+  const isGroupOpen = (item: NavItem) => groupHasActiveChild(item) || !!openGroups[item.href]
+
+  const toggleGroup = (item: NavItem) => {
+    setOpenGroups(prev => ({ ...prev, [item.href]: !(prev[item.href] ?? groupHasActiveChild(item)) }))
+  }
 
   const roleLabel = role === 'kasir'
     ? 'Kasir'
@@ -224,6 +255,19 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
           onCancel={() => setShowTutupModal(false)}
         />
       )}
+
+      <ConfirmationDialog
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={doLogout}
+        title="Konfirmasi Keluar"
+        message="Apakah Anda yakin ingin keluar dari akun Anda?"
+        confirmLabel="Keluar"
+        cancelLabel="Batal"
+        variant="danger"
+        icon="logout"
+        isLoading={loggingOut}
+      />
 
       <aside
         id="fluxa-sidebar"
@@ -321,7 +365,68 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
                 const badge = role === 'admin' && item.href === '/admin/transaksi'
                   ? pendingRefundCount
                   : item.badge
-                const isActive = pathname === item.href || (item.href !== rootHref && pathname.startsWith(item.href))
+
+                // Menu induk (memiliki submenu) — dapat dibuka/ditutup.
+                if (item.children && item.children.length > 0) {
+                  const childActive = groupHasActiveChild(item)
+                  const open = isGroupOpen(item)
+                  return (
+                    <div className="sidebar-submenu-block" key={item.href}>
+                      <button
+                        type="button"
+                        className="nav-item sidebar-link sidebar-parent"
+                        aria-label={item.label}
+                        aria-expanded={open}
+                        title={isExpanded ? undefined : item.label}
+                        onClick={() => toggleGroup(item)}
+                      >
+                        <span style={{ color: childActive ? 'var(--acc)' : 'var(--mute)', flexShrink: 0 }}>
+                          {item.icon}
+                        </span>
+                        <span className="sidebar-label sidebar-link-label">{item.label}</span>
+                        <ChevronDown
+                          className="sidebar-parent-chevron sidebar-label"
+                          size={14}
+                          style={{
+                            marginLeft: 'auto',
+                            color: childActive ? 'var(--acc)' : 'var(--mute)',
+                            transform: open ? 'rotate(180deg)' : 'none',
+                            transition: 'transform 180ms ease'
+                          }}
+                        />
+                      </button>
+                      {open && (
+                        <div className="sidebar-submenu">
+                          {item.children.map(child => {
+                            const childIsActive = isItemActive(child.href, item.children)
+                            return (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                className={`nav-item sidebar-link sidebar-sublink ${childIsActive ? 'active' : ''}`}
+                                aria-label={child.label}
+                                aria-current={childIsActive ? 'page' : undefined}
+                                title={isExpanded ? undefined : child.label}
+                                onClick={closeMobileSidebar}
+                              >
+                                <span style={{ color: childIsActive ? 'var(--acc)' : 'var(--mute)', flexShrink: 0 }}>
+                                  {child.icon}
+                                </span>
+                                <span className="sidebar-label sidebar-link-label">{child.label}</span>
+                                {child.badge !== undefined && (
+                                  <span className="nav-badge sidebar-label">{child.badge}</span>
+                                )}
+                                {childIsActive && <ChevronRight className="sidebar-active-chevron sidebar-label" size={13} style={{ marginLeft: 'auto', color: 'var(--acc)' }} />}
+                              </Link>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+
+                const isActive = isItemActive(item.href, group.items)
                 return (
                   <Link
                     key={item.href}
@@ -358,9 +463,8 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
             className="nav-item"
             aria-label={loggingOut ? 'Sedang keluar' : role === 'kasir' && currentShift ? 'Tutup Shift dan Keluar' : 'Keluar'}
             title={isExpanded ? undefined : 'Keluar'}
-            style={{ width: '100%', border: 'none', background: 'transparent', color: 'var(--bad)' }}
           >
-            <LogOut size={16} style={{ color: 'var(--bad)' }} />
+            <LogOut size={16} />
             <span className="sidebar-label sidebar-link-label">
               {loggingOut ? 'Keluar...' : role === 'kasir' && currentShift ? 'Tutup Shift & Keluar' : 'Keluar'}
             </span>

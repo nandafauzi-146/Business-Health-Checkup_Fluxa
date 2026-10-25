@@ -387,7 +387,7 @@ export default function AdminDashboardClient({
           {/* Quick actions */}
           <div className="admin-dashboard-enter" style={{ animationDelay: '375ms' }}>
             <SectionCard title="Akses Cepat Modul Admin">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
                 {[
                   { label: 'Katalog Produk', href: '/admin/produk', icon: <Package size={18} />, color: 'var(--acc)', bg: 'var(--accs)' },
                   { label: 'Audit Stok', href: '/admin/stok', icon: <Layers size={18} />, color: 'var(--ok)', bg: 'var(--oks)' },
