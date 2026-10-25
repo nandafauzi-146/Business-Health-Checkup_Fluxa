@@ -9,12 +9,28 @@ export default async function OwnerPenggunaPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Owner dapat melihat dan mengelola seluruh staf (kasir, admin, owner)
-  const { data: users } = await supabase
+  // Dapatkan business_id dari profile pemanggil
+  const { data: callerProfile } = await supabase
     .from("profiles")
-    .select("id, full_name, role, phone, email, created_at")
-    .eq("approval_status", "approved")
-    .order("created_at", { ascending: false });
+    .select("business_id, role")
+    .eq("id", user?.id || "")
+    .maybeSingle();
+
+  const businessId = (callerProfile as any)?.business_id || null;
+
+  // Owner dapat melihat dan mengelola seluruh staf (kasir, admin, owner) dalam bisnisnya
+  let query = supabase
+    .from("profiles")
+    .select("id, full_name, role, phone, email, created_at, business_id")
+    .eq("approval_status", "approved");
+
+  if (businessId) {
+    query = query.eq("business_id", businessId);
+  } else if (user?.id) {
+    query = query.eq("id", user.id);
+  }
+
+  const { data: users } = await query.order("created_at", { ascending: false });
 
   return (
     <UsersManagementClient

@@ -119,11 +119,6 @@ const paymentStatusLabels: Record<string, { label: string; class: string }> = {
 
 const BANK_LABELS: Record<string, string> = { bca: 'BCA', bni: 'BNI', bri: 'BRI', permata: 'Permata' }
 
-const SANDBOX_PAYMENT_LINKS: Record<string, string> = {
-  starter: 'https://app.sandbox.midtrans.com/payment-links/587def17-deca-4724-8018-195dd99cb5cd-OfToVzKz',
-  growth: 'https://app.sandbox.midtrans.com/payment-links/517b248c-d6ed-4005-bca8-56d9f5d5a03f-0Rmed3dB',
-  'pro business': 'https://app.sandbox.midtrans.com/payment-links/d54d39a5-5a8e-4310-b8b3-7b629ccf6e67-qSjFrISu',
-}
 
 function useCountdown(expiresAt: string | null) {
   const [timeLeft, setTimeLeft] = useState<{
@@ -194,6 +189,8 @@ export default function SubscriptionPage() {
 
   // Status refresh loading state
   const [checkingStatus, setCheckingStatus] = useState(false)
+  const [cancellingPayment, setCancellingPayment] = useState(false)
+  const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false)
 
   const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const pollingCountRef = useRef(0)
@@ -292,7 +289,7 @@ export default function SubscriptionPage() {
         setNotice('Pembayaran berhasil diverifikasi! Paket langganan Anda aktif secara otomatis. Mengalihkan ke dashboard...')
         setError('')
         setTimeout(() => {
-          window.location.assign('/owner')
+          router.push('/owner')
         }, 1500)
       } else if (result.status === 'expired' || result.status === 'failed' || result.status === 'cancelled') {
         setChargeResult(null)
@@ -338,44 +335,65 @@ export default function SubscriptionPage() {
 
   // Open Midtrans Snap popup (routes to /payment/finish upon return)
   const openSnapPopup = (token: string, paymentUrl?: string | null, orderId?: string) => {
+    if (orderId) {
+      router.push(`/payment/finish?order_id=${encodeURIComponent(orderId)}`)
+      return
+    }
     if (typeof window !== 'undefined' && window.snap?.pay) {
       window.snap.pay(token, {
         onSuccess: () => {
-          if (orderId) {
-            router.push(`/payment/finish?order_id=${encodeURIComponent(orderId)}&status=success`)
-          } else {
-            setNotice('Pembayaran berhasil! Memverifikasi aktivasi akun...')
-            void load()
-          }
+          setNotice('Pembayaran berhasil! Memverifikasi aktivasi akun...')
+          void load()
         },
         onPending: () => {
-          if (orderId) {
-            router.push(`/payment/finish?order_id=${encodeURIComponent(orderId)}&status=pending`)
-          } else {
-            setNotice('Transaksi Anda sedang diproses. Silakan selesaikan pembayaran.')
-            void load()
-          }
+          setNotice('Transaksi Anda sedang diproses. Silakan selesaikan pembayaran.')
+          void load()
         },
         onError: () => {
-          if (orderId) {
-            router.push(`/payment/finish?order_id=${encodeURIComponent(orderId)}&status=failed`)
-          } else {
-            setError('Pembayaran dibatalkan atau terjadi kendala. Anda dapat mencoba kembali.')
-            void load()
-          }
+          setError('Pembayaran tidak berhasil atau terjadi kendala. Anda dapat mencoba kembali.')
+          void load()
         },
         onClose: () => {
-          if (orderId) {
-            router.push(`/payment/finish?order_id=${encodeURIComponent(orderId)}`)
-          } else {
-            void load()
-          }
+          void load()
         },
       })
     } else if (paymentUrl) {
       window.location.assign(paymentUrl)
     } else {
       setError('Layanan pembayaran Snap belum siap. Silakan muat ulang halaman.')
+    }
+  }
+
+  // Handle cancellation action for pending payment
+  async function handleCancelPayment() {
+    if (!activePendingPayment || cancellingPayment) return
+    setCancellingPayment(true)
+    setError('')
+    setNotice('')
+
+    try {
+      const res = await fetch('/api/subscription/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: activePendingPayment.order_id }),
+      })
+      const result = (await res.json()) as { success?: boolean; error?: string }
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Gagal membatalkan pembayaran.')
+      }
+
+      setShowCancelConfirmModal(false)
+      setShowPaymentModal(false)
+      setChargeResult(null)
+      setSelectedMethod(null)
+      setNotice('Tagihan pembayaran berhasil dibatalkan. Anda dapat memilih paket baru di bawah.')
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Terjadi kendala saat membatalkan transaksi.')
+      setShowCancelConfirmModal(false)
+    } finally {
+      setCancellingPayment(false)
     }
   }
 
@@ -455,9 +473,10 @@ export default function SubscriptionPage() {
 
       setSelectedPlanForCheckout(null)
       await load()
-      setShowPaymentModal(true)
 
-      if (result.snapToken) {
+      if (result.orderId) {
+        router.push(`/payment/finish?order_id=${encodeURIComponent(result.orderId)}`)
+      } else if (result.snapToken) {
         openSnapPopup(result.snapToken, result.paymentUrl, result.orderId)
       } else if (result.paymentUrl) {
         window.location.assign(result.paymentUrl)
@@ -694,17 +713,16 @@ export default function SubscriptionPage() {
                   </button>
                 )}
 
-                {activePendingPayment.snap_url && !countdown.isExpired && (
-                  <a
-                    href={activePendingPayment.snap_url}
-                    target="_blank"
-                    rel="noreferrer"
+                {!countdown.isExpired && (
+                  <button
+                    type="button"
                     className={styles.btnSecondary}
-                    style={{ textDecoration: 'none' }}
+                    style={{ color: '#b91c1c', borderColor: '#fca5a5' }}
+                    onClick={() => setShowCancelConfirmModal(true)}
+                    disabled={cancellingPayment}
                   >
-                    <ExternalLink size={14} />
-                    Halaman Pembayaran Midtrans
-                  </a>
+                    <X size={15} /> Batalkan Pembayaran
+                  </button>
                 )}
               </div>
             </section>
@@ -1015,46 +1033,30 @@ export default function SubscriptionPage() {
                         </button>
                       ))}
                     </div>
-
-                    {/* Primary: Snap button & Sandbox Link */}
-                    {activePendingPayment.snap_token ? (
-                      <div style={{ marginTop: 14, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        <button
-                          type="button"
-                          className={styles.btnPrimary}
-                          style={{ width: '100%', justifyContent: 'center' }}
-                          onClick={() => openSnapPopup(activePendingPayment.snap_token!, activePendingPayment.snap_url, activePendingPayment.order_id)}
-                        >
-                          <Sparkles size={16} />
-                          Lanjutkan Pembayaran via Midtrans Snap
-                        </button>
-                        {SANDBOX_PAYMENT_LINKS[activePendingPayment.plan_name.toLowerCase()] && (
-                          <a
-                            href={SANDBOX_PAYMENT_LINKS[activePendingPayment.plan_name.toLowerCase()]}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: '.78rem', color: '#64748b', textDecoration: 'underline' }}
-                          >
-                            <ExternalLink size={12} /> Atau Buka Sandbox Payment Link ({activePendingPayment.plan_name})
-                          </a>
-                        )}
-                      </div>
-                    ) : (
-                      SANDBOX_PAYMENT_LINKS[activePendingPayment.plan_name.toLowerCase()] && (
-                        <div style={{ marginTop: 14, textAlign: 'center' }}>
-                          <a
-                            href={SANDBOX_PAYMENT_LINKS[activePendingPayment.plan_name.toLowerCase()]}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.btnSecondary}
-                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', textDecoration: 'none' }}
-                          >
-                            <ExternalLink size={15} />
-                            Buka Sandbox Payment Link ({activePendingPayment.plan_name})
-                          </a>
-                        </div>
-                      )
-                    )}
+                    {/* Primary: Snap button & Cancel action */}
+                    <div style={{ marginTop: 14, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <button
+                        type="button"
+                        className={styles.btnPrimary}
+                        style={{ width: '100%', justifyContent: 'center' }}
+                        onClick={() => {
+                          setShowPaymentModal(false)
+                          router.push(`/payment/finish?order_id=${encodeURIComponent(activePendingPayment.order_id)}`)
+                        }}
+                      >
+                        <Sparkles size={16} />
+                        Lanjutkan Pembayaran via Midtrans Snap
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.btnSecondary}
+                        style={{ color: '#b91c1c', borderColor: '#fca5a5', width: '100%', justifyContent: 'center' }}
+                        onClick={() => setShowCancelConfirmModal(true)}
+                        disabled={cancellingPayment}
+                      >
+                        <X size={15} /> Batalkan Tagihan Ini
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -1302,7 +1304,7 @@ export default function SubscriptionPage() {
                 )}
               </button>
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', width: '100%' }}>
                 <button
                   type="button"
                   className={styles.btnSecondary}
@@ -1311,18 +1313,44 @@ export default function SubscriptionPage() {
                 >
                   Batal
                 </button>
-
-                {SANDBOX_PAYMENT_LINKS[selectedPlanForCheckout.name.toLowerCase()] && (
-                  <a
-                    href={SANDBOX_PAYMENT_LINKS[selectedPlanForCheckout.name.toLowerCase()]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '.78rem', color: '#64748b', textDecoration: 'underline' }}
-                  >
-                    <ExternalLink size={12} /> Buka Sandbox Payment Link
-                  </a>
-                )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancellation Confirmation Dialog */}
+      {showCancelConfirmModal && activePendingPayment && (
+        <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-labelledby="modal-cancel-title">
+          <div className={styles.paymentModalCard} style={{ maxWidth: '440px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <AlertCircle size={22} color="#dc2626" />
+              <h3 id="modal-cancel-title" className={styles.modalTitle} style={{ margin: 0, color: '#dc2626' }}>
+                Batalkan Tagihan Pembayaran?
+              </h3>
+            </div>
+            <p style={{ fontSize: '.88rem', color: '#475569', lineHeight: 1.6, margin: '0 0 16px' }}>
+              Pembatalan ini hanya membatalkan sesi tagihan pending (<strong>{activePendingPayment.order_id}</strong>) dan tidak mempengaruhi langganan aktif yang sudah berjalan. Setelah dibatalkan, Anda dapat memilih paket kembali kapan saja.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                onClick={() => setShowCancelConfirmModal(false)}
+                disabled={cancellingPayment}
+              >
+                Kembali
+              </button>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                style={{ background: '#dc2626', borderColor: '#dc2626' }}
+                onClick={() => void handleCancelPayment()}
+                disabled={cancellingPayment}
+              >
+                {cancellingPayment ? <Loader2 size={15} className={styles.spinner} /> : <X size={15} />}
+                {cancellingPayment ? 'Membatalkan...' : 'Ya, Batalkan'}
+              </button>
             </div>
           </div>
         </div>

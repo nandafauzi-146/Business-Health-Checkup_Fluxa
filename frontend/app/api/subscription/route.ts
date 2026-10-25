@@ -8,6 +8,7 @@ import {
 } from '@/lib/midtrans'
 import { applySubscriptionPayment } from '@/lib/subscription-payment-sync'
 import { getSupabaseAdminClient } from '@backend/index'
+import { getAbsoluteUrl } from '@/lib/site-url'
 
 function getServiceClient() {
   return getSupabaseAdminClient()
@@ -259,8 +260,7 @@ export async function POST(request: Request) {
       .single()
     if (paymentError) throw paymentError
 
-    const reqOrigin = request.headers.get('origin') || 'http://localhost:3000'
-    const finishUrl = `${reqOrigin.replace(/\/$/, '')}/payment/finish`
+    const finishUrl = getAbsoluteUrl('/payment/finish', request)
 
     // Extract customer details: Name, Email, Phone (from body or authenticated user/profile/metadata)
     const { name: bodyName, email: bodyEmail, phone: bodyPhone } = body as Record<string, unknown>

@@ -323,7 +323,7 @@ export async function POST(request: Request) {
         ? (body as { orderId: string }).orderId.trim()
         : ''
 
-    const fakeUrl = new URL(`http://localhost/api/payments/status?order_id=${encodeURIComponent(orderId)}`)
+    const fakeUrl = new URL(`/api/payments/status?order_id=${encodeURIComponent(orderId)}`, request.url)
     return GET(new Request(fakeUrl, { headers: request.headers }))
   } catch (err) {
     return NextResponse.json({ error: 'Gagal memproses permintaan.' }, { status: 500 })
