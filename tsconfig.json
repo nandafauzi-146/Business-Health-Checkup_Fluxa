@@ -22,7 +22,8 @@
       "@/*": ["./frontend/*"],
       "@frontend/*": ["./frontend/*"],
       "@intelligence/*": ["./intelligence/*"],
-      "@backend/*": ["./backend/*"]
+      "@backend/*": ["./backend/*"],
+      "@database/*": ["./database/*"]
     }
   },
   "include": [
@@ -31,6 +32,7 @@
     "frontend/**/*.tsx",
     "intelligence/**/*.ts",
     "backend/**/*.ts",
+    "database/**/*.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
