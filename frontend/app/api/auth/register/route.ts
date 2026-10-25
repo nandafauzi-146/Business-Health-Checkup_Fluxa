@@ -1,18 +1,9 @@
 import { NextResponse } from 'next/server'
-import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
 import { getUserFacingError } from '@/lib/user-facing-error'
+import { getSupabaseAdminClient } from '@backend/index'
 
 function getAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !serviceKey) {
-    throw new Error('Konfigurasi Supabase server belum lengkap.')
-  }
-
-  return createSupabaseAdminClient(url, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
+  return getSupabaseAdminClient()
 }
 
 async function upsertRegistrationProfile(
