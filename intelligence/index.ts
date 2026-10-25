@@ -8,3 +8,4 @@ export * from './services/business-health/calculator';
 export * from './services/business-health/evaluator';
 export * from './ai/prompts';
 export * from './ai/client';
+export * from './ai/chat';
