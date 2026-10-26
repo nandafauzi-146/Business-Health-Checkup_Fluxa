@@ -708,7 +708,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
                   <div className={styles.packageCardTop}>
                     <div className={styles.packageTitleRow}>
                       <h3 className={styles.packageName}>{plan.name}</h3>
-                      {plan.featured && (
+                      {isSelected && (
                         <span className={styles.popularBadge}>{plan.badge || 'Pilihan bisnis'}</span>
                       )}
                     </div>

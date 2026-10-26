@@ -1163,6 +1163,12 @@
   font-weight: 700;
   letter-spacing: 0.1px;
   white-space: nowrap;
+  animation: badgePop .2s ease-out;
+}
+
+@keyframes badgePop {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .packageDescription {
