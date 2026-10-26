@@ -1126,9 +1126,7 @@ tr:hover td,
   flex: 1;
   overflow-y: auto;
   padding: 24px;
-  max-width: 1360px;
   width: 100%;
-  margin: 0 auto;
   background:
     radial-gradient(ellipse at 96% 4%, rgba(52, 120, 246, .055), transparent 34%),
     radial-gradient(ellipse at 5% 88%, rgba(113, 91, 219, .035), transparent 32%),
