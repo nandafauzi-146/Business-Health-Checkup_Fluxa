@@ -330,6 +330,18 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
   const [isLeaving, setIsLeaving] = useState(false)
 
   const cms = content || (defaultContent as unknown as LandingCMSContent)
+  const [selectedPlan, setSelectedPlan] = useState<string>(() => {
+    const pkgs = content?.pricing?.packages || defaultPackages
+    const featured = pkgs.find(p => p.featured)
+    return featured ? featured.name : 'Growth'
+  })
+
+  const getPlanWhatsappUrl = (planName: string) => {
+    const phone = (cms.contact?.whatsappNumber || '628980148297').replace(/\D/g, '')
+    const msg = `Halo Admin FLUXA 👋\n\nSaya tertarik dengan paket ${planName} di FLUXA.\n\nMohon informasi lebih lanjut mengenai detail harga, cara pendaftaran, dan cara aktivasi. Terima kasih!`
+    return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
+  }
+
   const whatsappUrl = `https://wa.me/${(cms.contact?.whatsappNumber || '628980148297').replace(/\D/g, '')}?text=${encodeURIComponent(cms.contact?.whatsappMessage || '')}`
   const featuresList = cms.features || []
   const stepsList = cms.steps || []
@@ -685,27 +697,57 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
             <p>{cms.pricing?.description || 'Mulai dengan trial 7 hari, lalu pilih kategori paket yang paling sesuai dengan tahap bisnis Anda.'}</p>
           </div>
           <div className={styles.packageGrid}>
-            {(cms.pricing?.packages || defaultPackages).map((plan, idx) => (
-              <article className={`${styles.packageCard} ${plan.featured ? styles.packageFeatured : ''}`} key={plan.name || idx}>
-                {plan.featured && <span className={styles.popularBadge}>{plan.badge || 'Pilihan bisnis'}</span>}
-                <h3>{plan.name}</h3>
-                <p className={styles.packageDescription}>{plan.description}</p>
-                <div className={styles.packagePrice}>
-                  {plan.priceLabel || 'Hubungi kami'}
-                  <small>{plan.priceSublabel || 'untuk informasi harga'}</small>
-                </div>
-                <a className={plan.featured ? styles.primaryButton : styles.packageButton} href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                  {cms.pricing?.buttonText || 'Tanyakan paket'} <ArrowRight size={16} />
-                </a>
-                <div className={styles.packageDivider} />
-                <span className={styles.packageIncludes}>Yang termasuk:</span>
-                <ul>
-                  {(plan.features || []).map((feature, fIdx) => (
-                    <li key={fIdx}><Check size={15} />{feature}</li>
-                  ))}
-                </ul>
-              </article>
-            ))}
+            {(cms.pricing?.packages || defaultPackages).map((plan, idx) => {
+              const isSelected = selectedPlan === plan.name
+              return (
+                <article
+                  className={`${styles.packageCard} ${isSelected ? styles.packageFeatured : ''}`}
+                  key={plan.name || idx}
+                  onClick={() => setSelectedPlan(plan.name)}
+                >
+                  <div className={styles.packageCardTop}>
+                    <div className={styles.packageTitleRow}>
+                      <h3 className={styles.packageName}>{plan.name}</h3>
+                      {plan.featured && (
+                        <span className={styles.popularBadge}>{plan.badge || 'Pilihan bisnis'}</span>
+                      )}
+                    </div>
+                    <p className={styles.packageDescription}>{plan.description}</p>
+                  </div>
+
+                  <div className={styles.packagePriceWrap}>
+                    <div className={styles.packagePrice}>{plan.priceLabel || 'Hubungi kami'}</div>
+                    <small className={styles.packagePriceSub}>{plan.priceSublabel || 'Hubungi tim kami untuk detail harga'}</small>
+                  </div>
+
+                  <a
+                    className={isSelected ? styles.primaryButton : styles.packageButton}
+                    href={getPlanWhatsappUrl(plan.name)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                      setSelectedPlan(plan.name)
+                    }}
+                  >
+                    {cms.pricing?.buttonText || 'Tanyakan paket'} <ArrowRight size={15} />
+                  </a>
+
+                  <div className={styles.packageDivider} />
+
+                  <div className={styles.packageFeaturesWrap}>
+                    <span className={styles.packageIncludes}>Yang termasuk:</span>
+                    <ul className={styles.packageFeaturesList}>
+                      {(plan.features || []).map((feature, fIdx) => (
+                        <li key={fIdx}>
+                          <Check size={15} />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
+              )
+            })}
           </div>
         </div>
       </section>

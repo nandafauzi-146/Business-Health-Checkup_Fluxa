@@ -137,7 +137,7 @@
         "name": "Starter",
         "description": "Untuk usaha kecil yang ingin mulai lebih rapi.",
         "priceLabel": "Hubungi kami",
-        "priceSublabel": "untuk informasi harga",
+        "priceSublabel": "Hubungi tim kami untuk detail harga",
         "featured": false,
         "badge": "",
         "features": [
@@ -150,7 +150,7 @@
         "name": "Growth",
         "description": "Untuk bisnis yang ingin memahami performa lebih dalam.",
         "priceLabel": "Hubungi kami",
-        "priceSublabel": "untuk informasi harga",
+        "priceSublabel": "Hubungi tim kami untuk detail harga",
         "featured": true,
         "badge": "Pilihan bisnis",
         "features": [
@@ -163,7 +163,7 @@
         "name": "Multi-cabang",
         "description": "Untuk tim dan operasional dengan kebutuhan lebih luas.",
         "priceLabel": "Hubungi kami",
-        "priceSublabel": "untuk informasi harga",
+        "priceSublabel": "Hubungi tim kami untuk detail harga",
         "featured": false,
         "badge": "",
         "features": [
