@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useLayoutEffect, useState, type MouseEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
 import {
   ArrowDown,
   ArrowRight,
@@ -72,24 +72,151 @@ const defaultPackages = [
 ]
 
 function ExampleChart() {
+  const [inView, setInView] = useState(false)
+  const [count, setCount] = useState(0)
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduceMotion) {
+      setInView(true)
+      setCount(82)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setInView(true)
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.2 }
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!inView) return
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduceMotion) {
+      setCount(82)
+      return
+    }
+
+    const target = 82
+    const duration = 1200
+    const start = performance.now()
+
+    let frameId: number
+    const step = (now: number) => {
+      const elapsed = now - start
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setCount(Math.round(eased * target))
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(step)
+      }
+    }
+
+    frameId = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frameId)
+  }, [inView])
+
   return (
-    <div className={styles.chartCard}>
+    <div className={styles.chartCard} ref={cardRef}>
       <div className={styles.chartHeader}>
-        <div><span className={styles.eyebrow}>CONTOH ANALISIS AI</span><h3>Skor kesehatan bisnis</h3></div>
+        <div>
+          <h3>Performa Bisnis</h3>
+        </div>
         <span className={styles.chartPeriod}>6 bulan terakhir</span>
       </div>
-      <div className={styles.chartValue}><strong>82</strong><span>/ 100</span><span className={styles.chartTrend}><TrendingUp size={15} /> +18 poin</span></div>
-      <div className={styles.chart} role="img" aria-label="Grafik ilustrasi skor kesehatan bisnis yang meningkat dari 64 ke 82 selama enam bulan">
-        <div className={styles.chartGrid}><span>100</span><span>75</span><span>50</span><span>25</span></div>
-        <svg viewBox="0 0 540 190" preserveAspectRatio="none" aria-hidden="true">
-          <defs><linearGradient id="chart-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#3878f6" stopOpacity=".19" /><stop offset="100%" stopColor="#3878f6" stopOpacity="0" /></linearGradient></defs>
-          <path d="M0 68 C42 66 48 58 90 61 S142 54 180 58 S231 48 270 52 S319 44 360 46 S412 37 450 42 S504 31 540 34 L540 190 L0 190 Z" fill="url(#chart-fill)" />
-          <path d="M0 68 C42 66 48 58 90 61 S142 54 180 58 S231 48 270 52 S319 44 360 46 S412 37 450 42 S504 31 540 34" fill="none" stroke="#3878f6" strokeWidth="3" vectorEffect="non-scaling-stroke" />
-          <circle cx="540" cy="34" r="5" fill="#fff" stroke="#3878f6" strokeWidth="3" vectorEffect="non-scaling-stroke" />
+
+      <div className={styles.chartValueRow}>
+        <div className={styles.chartScoreBadge}>
+          <TrendingUp size={16} />
+        </div>
+        <div className={styles.chartScoreText}>
+          <strong>{count}</strong>
+          <span>/100</span>
+        </div>
+        <span className={styles.chartTrend}>
+          <TrendingUp size={13} /> +18 poin
+        </span>
+      </div>
+
+      <div
+        className={styles.chart}
+        role="img"
+        aria-label="Grafik performa bisnis yang meningkat dari 40 ke 82 selama enam bulan terakhir"
+      >
+        <div className={styles.chartGrid}>
+          <span>100</span>
+          <span>75</span>
+          <span>50</span>
+          <span>25</span>
+        </div>
+
+        <svg viewBox="0 0 500 160" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="chart-growth-fill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#2563eb" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#2563eb" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+
+          {/* Area fill under curve */}
+          <path
+            className={`${styles.chartFillPath} ${inView ? styles.chartFillVisible : ''}`}
+            d="M 10 112 C 55 110, 65 90, 100 88 C 135 86, 160 80, 195 78 C 235 76, 255 84, 290 82 C 325 80, 355 56, 385 52 C 415 48, 450 32, 485 28 L 485 160 L 10 160 Z"
+            fill="url(#chart-growth-fill)"
+          />
+
+          {/* Spline line with drawing animation */}
+          <path
+            className={`${styles.chartLinePath} ${inView ? styles.chartLineAnimated : ''}`}
+            d="M 10 112 C 55 110, 65 90, 100 88 C 135 86, 160 80, 195 78 C 235 76, 255 84, 290 82 C 325 80, 355 56, 385 52 C 415 48, 450 32, 485 28"
+            fill="none"
+            stroke="#2563eb"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+
+          {/* Endpoint glowing dot & pulse */}
+          <g className={`${styles.chartEndpoint} ${inView ? styles.chartEndpointVisible : ''}`}>
+            <circle cx="485" cy="28" r="9" className={styles.pulseRing} />
+            <circle cx="485" cy="28" r="4.5" className={styles.chartDot} />
+          </g>
         </svg>
       </div>
-      <div className={styles.chartMonths} aria-hidden="true"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>Mei</span><span>Jun</span></div>
-      <div className={styles.insight}><span className={styles.insightIcon}><Sparkles size={16} /></span><p><strong>Insight FluxAI</strong><br />Arus kas dan konsistensi transaksi menunjukkan tren yang membaik.</p><span className={styles.sampleNote}>Ilustrasi</span></div>
+
+      <div className={styles.chartMonths} aria-hidden="true">
+        <span>Jan</span>
+        <span>Feb</span>
+        <span>Mar</span>
+        <span>Apr</span>
+        <span>Mei</span>
+        <span>Jun</span>
+      </div>
+
+      <div className={`${styles.insight} ${inView ? styles.insightVisible : ''}`}>
+        <div className={styles.insightIcon}>
+          <TrendingUp size={16} />
+        </div>
+        <div className={styles.insightContent}>
+          <strong>Tren Penjualan</strong>
+          <p>Penjualan meningkat 18% dibanding bulan lalu.</p>
+        </div>
+        <ArrowRight size={15} className={styles.insightArrow} />
+      </div>
     </div>
   )
 }
@@ -475,15 +602,19 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
 
       <section className={styles.aiSection}><div className={`${styles.sectionWrap} ${styles.aiLayout}`}>
         <div className={styles.aiCopy}>
-          <span className={styles.eyebrow}><Sparkles size={14} /> {cms.aiInsight?.eyebrow || 'INSIGHT BISNIS BERBANTU AI'}</span>
+          <span className={styles.eyebrow}><TrendingUp size={14} /> {cms.aiInsight?.eyebrow || 'PEMAHAMAN BISNIS'}</span>
           <h2>{cms.aiInsight?.title || 'Bukan sekadar angka.'}<br /><span>{cms.aiInsight?.titleHighlight || 'Pahami ceritanya.'}</span></h2>
-          <p>{cms.aiInsight?.description || 'FluxAI membantu merangkum kondisi usaha dari data operasional Anda, mengidentifikasi tren, dan menyajikan rekomendasi yang lebih mudah ditindaklanjuti.'}</p>
+          <p>{cms.aiInsight?.description || 'Fluxa membantu merangkum kondisi usaha dari data operasional Anda, mengidentifikasi tren, dan menyajikan rekomendasi yang lebih mudah ditindaklanjuti.'}</p>
           <ul className={styles.checkList}>
-            {(cms.aiInsight?.checklist || []).map((checkItem, idx) => (
+            {(cms.aiInsight?.checklist || [
+              'Diagnosis kesehatan bisnis',
+              'Tren penjualan dan arus kas',
+              'Rekomendasi berdasarkan data',
+            ]).map((checkItem, idx) => (
               <li key={idx}><Check size={16} /> {checkItem}</li>
             ))}
           </ul>
-          <a href="#cara-kerja" className={styles.textLink}>Pelajari cara kerja FluxAI <ArrowRight size={16} /></a>
+          <a href="#cara-kerja" className={styles.textLink}>Pelajari cara kerja Fluxa! <ArrowRight size={16} /></a>
         </div>
         <ExampleChart />
       </div></section>
