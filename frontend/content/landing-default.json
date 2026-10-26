@@ -11,40 +11,58 @@
   },
   "features": [
     {
+      "number": "01",
       "icon": "ShoppingCart",
+      "label": "KASIR CEPAT",
       "title": "Kasir praktis",
       "description": "Catat transaksi lebih cepat, kelola shift, dan pantau penjualan dalam satu tempat.",
-      "tone": "blue"
+      "tone": "blue",
+      "detail": "Shift kasir · Multi-pembayaran · Struk instan"
     },
     {
+      "number": "02",
       "icon": "BarChart3",
+      "label": "REKAP OTOMATIS",
       "title": "Laporan otomatis",
       "description": "Lihat ringkasan omzet, laba, arus kas, dan performa bisnis tanpa rekap manual.",
-      "tone": "purple"
+      "tone": "purple",
+      "detail": "Omzet · Laba bersih · Arus kas real-time"
     },
     {
+      "number": "03",
       "icon": "Bot",
+      "label": "INSIGHT CERDAS",
       "title": "Analisis dengan AI",
       "description": "Dapatkan diagnosis kesehatan usaha dan insight untuk menentukan langkah berikutnya.",
-      "tone": "green"
+      "tone": "green",
+      "detail": "Skor kesehatan · Rekomendasi · Tren risiko"
     },
     {
+      "number": "04",
       "icon": "Package",
+      "label": "MANAJEMEN GUDANG",
       "title": "Kontrol stok",
       "description": "Pantau persediaan, nilai stok, dan produk yang perlu segera diperhatikan.",
-      "tone": "orange"
+      "tone": "orange",
+      "detail": "Peringatan stok · Nilai aset · Mutasi barang"
     },
     {
+      "number": "05",
       "icon": "Wallet",
+      "label": "KEUANGAN USAHA",
       "title": "Kelola kas & piutang",
       "description": "Pantau uang masuk, pengeluaran, kasbon, serta hutang-piutang bisnis.",
-      "tone": "cyan"
+      "tone": "cyan",
+      "detail": "Buku kas · Catatan piutang · Jatuh tempo"
     },
     {
+      "number": "06",
       "icon": "Users",
+      "label": "KOLABORASI TIM",
       "title": "Tim lebih teratur",
       "description": "Atur akses owner, admin, dan kasir sesuai peran masing-masing.",
-      "tone": "pink"
+      "tone": "pink",
+      "detail": "Hak akses · Multi-peran · Log aktivitas"
     }
   ],
   "aiInsight": {

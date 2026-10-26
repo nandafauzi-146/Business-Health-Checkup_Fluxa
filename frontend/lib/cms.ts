@@ -15,10 +15,13 @@ export interface HeroContent {
 }
 
 export interface FeatureItem {
+  number?: string
   icon: string
+  label?: string
   title: string
   description: string
   tone: 'blue' | 'purple' | 'green' | 'orange' | 'cyan' | 'pink'
+  detail?: string
 }
 
 export interface AIInsightContent {
