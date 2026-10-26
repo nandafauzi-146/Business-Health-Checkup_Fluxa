@@ -469,7 +469,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
             </Link>
           </div>
 
-          <div className={styles.tabletActions}>
+          <div className={styles.tabletThemeWrap}>
             <button
               className={styles.themeToggle}
               type="button"
@@ -480,7 +480,6 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
               {isDark ? <Sun size={15} /> : <Moon size={15} />}
               <span>{isDark ? 'Terang' : 'Gelap'}</span>
             </button>
-            <Link className={styles.loginLink} href="/login">Masuk</Link>
           </div>
 
           <button
@@ -567,7 +566,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
             <p className={styles.heroDescription}>{cms.hero?.description || 'Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan Fluxa — semua dalam satu platform.'}</p>
             <div className={styles.heroActions}>
               <Link className={styles.primaryButton} href="/register">{cms.hero?.ctaText || 'Coba gratis 7 hari'} <ArrowRight size={17} /></Link>
-              <a className={styles.secondaryButton} href="#cara-kerja"><span className={styles.playIcon}>↓</span> {cms.hero?.ctaSecondaryText || 'Kenali cara kerjanya'}</a>
+              <a className={styles.secondaryButton} href="#cara-kerja">{cms.hero?.ctaSecondaryText || 'Kenali cara kerjanya'}</a>
             </div>
             <div className={styles.trustNote}><ShieldCheck size={17} /> {cms.hero?.trustNote || 'Data pelanggan Anda aman dan selalu terlindungi'}</div>
           </div>
