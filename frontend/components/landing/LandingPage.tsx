@@ -34,6 +34,7 @@ import {
   CreditCard,
   Activity,
   Layers,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 import { useTheme } from '@/components/layout/ThemeProvider'
@@ -343,6 +344,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
   const { isDark, setPreference } = useTheme()
   const [introActive, setIntroActive] = useState(true)
   const [isLeaving, setIsLeaving] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const cms = content || (defaultContent as unknown as LandingCMSContent)
   const [selectedPlan, setSelectedPlan] = useState<string>(() => {
@@ -366,6 +368,16 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const timeout = window.setTimeout(() => setIntroActive(false), reduceMotion ? 0 : 2100)
     return () => window.clearTimeout(timeout)
+  }, [])
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setMobileMenuOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   useLayoutEffect(() => {
@@ -397,7 +409,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
         behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
         block: 'start',
       })
-      anchor.closest('details[open]')?.removeAttribute('open')
+      setMobileMenuOpen(false)
       window.history.pushState(null, '', destination.hash)
       return
     }
@@ -408,6 +420,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
     if (isLeaving) return
 
     setIsLeaving(true)
+    setMobileMenuOpen(false)
     window.setTimeout(() => router.push(`${destination.pathname}${destination.search}${destination.hash}`), 420)
   }
 
@@ -426,20 +439,119 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
       )}
       <header className={styles.header}>
         <div className={styles.navWrap}>
-          <Link className={styles.brand} href="/" aria-label="Fluxa, beranda"><Image src="/Fluxa-Logo.webp" alt="" width={42} height={42} priority /><span>fluxa<span className={styles.brandDot}>.</span></span></Link>
-          <nav className={styles.desktopNav} aria-label="Navigasi utama"><a href="#fitur">Fitur</a><a href="#cara-kerja">Cara kerja</a><a href="#kontak">Kontak</a><a href="#paket">Subscribe</a></nav>
+          <Link className={styles.brand} href="/" aria-label="Fluxa, beranda">
+            <Image src="/Fluxa-Logo.webp" alt="Logo Fluxa" width={38} height={38} priority />
+            <span>fluxa<span className={styles.brandDot}>.</span></span>
+          </Link>
+
+          <nav className={styles.desktopNav} aria-label="Navigasi utama">
+            <a href="#fitur">Fitur</a>
+            <a href="#cara-kerja">Cara kerja</a>
+            <a href="#kontak">Kontak</a>
+            <a href="#paket">Subscribe</a>
+          </nav>
+
           <div className={styles.navActions}>
-            <button className={styles.themeToggle} type="button" onClick={() => setPreference(isDark ? 'light' : 'dark')} aria-label={`Aktifkan mode ${isDark ? 'terang' : 'gelap'}`} title={`Mode ${isDark ? 'terang' : 'gelap'}`}>
-              {isDark ? <Sun size={17} /> : <Moon size={17} />}
+            <button
+              className={styles.themeToggle}
+              type="button"
+              onClick={() => setPreference(isDark ? 'light' : 'dark')}
+              aria-label={`Aktifkan mode ${isDark ? 'terang' : 'gelap'}`}
+              title={`Mode ${isDark ? 'terang' : 'gelap'}`}
+            >
+              {isDark ? <Sun size={15} /> : <Moon size={15} />}
               <span>{isDark ? 'Terang' : 'Gelap'}</span>
             </button>
-            <Link className={styles.loginLink} href="/login">Masuk</Link><Link className={styles.navCta} href="/register">Registrasi <ArrowRight size={15} /></Link>
+            <Link className={styles.loginLink} href="/login">Masuk</Link>
+            <Link className={styles.navCta} href="/register">
+              <span>Registrasi</span>
+              <ArrowRight size={15} />
+            </Link>
           </div>
-          <details className={styles.mobileMenu}>
-            <summary aria-label="Buka menu"><span /><span /><span /></summary>
-            <nav aria-label="Navigasi seluler"><a href="#fitur">Fitur</a><a href="#cara-kerja">Cara kerja</a><a href="#kontak">Kontak</a><a href="#paket">Subscribe</a><Link href="/login">Login</Link><Link href="/register">Registrasi</Link></nav>
-          </details>
+
+          <div className={styles.tabletThemeWrap}>
+            <button
+              className={styles.themeToggle}
+              type="button"
+              onClick={() => setPreference(isDark ? 'light' : 'dark')}
+              aria-label={`Aktifkan mode ${isDark ? 'terang' : 'gelap'}`}
+              title={`Mode ${isDark ? 'terang' : 'gelap'}`}
+            >
+              {isDark ? <Sun size={15} /> : <Moon size={15} />}
+              <span>{isDark ? 'Terang' : 'Gelap'}</span>
+            </button>
+          </div>
+
+          <button
+            className={styles.hamburgerBtn}
+            type="button"
+            onClick={() => setMobileMenuOpen(prev => !prev)}
+            aria-label={mobileMenuOpen ? 'Tutup navigasi' : 'Buka navigasi'}
+            aria-expanded={mobileMenuOpen}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </div>
+
+        {mobileMenuOpen && (
+          <div className={styles.mobileBackdrop} onClick={() => setMobileMenuOpen(false)}>
+            <div className={styles.mobileMenuPanel} onClick={e => e.stopPropagation()}>
+              <div className={styles.mobileMenuTop}>
+                <button
+                  className={styles.themeToggle}
+                  type="button"
+                  onClick={() => setPreference(isDark ? 'light' : 'dark')}
+                  aria-label={`Aktifkan mode ${isDark ? 'terang' : 'gelap'}`}
+                  title={`Mode ${isDark ? 'terang' : 'gelap'}`}
+                >
+                  {isDark ? <Sun size={15} /> : <Moon size={15} />}
+                  <span>{isDark ? 'Terang' : 'Gelap'}</span>
+                </button>
+                <button
+                  className={styles.mobileCloseBtn}
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  aria-label="Tutup navigasi"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <nav className={styles.mobileNavList} aria-label="Navigasi seluler">
+                <a href="#fitur" onClick={() => setMobileMenuOpen(false)}>
+                  <span>Fitur</span>
+                  <ChevronRight size={15} />
+                </a>
+                <a href="#cara-kerja" onClick={() => setMobileMenuOpen(false)}>
+                  <span>Cara kerja</span>
+                  <ChevronRight size={15} />
+                </a>
+                <a href="#kontak" onClick={() => setMobileMenuOpen(false)}>
+                  <span>Kontak</span>
+                  <ChevronRight size={15} />
+                </a>
+                <a href="#paket" onClick={() => setMobileMenuOpen(false)}>
+                  <span>Subscribe</span>
+                  <ChevronRight size={15} />
+                </a>
+              </nav>
+
+              <div className={styles.mobileDivider} />
+
+              <div className={styles.mobileNavBottom}>
+                <Link className={styles.mobileLoginLink} href="/login" onClick={() => setMobileMenuOpen(false)}>
+                  Masuk
+                </Link>
+                <Link className={styles.mobileRegisterBtn} href="/register" onClick={() => setMobileMenuOpen(false)}>
+                  <span>Registrasi</span>
+                  <ArrowRight size={15} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       <section className={styles.hero}>
@@ -454,7 +566,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
             <p className={styles.heroDescription}>{cms.hero?.description || 'Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan Fluxa — semua dalam satu platform.'}</p>
             <div className={styles.heroActions}>
               <Link className={styles.primaryButton} href="/register">{cms.hero?.ctaText || 'Coba gratis 7 hari'} <ArrowRight size={17} /></Link>
-              <a className={styles.secondaryButton} href="#cara-kerja"><span className={styles.playIcon}>↓</span> {cms.hero?.ctaSecondaryText || 'Kenali cara kerjanya'}</a>
+              <a className={styles.secondaryButton} href="#cara-kerja">{cms.hero?.ctaSecondaryText || 'Kenali cara kerjanya'}</a>
             </div>
             <div className={styles.trustNote}><ShieldCheck size={17} /> {cms.hero?.trustNote || 'Data pelanggan Anda aman dan selalu terlindungi'}</div>
           </div>
