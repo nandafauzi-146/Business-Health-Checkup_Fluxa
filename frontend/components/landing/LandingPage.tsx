@@ -29,6 +29,7 @@ import {
   CreditCard,
   Activity,
   Layers,
+  type LucideIcon,
 } from 'lucide-react'
 import { useTheme } from '@/components/layout/ThemeProvider'
 import type { LandingCMSContent } from '@/lib/cms'
@@ -84,6 +85,108 @@ function ExampleChart() {
       </div>
       <div className={styles.chartMonths} aria-hidden="true"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>Mei</span><span>Jun</span></div>
       <div className={styles.insight}><span className={styles.insightIcon}><Sparkles size={16} /></span><p><strong>Insight FluxAI</strong><br />Arus kas dan konsistensi transaksi menunjukkan tren yang membaik.</p><span className={styles.sampleNote}>Ilustrasi</span></div>
+    </div>
+  )
+}
+
+interface MobileCardItem {
+  number?: string
+  icon: string
+  title: string
+  description: string
+  label?: string
+  detail?: string
+}
+
+function getConciseDetail(item: MobileCardItem, fallbackIndex: number): string {
+  if (item.detail && item.detail !== 'Operasional · Bisnis · Insight') {
+    return item.detail
+  }
+  const featureShort: Record<string, string> = {
+    '01': 'Kasir · Shift · Struk',
+    '02': 'Omzet · Laba · Arus kas',
+    '03': 'Skor AI · Rekomendasi',
+    '04': 'Stok · Aset · Mutasi',
+    '05': 'Buku kas · Piutang',
+    '06': 'Akses · Multi-peran',
+  }
+  return featureShort[item.number || `0${fallbackIndex + 1}`] || item.label || 'Operasional'
+}
+
+function MobilePairsList({
+  items,
+  defaultIcon = Sparkles,
+}: {
+  items: MobileCardItem[]
+  defaultIcon?: LucideIcon
+}) {
+  const pairs: Array<[MobileCardItem, MobileCardItem | undefined]> = []
+  for (let i = 0; i < items.length; i += 2) {
+    pairs.push([items[i], items[i + 1]])
+  }
+
+  return (
+    <div className={styles.mobilePairsList} aria-label="Mobile paired containers">
+      {pairs.map(([col1, col2], pIdx) => {
+        const Icon1 = resolveIcon(col1.icon, defaultIcon)
+        const num1 = col1.number || `0${pIdx * 2 + 1}`
+        const detail1 = getConciseDetail(col1, pIdx * 2)
+
+        const Icon2 = col2 ? resolveIcon(col2.icon, defaultIcon) : null
+        const num2 = col2 ? (col2.number || `0${pIdx * 2 + 2}`) : ''
+        const detail2 = col2 ? getConciseDetail(col2, pIdx * 2 + 1) : ''
+
+        return (
+          <div className={styles.mobilePairCard} key={pIdx}>
+            {/* Column 1 */}
+            <article className={styles.mobilePairCol}>
+              <div className={styles.mobileColTop}>
+                <span className={styles.mobileColNumber}>{num1}</span>
+              </div>
+              <div className={styles.mobileColNotch} aria-hidden="true">
+                <div className={styles.mobileNotchDish}>
+                  <div className={styles.mobileNotchGlow} />
+                  <div className={styles.mobileIconBadge}>
+                    <Icon1 size={14} strokeWidth={2.2} />
+                  </div>
+                </div>
+              </div>
+              <h3 className={styles.mobileColTitle}>{col1.title}</h3>
+              <p className={styles.mobileColDescription}>{col1.description}</p>
+              <div className={styles.mobileColMeta}>
+                <Clock3 size={10} className={styles.mobileMetaClock} />
+                <span>{detail1}</span>
+              </div>
+            </article>
+
+            {/* Subtle Vertical Divider */}
+            {col2 && <div className={styles.mobilePairDivider} aria-hidden="true" />}
+
+            {/* Column 2 */}
+            {col2 && (
+              <article className={styles.mobilePairCol}>
+                <div className={styles.mobileColTop}>
+                  <span className={styles.mobileColNumber}>{num2}</span>
+                </div>
+                <div className={styles.mobileColNotch} aria-hidden="true">
+                  <div className={styles.mobileNotchDish}>
+                    <div className={styles.mobileNotchGlow} />
+                    <div className={styles.mobileIconBadge}>
+                      {Icon2 && <Icon2 size={14} strokeWidth={2.2} />}
+                    </div>
+                  </div>
+                </div>
+                <h3 className={styles.mobileColTitle}>{col2.title}</h3>
+                <p className={styles.mobileColDescription}>{col2.description}</p>
+                <div className={styles.mobileColMeta}>
+                  <Clock3 size={10} className={styles.mobileMetaClock} />
+                  <span>{detail2}</span>
+                </div>
+              </article>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -238,6 +341,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
             )
           })}
         </div>
+        <MobilePairsList items={featuresList} />
       </div></section>
 
       <section className={styles.aiSection}><div className={`${styles.sectionWrap} ${styles.aiLayout}`}>
@@ -282,6 +386,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
             )
           })}
         </div>
+        <MobilePairsList items={stepsList} defaultIcon={Database} />
       </div></section>
 
       <section className={styles.contactSection} id="kontak">
