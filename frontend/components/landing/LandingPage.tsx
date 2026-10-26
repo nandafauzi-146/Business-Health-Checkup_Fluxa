@@ -215,14 +215,25 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
         <div className={styles.featureGrid}>
           {featuresList.map((item, idx) => {
             const IconComponent = resolveIcon(item.icon)
+            const itemNumber = item.number || `0${idx + 1}`
+            const itemDetail = item.detail || 'Operasional · Bisnis · Insight'
             return (
-              <article className={styles.featureCard} key={idx}>
-                <span className={`${styles.featureIcon} ${styles[item.tone] || styles.blue}`}>
-                  <IconComponent size={21} strokeWidth={1.8} />
-                </span>
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-                <span className={styles.cardArrow}><ArrowRight size={16} /></span>
+              <article className={styles.notchCard} key={idx}>
+                <div className={styles.notchCardHeader}>
+                  <span className={styles.notchCardNumber}>{itemNumber}</span>
+                </div>
+                <div className={styles.cardNotch} aria-hidden="true">
+                  <div className={styles.notchDish}>
+                    <div className={styles.notchGlow} />
+                    <div className={styles.notchIconBadge}>
+                      <IconComponent size={22} strokeWidth={2.2} />
+                    </div>
+                  </div>
+                </div>
+                <h3 className={styles.notchCardTitle}>{item.title}</h3>
+                <p className={styles.notchCardDescription}>{item.description}</p>
+                <div className={styles.notchCardDivider} />
+                <div className={styles.notchCardMeta}>{itemDetail}</div>
               </article>
             )
           })}
@@ -249,16 +260,24 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
         <div className={styles.steps}>
           {stepsList.map((step, idx) => {
             const StepIcon = resolveIcon(step.icon, Database)
+            const stepNumber = step.number || `0${idx + 1}`
             return (
-              <article className={styles.step} key={idx}>
-                <div className={styles.stepHead}>
-                  <span className={styles.stepNumber}>{step.number || `0${idx + 1}`}</span>
-                  <span className={styles.stepIcon}><StepIcon size={19} /></span>
-                  <span className={styles.stepLabel}>{step.label}</span>
+              <article className={styles.notchCard} key={idx}>
+                <div className={styles.notchCardHeader}>
+                  <span className={styles.notchCardNumber}>{stepNumber}</span>
                 </div>
-                <h3>{step.title}</h3>
-                <p>{step.description}</p>
-                <div className={styles.stepDetail}><Clock3 size={14} /><span>{step.detail}</span></div>
+                <div className={styles.cardNotch} aria-hidden="true">
+                  <div className={styles.notchDish}>
+                    <div className={styles.notchGlow} />
+                    <div className={styles.notchIconBadge}>
+                      <StepIcon size={22} strokeWidth={2.2} />
+                    </div>
+                  </div>
+                </div>
+                <h3 className={styles.notchCardTitle}>{step.title}</h3>
+                <p className={styles.notchCardDescription}>{step.description}</p>
+                <div className={styles.notchCardDivider} />
+                <div className={styles.notchCardMeta}>{step.detail}</div>
               </article>
             )
           })}

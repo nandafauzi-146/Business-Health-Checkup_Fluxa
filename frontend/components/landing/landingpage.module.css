@@ -94,31 +94,197 @@
 .heroStamp svg { color: #9473e9; }
 .scrollCue { position: absolute; bottom: 23px; left: calc(50% - 18px); width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid #e7ebf4; border-radius: 50%; color: #8492a9 !important; background: white; }
 
-.featureSection, .howSection, .pricingSection { padding: 100px 0; }
-.sectionHeading { max-width: 620px; margin: 0 auto 46px; text-align: center; }
+.featureSection {
+  position: relative;
+  overflow: hidden;
+  padding: 104px 0;
+  background: #ffffff;
+}
+
+.howSection {
+  position: relative;
+  overflow: hidden;
+  padding: 104px 0;
+  background: linear-gradient(180deg, #f7f9fe 0%, #ffffff 100%);
+}
+
+.pricingSection { padding: 100px 0; }
+
+.sectionHeading { max-width: 620px; margin: 0 auto 48px; text-align: center; }
 .eyebrow { display: inline-flex; align-items: center; gap: 7px; color: var(--blue); font-size: 10px; font-weight: 800; letter-spacing: 1.4px; }
 .sectionHeading h2, .aiCopy h2, .faqIntro h2 { margin-top: 13px; font-size: clamp(32px, 4vw, 43px); line-height: 1.2; letter-spacing: -1.8px; font-weight: 800; }
 .sectionHeading > p { max-width: 510px; margin: 14px auto 0; color: var(--muted); font-size: 14px; }
-.featureGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-.featureCard { position: relative; min-height: 205px; padding: 24px; border: 1px solid #e9edf4; border-radius: 15px; background: white; transition: transform .2s, box-shadow .2s, border-color .2s; animation: fadeUp .6s backwards; }
-.featureCard:nth-child(2), .packageCard:nth-child(2) { animation-delay: .1s; }
-.featureCard:nth-child(3), .packageCard:nth-child(3) { animation-delay: .2s; }
-.featureCard:hover { transform: translateY(-4px); border-color: #d6e2ff; box-shadow: 0 14px 34px rgb(41 69 124 / 7%); }
-.featureIcon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; }
-.blue { color: #3478f6; background: #eaf1ff; }
-.purple { color: #825add; background: #f1eaff; }
-.green { color: #159b74; background: #e6f8f1; }
-.orange { color: #df8732; background: #fff2e3; }
-.cyan { color: #1298aa; background: #e3f8fa; }
-.pink { color: #d45d91; background: #fff0f6; }
-.featureCard h3 { margin-top: 17px; font-size: 15px; font-weight: 750; }
-.featureCard p { max-width: 290px; margin-top: 7px; color: var(--muted); font-size: 12px; line-height: 1.75; }
-.cardArrow { position: absolute; top: 29px; right: 23px; color: #c4ccda; }
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  align-items: stretch;
+}
+
+.steps {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* ============================================================
+   Unified Notch Container System (Desktop, Tablet, Mobile)
+   ============================================================ */
+.notchCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 290px;
+  padding: 22px 20px 22px;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid #e2eaf5;
+  box-shadow: 0 12px 32px rgba(21, 37, 68, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+  text-align: center;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s ease,
+              box-shadow 0.28s ease;
+  animation: fadeUp .6s backwards;
+}
+
+.notchCard:nth-child(2) { animation-delay: .08s; }
+.notchCard:nth-child(3) { animation-delay: .16s; }
+.notchCard:nth-child(4) { animation-delay: .24s; }
+.notchCard:nth-child(5) { animation-delay: .32s; }
+.notchCard:nth-child(6) { animation-delay: .40s; }
+
+.notchCard:hover {
+  transform: translateY(-5px);
+  border-color: #bcd5ff;
+  box-shadow: 0 18px 42px rgba(37, 99, 235, 0.1), 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.notchCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 20px;
+  z-index: 3;
+}
+
+.notchCardNumber {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--blue);
+  letter-spacing: 0.6px;
+  line-height: 1;
+}
+
+/* Oval / Semicircular Notch dipping smoothly from top border */
+.cardNotch {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 144px;
+  height: 64px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.notchDish {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Horizontal flat oval dipping down from the top edge */
+  border-radius: 0 0 72px 72px / 0 0 64px 64px;
+  background: radial-gradient(ellipse at 50% 12%, #ebf3ff 0%, #f4f8ff 75%);
+  border: 1px solid #bfdbfe;
+  border-top: none;
+  box-shadow: inset 0 -2px 8px rgba(56, 120, 246, 0.08), 0 4px 12px rgba(31, 57, 105, 0.05);
+  transition: border-color 0.28s ease, box-shadow 0.28s ease;
+}
+
+.notchCard:hover .notchDish {
+  border-color: #93c5fd;
+  box-shadow: inset 0 -3px 12px rgba(56, 120, 246, 0.15), 0 6px 16px rgba(37, 99, 235, 0.1);
+}
+
+.notchGlow {
+  position: absolute;
+  top: 8px;
+  width: 65px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56, 120, 246, 0.15) 0%, transparent 70%);
+  filter: blur(8px);
+}
+
+.notchIconBadge {
+  position: relative;
+  z-index: 1;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease;
+}
+
+.notchCard:hover .notchIconBadge {
+  transform: scale(1.06);
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.notchCardTitle {
+  margin-top: 48px;
+  font-size: 15.5px;
+  font-weight: 750;
+  color: var(--ink);
+  letter-spacing: -0.3px;
+  line-height: 1.45;
+}
+
+.notchCardDescription {
+  margin-top: 9px;
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--muted);
+  flex: 1;
+}
+
+.notchCardDivider {
+  width: 100%;
+  height: 1px;
+  background: #edf2f7;
+  margin: 18px 0 13px;
+}
+
+.notchCardMeta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--blue);
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+}
+
+.featureCard, .step {
+  composes: notchCard;
+}
 
 .aiSection { padding: 98px 0; background: #f7f9fe; }
 .aiLayout { display: grid; grid-template-columns: .85fr 1.15fr; align-items: center; gap: 75px; }
 .aiCopy h2 { font-size: clamp(34px, 4vw, 45px); }
-.aiCopy > p, .faqIntro > p { margin-top: 16px; color: var(--muted); font-size: 14px; line-height: 1.8; }
+.aiCopy > p { margin-top: 16px; color: var(--muted); font-size: 14px; line-height: 1.8; }
 .checkList { display: grid; gap: 12px; margin: 23px 0 25px; list-style: none; }
 .checkList li { display: flex; align-items: center; gap: 10px; color: #53637e; font-size: 12px; font-weight: 600; }
 .checkList svg { color: #189d72; }
@@ -144,19 +310,6 @@
 .insight p strong { color: #344560; font-size: 10px; }
 .sampleNote { margin-left: auto; color: #8794a8; font-size: 9px; }
 
-.howSection { position: relative; overflow: hidden; background: linear-gradient(180deg, #f7f9fe 0%, #fff 100%); }
-.howSection::before { position: absolute; top: 115px; left: 50%; width: min(78vw, 940px); height: 1px; content: ""; background: linear-gradient(90deg, transparent, #dce6fb 12%, #dce6fb 88%, transparent); }
-.steps { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-.step { position: relative; min-height: 280px; padding: 21px 19px; border: 1px solid #e7ecf5; border-radius: 16px; background: rgb(255 255 255 / 90%); box-shadow: 0 12px 36px rgb(31 57 105 / 5%); transition: transform .22s, border-color .22s, box-shadow .22s; }
-.step:hover { transform: translateY(-5px); border-color: #cddcff; box-shadow: 0 18px 42px rgb(31 57 105 / 10%); }
-.stepHead { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; }
-.stepNumber { color: #8291aa; font-size: 11px; font-weight: 800; letter-spacing: .6px; }
-.stepIcon { width: 41px; height: 41px; display: grid; place-items: center; border: 1px solid #dce7ff; border-radius: 13px; color: var(--blue); background: #f1f5ff; }
-.stepLabel { margin-left: auto; color: #8190a8; font-size: 8px; font-weight: 800; letter-spacing: .8px; text-align: right; }
-.step h3 { margin-top: 23px; font-size: 15px; line-height: 1.45; letter-spacing: -.25px; }
-.step p { margin-top: 9px; color: var(--muted); font-size: 11px; line-height: 1.75; }
-.stepDetail { display: flex; align-items: center; gap: 7px; margin-top: 17px; padding-top: 13px; border-top: 1px solid #edf0f6; color: #71809b; font-size: 9px; font-weight: 650; }
-.stepDetail svg { flex: 0 0 auto; color: var(--blue); }
 .contactSection { padding: 10px 0 94px; }
 .contactCard { width: min(1050px, calc(100% - 64px)); min-height: 160px; display: flex; align-items: center; gap: 22px; margin: 0 auto; padding: 28px 37px; border: 1px solid #e8edf6; border-radius: 18px; background: linear-gradient(100deg, #f7f9ff, #fbfaff); }
 .contactIcon { width: 48px; height: 48px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 14px; color: var(--blue); background: #e8efff; }
@@ -250,16 +403,21 @@
 :global(html[data-theme="dark"]) .aiTip { border-color: rgb(148 168 198 / 14%); background: #18253d; }
 :global(html[data-theme="dark"]) .aiTip p { color: #a5b4cc; }
 :global(html[data-theme="dark"]) .floatBadge { border-color: rgb(148 168 198 / 18%); background: #142239; }
-:global(html[data-theme="dark"]) .featureSection, :global(html[data-theme="dark"]) .pricingSection, :global(html[data-theme="dark"]) .howSection { background: #0b1324; }
-:global(html[data-theme="dark"]) .howSection { background: linear-gradient(180deg, #101b2e, #0b1324); }
-:global(html[data-theme="dark"]) .howSection::before { background: linear-gradient(90deg, transparent, rgb(89 123 189 / 27%) 12%, rgb(89 123 189 / 27%) 88%, transparent); }
-:global(html[data-theme="dark"]) .featureCard, :global(html[data-theme="dark"]) .step, :global(html[data-theme="dark"]) .packageCard { border-color: rgb(148 168 198 / 16%); background: #111e33; }
-:global(html[data-theme="dark"]) .featureCard h3, :global(html[data-theme="dark"]) .step h3, :global(html[data-theme="dark"]) .contactCard h2, :global(html[data-theme="dark"]) .packageCard h3 { color: #e7efff; }
-:global(html[data-theme="dark"]) .featureCard p, :global(html[data-theme="dark"]) .step p, :global(html[data-theme="dark"]) .packageDescription, :global(html[data-theme="dark"]) .packageCard li { color: #a5b4cc; }
-:global(html[data-theme="dark"]) .stepNumber, :global(html[data-theme="dark"]) .stepLabel, :global(html[data-theme="dark"]) .stepDetail { color: #a3b2ca; }
-:global(html[data-theme="dark"]) .stepIcon { border-color: rgb(94 139 228 / 22%); background: #192944; }
-:global(html[data-theme="dark"]) .stepDetail, :global(html[data-theme="dark"]) .packageDivider { border-color: rgb(148 168 198 / 15%); background-color: transparent; }
-:global(html[data-theme="dark"]) .stepDetail svg { color: #83a9ff; }
+:global(html[data-theme="dark"]) .featureSection, :global(html[data-theme="dark"]) .pricingSection, :global(html[data-theme="dark"]) .howSection { background: #081022; }
+:global(html[data-theme="dark"]) .howSection { background: radial-gradient(ellipse 95% 65% at 50% 0%, #0d1e3d 0%, #081022 65%, #050b17 100%); }
+:global(html[data-theme="dark"]) .featureSection { background: radial-gradient(ellipse 95% 65% at 50% 0%, #0d1e3d 0%, #081022 65%, #050b17 100%); }
+:global(html[data-theme="dark"]) .howSection::before, :global(html[data-theme="dark"]) .featureSection::before { background: radial-gradient(ellipse at 50% 0%, rgba(56, 120, 246, 0.14) 0%, transparent 70%); }
+:global(html[data-theme="dark"]) .notchCard, :global(html[data-theme="dark"]) .packageCard { border-color: rgba(75, 135, 235, 0.22); background: linear-gradient(180deg, #0e1c38 0%, #0a1428 65%, #081022 100%); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.02); }
+:global(html[data-theme="dark"]) .notchCard:hover { border-color: rgba(96, 165, 250, 0.45); box-shadow: 0 22px 50px rgba(0, 0, 0, 0.45), 0 0 26px rgba(56, 120, 246, 0.16); }
+:global(html[data-theme="dark"]) .notchDish { background: radial-gradient(ellipse at 50% 12%, rgba(45, 95, 215, 0.32) 0%, rgba(10, 22, 45, 0.99) 70%); border-color: rgba(85, 155, 255, 0.35); box-shadow: inset 0 -3px 14px rgba(56, 120, 246, 0.14), 0 6px 18px rgba(0, 0, 0, 0.3); }
+:global(html[data-theme="dark"]) .notchCard:hover .notchDish { border-color: rgba(120, 185, 255, 0.55); box-shadow: inset 0 -3px 18px rgba(56, 120, 246, 0.24), 0 8px 24px rgba(0, 0, 0, 0.4); }
+:global(html[data-theme="dark"]) .notchGlow { background: radial-gradient(circle, rgba(56, 120, 246, 0.35) 0%, rgba(56, 120, 246, 0) 70%); }
+:global(html[data-theme="dark"]) .notchCardTitle, :global(html[data-theme="dark"]) .contactCard h2, :global(html[data-theme="dark"]) .packageCard h3 { color: #ffffff; }
+:global(html[data-theme="dark"]) .notchCardDescription, :global(html[data-theme="dark"]) .packageDescription, :global(html[data-theme="dark"]) .packageCard li { color: #94a3b8; }
+:global(html[data-theme="dark"]) .notchCardNumber { color: #60a5fa; }
+:global(html[data-theme="dark"]) .notchCardMeta { color: #93c5fd; }
+:global(html[data-theme="dark"]) .notchCardDivider { background: rgba(100, 150, 255, 0.12); }
+:global(html[data-theme="dark"]) .packageDivider { border-color: rgba(100, 150, 255, 0.12); background-color: transparent; }
 :global(html[data-theme="dark"]) .aiSection, :global(html[data-theme="dark"]) .faqSection { background: #101b2e; }
 :global(html[data-theme="dark"]) .chartHeader h3 { color: #e7efff; }
 :global(html[data-theme="dark"]) .chartPeriod, :global(html[data-theme="dark"]) .packageButton { border-color: rgb(148 168 198 / 18%); color: #c1cde0 !important; background: #17253b; }
@@ -342,7 +500,12 @@
   .floatBadge { right: -8px; }
   .aiLayout { gap: 35px; }
   .faqLayout { gap: 45px; }
-  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .featureGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .notchCard { min-height: 275px; padding: 22px 18px 20px; }
+  .notchCardTitle { font-size: 14.5px; }
+  .notchCardDescription { font-size: 11.5px; }
+  .notchCardMeta { font-size: 10px; }
   .howSection::before { display: none; }
 }
 @media (max-width: 680px) {
@@ -378,25 +541,17 @@
   .sectionHeading { margin-bottom: 32px; }
   .sectionHeading h2, .aiCopy h2, .faqIntro h2 { font-size: 34px; }
   .sectionHeading > p { font-size: 12px; }
-  .featureGrid { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .featureCard { min-height: 191px; padding: 16px; }
-  .featureIcon { width: 37px; height: 37px; }
-  .featureCard h3 { margin-top: 14px; font-size: 12px; }
-  .featureCard p { font-size: 10px; }
-  .cardArrow { top: 25px; right: 16px; }
+  .featureGrid { grid-template-columns: 1fr; gap: 16px; }
+  .steps { grid-template-columns: 1fr; gap: 16px; }
+  .notchCard { min-height: 0; padding: 22px 18px 20px; }
+  .notchCardTitle { font-size: 14.5px; margin-top: 46px; }
+  .notchCardDescription { font-size: 11.5px; }
+  .notchCardMeta { font-size: 10px; }
   .aiSection { padding: 70px 0; }
   .aiLayout { grid-template-columns: 1fr; gap: 32px; }
   .aiCopy > p { font-size: 12px; }
   .chartCard { padding: 20px 16px 16px; }
   .chart { height: 155px; }
-  .steps { grid-template-columns: 1fr 1fr; gap: 11px; }
-  .step { min-height: 0; padding: 17px 14px; }
-  .stepHead { flex-wrap: wrap; gap: 8px; }
-  .stepIcon { width: 35px; height: 35px; }
-  .stepLabel { width: 100%; margin-left: 0; text-align: left; }
-  .step h3 { margin-top: 13px; font-size: 13px; }
-  .step p { font-size: 10px; }
-  .stepDetail { align-items: flex-start; font-size: 8px; }
   .contactSection { padding: 0 0 65px; }
   .contactCard { width: calc(100% - 40px); display: grid; grid-template-columns: 48px 1fr; gap: 14px; padding: 22px; }
   .contactCard h2 { font-size: 16px; }
@@ -422,16 +577,14 @@
   .heroInner, .sectionWrap { width: calc(100% - 32px); }
   .hero h1 { font-size: 38px; letter-spacing: -2.2px; }
   .heroActions { align-items: flex-start; flex-direction: column; gap: 8px; }
-  .featureGrid { grid-template-columns: 1fr; }
-  .featureCard { min-height: 0; padding: 18px; }
-  .featureCard p { max-width: none; }
+  .cardNotch { width: 136px; height: 58px; }
+  .notchDish { border-radius: 0 0 68px 68px / 0 0 58px 58px; }
+  .notchIconBadge { width: 38px; height: 38px; border-radius: 10px; }
+  .notchCardTitle { margin-top: 42px; font-size: 14px; }
   .chartHeader { gap: 8px; }
   .chartPeriod { flex: 0 0 auto; }
   .contactCard { width: calc(100% - 32px); grid-template-columns: 1fr; }
   .contactCard .secondaryButton { grid-column: 1; }
-  .steps { grid-template-columns: 1fr; }
-  .stepHead { flex-wrap: nowrap; }
-  .stepLabel { width: auto; margin-left: auto; text-align: right; }
   .footerInner { width: calc(100% - 32px); }
   .copyright { width: calc(100% - 32px); }
 }
