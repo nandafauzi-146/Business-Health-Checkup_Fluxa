@@ -9,17 +9,22 @@ import {
   ArrowRight,
   BarChart3,
   Bot,
+  Calendar,
   Check,
   ChevronDown,
+  ChevronRight,
   CircleDollarSign,
   ClipboardCheck,
   Clock3,
   Database,
   Headset,
   Package,
+  Receipt,
   ShieldCheck,
+  ShoppingBag,
   ShoppingCart,
   Sparkles,
+  Store,
   Sun,
   TrendingUp,
   Users,
@@ -292,22 +297,146 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
               <div className={styles.heroStamp}><CircleDollarSign size={18} /> {cms.hero?.badge || 'Data usaha, satu dashboard'}</div>
             </div>
             <h1>{cms.hero?.title || 'Bisnis lebih terarah.'}<br /><span>{cms.hero?.titleHighlight || 'Tumbuh lebih percaya diri.'}</span></h1>
-            <p className={styles.heroDescription}>{cms.hero?.description || 'Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan AI — semua dalam satu platform.'}</p>
+            <p className={styles.heroDescription}>{cms.hero?.description || 'Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan Fluxa — semua dalam satu platform.'}</p>
             <div className={styles.heroActions}>
               <Link className={styles.primaryButton} href="/register">{cms.hero?.ctaText || 'Coba gratis 7 hari'} <ArrowRight size={17} /></Link>
               <a className={styles.secondaryButton} href="#cara-kerja"><span className={styles.playIcon}>↓</span> {cms.hero?.ctaSecondaryText || 'Kenali cara kerjanya'}</a>
             </div>
-            <div className={styles.trustNote}><ShieldCheck size={17} /> {cms.hero?.trustNote || 'Satu platform untuk operasional dan insight bisnis'}</div>
+            <div className={styles.trustNote}><ShieldCheck size={17} /> {cms.hero?.trustNote || 'Data pelanggan Anda aman dan selalu terlindungi'}</div>
           </div>
           <div className={styles.heroVisual}>
             <div className={styles.visualOrb} aria-hidden="true" />
             <div className={styles.dashboardCard}>
-              <div className={styles.dashboardTop}><span className={styles.dashTitle}>Contoh ringkasan bisnis</span><span className={styles.liveDot}>● Simulasi</span></div>
-              <div className={styles.metricGrid}><div className={styles.metric}><span>Total penjualan</span><strong>Rp 12,8 jt</strong><small className={styles.positive}>↗ 12,4%</small></div><div className={styles.metric}><span>Transaksi</span><strong>248</strong><small>Periode ini</small></div></div>
-              <div className={styles.miniChart}><div className={styles.miniChartTitle}><span>Performa penjualan</span><span>7 hari</span></div><svg viewBox="0 0 410 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 94 C25 83 28 52 61 65 S97 90 121 70 S153 45 180 55 S216 28 243 42 S279 58 300 35 S333 49 354 24 S390 28 410 8" fill="none" stroke="#4485ff" strokeWidth="3" vectorEffect="non-scaling-stroke" /><path d="M0 94 C25 83 28 52 61 65 S97 90 121 70 S153 45 180 55 S216 28 243 42 S279 58 300 35 S333 49 354 24 S390 28 410 8 L410 120 L0 120Z" fill="url(#mini-fill)" opacity=".55" /><defs><linearGradient id="mini-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#4485ff" stopOpacity=".28" /><stop offset="100%" stopColor="#4485ff" stopOpacity="0" /></linearGradient></defs></svg><div className={styles.miniChartLabels}><span>Sen</span><span>Rab</span><span>Jum</span><span>Min</span></div></div>
-              <div className={styles.aiTip}><span><Sparkles size={16} /></span><div><strong>Insight FluxAI</strong><p>Penjualan tertinggi terjadi pada akhir pekan.</p></div><ArrowRight size={16} /></div>
+              {/* Header Ringkasan Bisnis */}
+              <div className={styles.dashboardTop}>
+                <div className={styles.dashHeaderLeft}>
+                  <span className={styles.dashHeaderIcon}>
+                    <Store size={15} />
+                  </span>
+                  <span className={styles.dashTitle}>Ringkasan Bisnis</span>
+                </div>
+                <div className={styles.dashPeriodBtn}>
+                  <Calendar size={12} />
+                  <span>7 hari terakhir</span>
+                  <ChevronRight size={12} />
+                </div>
+              </div>
+
+              {/* Kartu Statistik Total Penjualan & Transaksi */}
+              <div className={styles.metricGrid}>
+                <div className={styles.metric}>
+                  <div className={styles.metricHeader}>
+                    <span className={styles.metricIconWrap}>
+                      <ShoppingBag size={14} />
+                    </span>
+                    <span className={styles.metricLabel}>Total Penjualan</span>
+                  </div>
+                  <strong className={styles.metricValue}>Rp 12,8 jt</strong>
+                  <small className={styles.metricTrend}>
+                    <span className={styles.positive}>↗ 12,4%</span> <span>dari 7 hari sebelumnya</span>
+                  </small>
+                </div>
+
+                <div className={styles.metric}>
+                  <div className={styles.metricHeader}>
+                    <span className={styles.metricIconWrap}>
+                      <Receipt size={14} />
+                    </span>
+                    <span className={styles.metricLabel}>Jumlah Transaksi</span>
+                  </div>
+                  <strong className={styles.metricValue}>248</strong>
+                  <small className={styles.metricTrend}>
+                    <span className={styles.positive}>↗ 9,3%</span> <span>dari 7 hari sebelumnya</span>
+                  </small>
+                </div>
+              </div>
+
+              {/* Grafik Performa Penjualan */}
+              <div className={styles.miniChart}>
+                <div className={styles.miniChartHeader}>
+                  <span className={styles.miniChartTitle}>Performa Penjualan</span>
+                  <div className={styles.miniChartDropdown}>
+                    <span>7 hari</span>
+                    <ChevronDown size={13} />
+                  </div>
+                </div>
+
+                <div className={styles.chartWrapper}>
+                  <div className={styles.chartYAxis} aria-hidden="true">
+                    <span>15 jt</span>
+                    <span>10 jt</span>
+                    <span>5 jt</span>
+                    <span>0</span>
+                  </div>
+                  <div className={styles.chartCanvas}>
+                    <svg viewBox="0 0 340 100" preserveAspectRatio="none" aria-hidden="true">
+                      <defs>
+                        <linearGradient id="mini-fill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.22" />
+                          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+                      <line x1="0" y1="8" x2="340" y2="8" stroke="#f1f5f9" strokeDasharray="3 3" />
+                      <line x1="0" y1="38" x2="340" y2="38" stroke="#f1f5f9" strokeDasharray="3 3" />
+                      <line x1="0" y1="68" x2="340" y2="68" stroke="#f1f5f9" strokeDasharray="3 3" />
+                      <line x1="0" y1="96" x2="340" y2="96" stroke="#f1f5f9" />
+                      <path
+                        d="M 0 84 C 28 72 45 62 80 65 C 115 68 135 55 170 58 C 205 61 225 44 260 48 C 295 52 315 22 340 8 L 340 96 L 0 96 Z"
+                        fill="url(#mini-fill)"
+                      />
+                      <path
+                        d="M 0 84 C 28 72 45 62 80 65 C 115 68 135 55 170 58 C 205 61 225 44 260 48 C 295 52 315 22 340 8"
+                        fill="none"
+                        stroke="#2563eb"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                      />
+                      <circle cx="340" cy="8" r="4.5" fill="#2563eb" />
+                      <circle cx="340" cy="8" r="7.5" fill="none" stroke="#2563eb" strokeOpacity="0.35" strokeWidth="2" />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className={styles.miniChartLabels} aria-hidden="true">
+                  <span>Sen</span>
+                  <span>Sel</span>
+                  <span>Rab</span>
+                  <span>Kam</span>
+                  <span>Jum</span>
+                  <span>Sab</span>
+                  <span>Min</span>
+                </div>
+              </div>
+
+              {/* Dua Kartu Operasional di Bagian Bawah */}
+              <div className={styles.dashBottomCards}>
+                <div className={styles.bottomCardSales}>
+                  <span className={styles.bottomCardIconBlue}>
+                    <BarChart3 size={16} />
+                  </span>
+                  <div className={styles.bottomCardContent}>
+                    <div className={styles.bottomCardTitleRow}>
+                      <strong>Ringkasan penjualan</strong>
+                      <ChevronRight size={12} className={styles.bottomCardArrow} />
+                    </div>
+                    <p>Penjualan tertinggi terjadi pada akhir pekan.</p>
+                  </div>
+                </div>
+
+                <div className={styles.bottomCardStatus}>
+                  <span className={styles.bottomCardIconGreen}>
+                    <Store size={16} />
+                  </span>
+                  <div className={styles.bottomCardContent}>
+                    <div className={styles.bottomCardTitleRow}>
+                      <strong>Bisnis terpantau</strong>
+                      <ChevronRight size={12} className={styles.bottomCardArrow} />
+                    </div>
+                    <p>Operasional berjalan normal.</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className={styles.floatBadge}><span><ClipboardCheck size={17} /></span><div><strong>Bisnis terpantau</strong><small>Laporan diperbarui otomatis</small></div></div>
           </div>
         </div>
         <a className={styles.scrollCue} href="#fitur" aria-label="Lihat fitur"><ArrowDown size={16} /></a>
