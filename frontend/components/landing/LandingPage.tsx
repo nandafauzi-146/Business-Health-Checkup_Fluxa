@@ -268,28 +268,54 @@ function MobilePairsList({
   items: MobileCardItem[]
   defaultIcon?: LucideIcon
 }) {
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
+
   const pairs: Array<[MobileCardItem, MobileCardItem | undefined]> = []
   for (let i = 0; i < items.length; i += 2) {
     pairs.push([items[i], items[i + 1]])
   }
 
+  const toggleExpand = (idx: number) => {
+    setExpandedIdx(prev => prev === idx ? null : idx)
+  }
+
   return (
     <div className={styles.mobilePairsList} aria-label="Mobile paired containers">
       {pairs.map(([col1, col2], pIdx) => {
+        const idx1 = pIdx * 2
+        const isExpanded1 = expandedIdx === idx1
         const Icon1 = resolveIcon(col1.icon, defaultIcon)
-        const num1 = col1.number || `0${pIdx * 2 + 1}`
-        const detail1 = getConciseDetail(col1, pIdx * 2)
+        const num1 = col1.number || `0${idx1 + 1}`
+        const detail1 = getConciseDetail(col1, idx1)
 
+        const idx2 = pIdx * 2 + 1
+        const isExpanded2 = expandedIdx === idx2
         const Icon2 = col2 ? resolveIcon(col2.icon, defaultIcon) : null
-        const num2 = col2 ? (col2.number || `0${pIdx * 2 + 2}`) : ''
-        const detail2 = col2 ? getConciseDetail(col2, pIdx * 2 + 1) : ''
+        const num2 = col2 ? (col2.number || `0${idx2 + 1}`) : ''
+        const detail2 = col2 ? getConciseDetail(col2, idx2) : ''
 
         return (
           <div className={styles.mobilePairCard} key={pIdx}>
             {/* Column 1 */}
-            <article className={styles.mobilePairCol}>
+            <article
+              className={`${styles.mobilePairCol}${isExpanded1 ? ` ${styles.mobilePairColExpanded}` : ''}`}
+              onClick={() => toggleExpand(idx1)}
+              role="button"
+              tabIndex={0}
+              aria-expanded={isExpanded1}
+              aria-label={`Kartu ${num1}: ${col1.title}. Ketuk untuk ${isExpanded1 ? 'tutup' : 'baca selengkapnya'}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  toggleExpand(idx1)
+                }
+              }}
+            >
               <div className={styles.mobileColTop}>
                 <span className={styles.mobileColNumber}>{num1}</span>
+                <span className={`${styles.mobileExpandIcon}${isExpanded1 ? ` ${styles.mobileExpandIconRotated}` : ''}`} aria-hidden="true">
+                  <ChevronDown size={12} />
+                </span>
               </div>
               <div className={styles.mobileColNotch} aria-hidden="true">
                 <div className={styles.mobileNotchDish}>
@@ -300,8 +326,10 @@ function MobilePairsList({
                 </div>
               </div>
               <h3 className={styles.mobileColTitle}>{col1.title}</h3>
-              <p className={styles.mobileColDescription}>{col1.description}</p>
-              <div className={styles.mobileColMeta}>
+              <p className={`${styles.mobileColDescription}${isExpanded1 ? ` ${styles.mobileColDescriptionExpanded}` : ''}`}>
+                {col1.description}
+              </p>
+              <div className={`${styles.mobileColMeta}${isExpanded1 ? ` ${styles.mobileColMetaExpanded}` : ''}`}>
                 <Clock3 size={10} className={styles.mobileMetaClock} />
                 <span>{detail1}</span>
               </div>
@@ -312,9 +340,25 @@ function MobilePairsList({
 
             {/* Column 2 */}
             {col2 && (
-              <article className={styles.mobilePairCol}>
+              <article
+                className={`${styles.mobilePairCol}${isExpanded2 ? ` ${styles.mobilePairColExpanded}` : ''}`}
+                onClick={() => toggleExpand(idx2)}
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded2}
+                aria-label={`Kartu ${num2}: ${col2.title}. Ketuk untuk ${isExpanded2 ? 'tutup' : 'baca selengkapnya'}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    toggleExpand(idx2)
+                  }
+                }}
+              >
                 <div className={styles.mobileColTop}>
                   <span className={styles.mobileColNumber}>{num2}</span>
+                  <span className={`${styles.mobileExpandIcon}${isExpanded2 ? ` ${styles.mobileExpandIconRotated}` : ''}`} aria-hidden="true">
+                    <ChevronDown size={12} />
+                  </span>
                 </div>
                 <div className={styles.mobileColNotch} aria-hidden="true">
                   <div className={styles.mobileNotchDish}>
@@ -325,8 +369,10 @@ function MobilePairsList({
                   </div>
                 </div>
                 <h3 className={styles.mobileColTitle}>{col2.title}</h3>
-                <p className={styles.mobileColDescription}>{col2.description}</p>
-                <div className={styles.mobileColMeta}>
+                <p className={`${styles.mobileColDescription}${isExpanded2 ? ` ${styles.mobileColDescriptionExpanded}` : ''}`}>
+                  {col2.description}
+                </p>
+                <div className={`${styles.mobileColMeta}${isExpanded2 ? ` ${styles.mobileColMetaExpanded}` : ''}`}>
                   <Clock3 size={10} className={styles.mobileMetaClock} />
                   <span>{detail2}</span>
                 </div>

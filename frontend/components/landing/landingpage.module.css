@@ -863,6 +863,22 @@
   flex: 1 1 0;
   min-width: 0;
   padding: 13px 11px 12px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 12px;
+  transition: background .2s ease, transform .15s ease;
+}
+
+.mobilePairCol:hover {
+  background: rgba(59, 130, 246, 0.04);
+}
+
+.mobilePairCol:active {
+  transform: scale(0.99);
+}
+
+.mobilePairColExpanded {
+  background: rgba(59, 130, 246, 0.08);
 }
 
 .mobilePairDivider {
@@ -950,6 +966,20 @@
   text-align: left;
 }
 
+.mobileExpandIcon {
+  margin-left: auto;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .25s ease, color .2s ease;
+}
+
+.mobileExpandIconRotated {
+  transform: rotate(180deg);
+  color: var(--blue, #2563eb);
+}
+
 .mobileColDescription {
   margin-top: 5px;
   font-size: 10px;
@@ -962,6 +992,15 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: all .2s ease;
+}
+
+.mobileColDescriptionExpanded {
+  display: block !important;
+  -webkit-line-clamp: unset !important;
+  -webkit-box-orient: unset !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
 }
 
 .mobileColMeta {
@@ -978,12 +1017,25 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: all .2s ease;
+}
+
+.mobileColMetaExpanded {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
 }
 
 .mobileColMeta span {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.mobileColMetaExpanded span {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
 }
 
 .mobileMetaClock {
@@ -1905,7 +1957,19 @@
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 :global(html[data-theme="dark"]) .mobilePairDivider { background: rgba(100, 150, 255, 0.12); }
+:global(html[data-theme="dark"]) .mobilePairCol:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+:global(html[data-theme="dark"]) .mobilePairColExpanded {
+  background: rgba(59, 130, 246, 0.15);
+}
 :global(html[data-theme="dark"]) .mobileColNumber { color: #60a5fa; }
+:global(html[data-theme="dark"]) .mobileExpandIcon {
+  color: #64748b;
+}
+:global(html[data-theme="dark"]) .mobileExpandIconRotated {
+  color: #60a5fa;
+}
 :global(html[data-theme="dark"]) .mobileNotchDish {
   background: radial-gradient(ellipse at 50% 12%, rgba(45, 95, 215, 0.32) 0%, rgba(10, 22, 45, 0.99) 70%);
   border-color: rgba(85, 155, 255, 0.35);
