@@ -123,7 +123,7 @@
         ],
         "priceLabel": "Hubungi kami",
         "description": "Untuk usaha kecil yang ingin mulai lebih rapi.",
-        "priceSublabel": "untuk informasi harga"
+        "priceSublabel": "Hubungi tim kami untuk detail harga"
       },
       {
         "name": "Growth",
@@ -136,7 +136,7 @@
         ],
         "priceLabel": "Hubungi kami",
         "description": "Untuk bisnis yang ingin memahami performa lebih dalam.",
-        "priceSublabel": "untuk informasi harga"
+        "priceSublabel": "Hubungi tim kami untuk detail harga"
       },
       {
         "name": "Multi-cabang",
@@ -149,7 +149,7 @@
         ],
         "priceLabel": "Hubungi kami",
         "description": "Untuk tim dan operasional dengan kebutuhan lebih luas.",
-        "priceSublabel": "untuk informasi harga"
+        "priceSublabel": "Hubungi tim kami untuk detail harga"
       }
     ],
     "buttonText": "Tanyakan paket",
