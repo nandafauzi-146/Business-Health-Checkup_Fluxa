@@ -703,34 +703,327 @@
   color: var(--blue);
 }
 
-.aiSection { padding: 98px 0; background: #f7f9fe; }
-.aiLayout { display: grid; grid-template-columns: .85fr 1.15fr; align-items: center; gap: 75px; }
-.aiCopy h2 { font-size: clamp(34px, 4vw, 45px); }
-.aiCopy > p { margin-top: 16px; color: var(--muted); font-size: 14px; line-height: 1.8; }
-.checkList { display: grid; gap: 12px; margin: 23px 0 25px; list-style: none; }
-.checkList li { display: flex; align-items: center; gap: 10px; color: #53637e; font-size: 12px; font-weight: 600; }
-.checkList svg { color: #189d72; }
-.textLink { display: inline-flex; align-items: center; gap: 8px; color: var(--blue) !important; font-size: 12px; font-weight: 750; }
-.chartCard { padding: 25px 27px 20px; border: 1px solid #e8edf5; border-radius: 18px; background: white; box-shadow: 0 20px 55px rgb(41 69 124 / 7%); }
-.chartHeader { display: flex; justify-content: space-between; align-items: flex-start; }
-.chartHeader h3 { margin-top: 7px; font-size: 16px; letter-spacing: -.4px; }
-.chartHeader .eyebrow { font-size: 9px; }
-.chartPeriod { padding: 7px 9px; border: 1px solid #edf0f5; border-radius: 7px; color: #77869f; font-size: 9px; }
-.chartValue { display: flex; align-items: baseline; gap: 4px; margin-top: 19px; }
-.chartValue strong { font-size: 34px; letter-spacing: -1.5px; }
-.chartValue > span:nth-child(2) { color: #99a4b5; font-size: 12px; }
-.chartTrend { display: inline-flex; align-items: center; gap: 3px; margin-left: 10px; color: #149b71; font-size: 10px; font-weight: 700; }
-.chart { position: relative; height: 180px; margin-top: 15px; padding-left: 34px; }
-.chartGrid { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding-bottom: 1px; }
-.chartGrid span { position: relative; color: #a2adbd; font-size: 9px; }
-.chartGrid span::after { content: ""; position: absolute; top: 7px; left: 30px; right: 0; border-top: 1px dashed #edf0f5; }
-.chart svg { position: relative; width: 100%; height: 100%; overflow: visible; }
-.chartMonths { display: flex; justify-content: space-between; margin: 6px 2px 0 34px; color: #98a4b5; font-size: 9px; }
-.insight { display: flex; align-items: center; gap: 11px; margin-top: 20px; padding: 12px; border-radius: 11px; background: #f4f7ff; }
-.insightIcon { width: 30px; height: 30px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 9px; color: #7358d1; background: #ebe7ff; }
-.insight p { color: #75829a; font-size: 9px; line-height: 1.6; }
-.insight p strong { color: #344560; font-size: 10px; }
-.sampleNote { margin-left: auto; color: #8794a8; font-size: 9px; }
+.aiSection {
+  padding: 96px 0;
+  background: #f8fafd;
+  position: relative;
+  overflow: hidden;
+}
+
+.aiLayout {
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+  align-items: center;
+  gap: 60px;
+}
+
+.aiCopy h2 {
+  font-size: clamp(32px, 3.8vw, 46px);
+  line-height: 1.15;
+  letter-spacing: -2px;
+  font-weight: 800;
+}
+
+.aiCopy > p {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.75;
+  max-width: 480px;
+}
+
+.checkList {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0 26px;
+  list-style: none;
+}
+
+.checkList li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #3e506d;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.checkList svg {
+  color: #10b981;
+  flex: 0 0 auto;
+}
+
+.textLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--blue) !important;
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: transform .2s ease, gap .2s ease;
+}
+
+.textLink:hover {
+  gap: 12px;
+}
+
+/* Dashboard / Chart Card */
+.chartCard {
+  width: 100%;
+  max-width: 520px;
+  margin-left: auto;
+  padding: 26px 26px 20px;
+  border: 1px solid #e8edf5;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 20px 50px rgba(37, 99, 235, 0.06), 0 2px 6px rgba(0, 0, 0, 0.02);
+  transition: box-shadow .3s ease, border-color .3s ease;
+}
+
+.chartCard:hover {
+  box-shadow: 0 26px 60px rgba(37, 99, 235, 0.09), 0 4px 10px rgba(0, 0, 0, 0.03);
+  border-color: #dbeafe;
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chartHeader h3 {
+  font-size: 16.5px;
+  font-weight: 750;
+  letter-spacing: -0.4px;
+  color: var(--ink);
+}
+
+.chartPeriod {
+  padding: 5px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 99px;
+  color: #64748b;
+  font-size: 9.5px;
+  font-weight: 600;
+  background: #f8fafc;
+}
+
+.chartValueRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.chartScoreBadge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  color: #2563eb;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.chartScoreText {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.chartScoreText strong {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -1.2px;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.chartScoreText span {
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chartTrend {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #16a34a;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.chart {
+  position: relative;
+  height: 175px;
+  margin-top: 16px;
+  padding-left: 32px;
+}
+
+.chartGrid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 2px;
+  pointer-events: none;
+}
+
+.chartGrid span {
+  position: relative;
+  color: #a0aec0;
+  font-size: 9.5px;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.chartGrid span::after {
+  content: "";
+  position: absolute;
+  top: 7px;
+  left: 28px;
+  right: 0;
+  border-top: 1px dashed #edf2f7;
+}
+
+.chart svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.chartFillPath {
+  opacity: 0;
+  transition: opacity 0.8s ease 0.4s;
+}
+
+.chartFillVisible {
+  opacity: 1;
+}
+
+.chartLinePath {
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  transition: stroke-dashoffset 1.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.chartLineAnimated {
+  stroke-dashoffset: 0;
+}
+
+.chartEndpoint {
+  opacity: 0;
+  transition: opacity 0.4s ease 1.1s;
+}
+
+.chartEndpointVisible {
+  opacity: 1;
+}
+
+.pulseRing {
+  fill: rgba(37, 99, 235, 0.22);
+  transform-origin: 485px 28px;
+  animation: chartPulse 2.4s ease-out infinite;
+}
+
+.chartDot {
+  fill: #ffffff;
+  stroke: #2563eb;
+  stroke-width: 2.8;
+  vector-effect: non-scaling-stroke;
+}
+
+@keyframes chartPulse {
+  0% { transform: scale(0.85); opacity: 0.9; }
+  50% { transform: scale(1.65); opacity: 0; }
+  100% { transform: scale(0.85); opacity: 0; }
+}
+
+.chartMonths {
+  display: flex;
+  justify-content: space-between;
+  margin: 6px 2px 0 32px;
+  color: #94a3b8;
+  font-size: 9.5px;
+  font-weight: 600;
+}
+
+/* Insight Card (Tren Penjualan) */
+.insight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f8fafd;
+  border: 1px solid #e8effe;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.6s ease 0.8s, transform 0.6s ease 0.8s, border-color .2s ease, background .2s ease;
+}
+
+.insightVisible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.insight:hover {
+  background: #f3f7fe;
+  border-color: #c7dcfa;
+}
+
+.insightIcon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+}
+
+.insightContent {
+  flex: 1 1 auto;
+}
+
+.insightContent strong {
+  display: block;
+  color: var(--ink);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: -0.15px;
+}
+
+.insightContent p {
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.45;
+  margin-top: 2px;
+}
+
+.insightArrow {
+  color: #94a3b8;
+  flex: 0 0 auto;
+  transition: transform .2s ease, color .2s ease;
+}
+
+.insight:hover .insightArrow {
+  transform: translateX(3px);
+  color: #2563eb;
+}
 
 .contactSection { padding: 10px 0 94px; }
 .contactCard { width: min(1050px, calc(100% - 64px)); min-height: 160px; display: flex; align-items: center; gap: 22px; margin: 0 auto; padding: 28px 37px; border: 1px solid #e8edf6; border-radius: 18px; background: linear-gradient(100deg, #f7f9ff, #fbfaff); }
@@ -922,14 +1215,53 @@
 :global(html[data-theme="dark"]) .mobileColDescription { color: #94a3b8; }
 :global(html[data-theme="dark"]) .mobileColMeta { color: #93c5fd; }
 :global(html[data-theme="dark"]) .mobileMetaClock { color: #60a5fa; }
-:global(html[data-theme="dark"]) .aiSection, :global(html[data-theme="dark"]) .faqSection { background: #101b2e; }
-:global(html[data-theme="dark"]) .chartHeader h3 { color: #e7efff; }
+:global(html[data-theme="dark"]) .aiSection { background: #081022; }
+:global(html[data-theme="dark"]) .faqSection { background: #101b2e; }
+:global(html[data-theme="dark"]) .chartCard {
+  border-color: rgba(148, 168, 198, 0.16);
+  background: #0f1c32;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+:global(html[data-theme="dark"]) .chartCard:hover {
+  border-color: rgba(96, 165, 250, 0.35);
+}
+:global(html[data-theme="dark"]) .chartHeader h3 { color: #ffffff; }
 :global(html[data-theme="dark"]) .chartPeriod, :global(html[data-theme="dark"]) .packageButton { border-color: rgb(148 168 198 / 18%); color: #c1cde0 !important; background: #17253b; }
-:global(html[data-theme="dark"]) .chartGrid span, :global(html[data-theme="dark"]) .chartMonths { color: #95a6bf; }
-:global(html[data-theme="dark"]) .chartGrid span::after { border-color: rgb(148 168 198 / 15%); }
-:global(html[data-theme="dark"]) .insight { background: #18253d; }
-:global(html[data-theme="dark"]) .insight p { color: #a5b4cc; }
-:global(html[data-theme="dark"]) .insight p strong { color: #e0eaff; }
+:global(html[data-theme="dark"]) .chartScoreBadge {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(96, 165, 250, 0.25);
+  color: #60a5fa;
+}
+:global(html[data-theme="dark"]) .chartScoreText strong { color: #ffffff; }
+:global(html[data-theme="dark"]) .chartScoreText span { color: #8395b0; }
+:global(html[data-theme="dark"]) .chartTrend {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.25);
+  color: #34d399;
+}
+:global(html[data-theme="dark"]) .chartGrid span, :global(html[data-theme="dark"]) .chartMonths { color: #8395b0; }
+:global(html[data-theme="dark"]) .chartGrid span::after { border-color: rgba(148 168 198 / 12%); }
+:global(html[data-theme="dark"]) .chartLinePath { stroke: #3b82f6; }
+:global(html[data-theme="dark"]) .chartDot { fill: #0f1c32; stroke: #60a5fa; }
+:global(html[data-theme="dark"]) .pulseRing { fill: rgba(96, 165, 250, 0.3); }
+:global(html[data-theme="dark"]) .insight {
+  background: rgba(23, 37, 65, 0.7);
+  border-color: rgba(96, 165, 250, 0.18);
+}
+:global(html[data-theme="dark"]) .insight:hover {
+  background: rgba(29, 47, 82, 0.85);
+  border-color: rgba(96, 165, 250, 0.35);
+}
+:global(html[data-theme="dark"]) .insightIcon {
+  background: rgba(59, 130, 246, 0.22);
+  border-color: rgba(96, 165, 250, 0.25);
+  color: #60a5fa;
+}
+:global(html[data-theme="dark"]) .insightContent strong { color: #ffffff; }
+:global(html[data-theme="dark"]) .insightContent p { color: #94a3b8; }
+:global(html[data-theme="dark"]) .insightArrow { color: #64748b; }
+:global(html[data-theme="dark"]) .insight:hover .insightArrow { color: #60a5fa; }
+:global(html[data-theme="dark"]) .checkList li { color: #cbd5e1; }
 :global(html[data-theme="dark"]) .faqList, :global(html[data-theme="dark"]) .faqItem { border-color: rgb(148 168 198 / 17%); }
 :global(html[data-theme="dark"]) .faqItem summary { color: #dce7f7; }
 :global(html[data-theme="dark"]) .faqItem > p { color: #a5b4cc; }
@@ -994,6 +1326,13 @@
   to { opacity: 0; transform: translateY(-8px); }
 }
 
+@media (max-width: 1023px) {
+  .aiLayout { grid-template-columns: 1fr; gap: 40px; }
+  .aiCopy { max-width: 620px; margin: 0 auto; text-align: left; }
+  .aiCopy h2 { font-size: clamp(30px, 4vw, 38px); }
+  .chartCard { width: min(100%, 540px); margin: 0 auto; }
+}
+
 @media (max-width: 900px) {
   .desktopNav { gap: 19px; }
   .navWrap, .heroInner, .sectionWrap, .footerInner { width: min(100% - 48px, 720px); }
@@ -1007,7 +1346,6 @@
   .heroVisual { min-height: auto; width: 100%; }
   .dashboardCard { width: min(100%, 480px); padding: 22px 20px; margin: 0 auto; }
   .dashBottomCards { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .aiLayout { gap: 35px; }
   .faqLayout { gap: 45px; }
   .featureGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
   .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
@@ -1077,11 +1415,28 @@
   .notchCardTitle { font-size: 14.5px; margin-top: 46px; }
   .notchCardDescription { font-size: 11.5px; }
   .notchCardMeta { font-size: 10px; }
-  .aiSection { padding: 70px 0; }
-  .aiLayout { grid-template-columns: 1fr; gap: 32px; }
-  .aiCopy > p { font-size: 12px; }
-  .chartCard { padding: 20px 16px 16px; }
-  .chart { height: 155px; }
+  .aiSection { padding: 64px 0; }
+  .aiLayout { grid-template-columns: 1fr; gap: 28px; }
+  .aiCopy { max-width: 100%; margin: 0; }
+  .aiCopy h2 { font-size: clamp(26px, 7vw, 34px); letter-spacing: -1.2px; }
+  .aiCopy > p { font-size: 13px; line-height: 1.65; margin-top: 12px; }
+  .checkList { gap: 10px; margin: 18px 0 20px; }
+  .checkList li { font-size: 11.5px; }
+  .chartCard { width: 100%; max-width: 100%; padding: 20px 18px 16px; border-radius: 18px; margin: 0; }
+  .chartHeader h3 { font-size: 15px; }
+  .chartPeriod { font-size: 9px; padding: 4px 9px; }
+  .chartScoreBadge { width: 25px; height: 25px; }
+  .chartScoreText strong { font-size: 28px; }
+  .chartScoreText span { font-size: 11.5px; }
+  .chartTrend { font-size: 9.5px; padding: 2px 7px; margin-left: 6px; }
+  .chart { height: 145px; margin-top: 14px; padding-left: 28px; }
+  .chartGrid span { font-size: 8.5px; }
+  .chartGrid span::after { left: 24px; }
+  .chartMonths { font-size: 8.5px; margin-left: 28px; }
+  .insight { padding: 10px 12px; gap: 10px; margin-top: 14px; }
+  .insightIcon { width: 30px; height: 30px; border-radius: 8px; }
+  .insightContent strong { font-size: 11px; }
+  .insightContent p { font-size: 9.5px; }
   .contactSection { padding: 0 0 65px; }
   .contactCard { width: calc(100% - 40px); display: grid; grid-template-columns: 48px 1fr; gap: 14px; padding: 22px; }
   .contactCard h2 { font-size: 16px; }
@@ -1128,6 +1483,10 @@
   .mobileColMeta { font-size: 8px; gap: 3px; margin-top: 8px; }
   .chartHeader { gap: 8px; }
   .chartPeriod { flex: 0 0 auto; }
+  .chartCard { padding: 16px 13px 13px; }
+  .chart { height: 130px; padding-left: 24px; }
+  .chartGrid span::after { left: 20px; }
+  .chartMonths { margin-left: 24px; font-size: 8px; }
   .contactCard { width: calc(100% - 32px); grid-template-columns: 1fr; }
   .contactCard .secondaryButton { grid-column: 1; }
   .footerInner { width: calc(100% - 32px); }
@@ -1138,5 +1497,10 @@
   .introOverlay { animation-duration: .01ms !important; }
   .introOverlay *, .introOverlay::before, .introOverlay::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
   .isLeaving { animation-duration: .01ms !important; }
+  .chartLinePath { stroke-dashoffset: 0 !important; transition: none !important; }
+  .chartFillPath { opacity: 1 !important; transition: none !important; }
+  .chartEndpoint { opacity: 1 !important; transition: none !important; }
+  .pulseRing { animation: none !important; opacity: 0.5 !important; }
+  .insight { opacity: 1 !important; transform: none !important; transition: none !important; }
   .page *, .page *::before, .page *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
