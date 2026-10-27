@@ -318,19 +318,54 @@ export default function DebtCategoriesClient() {
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="debt-cat-type">
-                    Jenis Transaksi *
-                  </label>
-                  <select
-                    id="debt-cat-type"
-                    className="input"
-                    value={formData.type}
-                    onChange={e => setFormData({ ...formData, type: e.target.value as CategoryType })}
-                  >
-                    <option value="payable">Hutang</option>
-                    <option value="receivable">Piutang</option>
-                    <option value="both">Hutang &amp; Piutang</option>
-                  </select>
+                  <label className="label">Jenis Transaksi *</label>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+                    {([
+                      { value: 'payable', label: 'Hutang', icon: <ArrowUpRight size={15} />, color: 'var(--bad)', bg: 'var(--bads)' },
+                      { value: 'receivable', label: 'Piutang', icon: <ArrowDownLeft size={15} />, color: 'var(--ok)', bg: 'var(--oks)' },
+                    ] as const).map(opt => {
+                      const isActive = formData.type === opt.value
+                      return (
+                        <label
+                          key={opt.value}
+                          htmlFor={`debt-type-${opt.value}`}
+                          style={{
+                            flex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '12px 8px',
+                            borderRadius: 10,
+                            border: `2px solid ${isActive ? opt.color : 'var(--line)'}`,
+                            background: isActive ? opt.bg : 'var(--surface)',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            userSelect: 'none',
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            id={`debt-type-${opt.value}`}
+                            name="debt-cat-type"
+                            value={opt.value}
+                            checked={isActive}
+                            onChange={() => setFormData({ ...formData, type: opt.value })}
+                            style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
+                          />
+                          <span style={{ color: isActive ? opt.color : 'var(--mute)' }}>{opt.icon}</span>
+                          <span style={{
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: isActive ? opt.color : 'var(--mute)',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {opt.label}
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
                 </div>
 
                 <div>

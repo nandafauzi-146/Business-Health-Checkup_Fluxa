@@ -43,14 +43,22 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
       items: [
         { icon: <Package size={16} />, label: 'Kelola Produk', href: '/admin/produk' },
         { icon: <Layers size={16} />, label: 'Stok & Kartu Stok', href: '/admin/stok' },
-        { icon: <ClipboardList size={16} />, label: 'Kategori', href: '/admin/kategori' },
+        { icon: <ClipboardList size={16} />, label: 'Kategori Produk', href: '/admin/kategori' },
       ]
     },
     {
       label: 'Keuangan',
       items: [
         { icon: <Tag size={16} />, label: 'Diskon & Promo', href: '/admin/diskon' },
-        { icon: <DollarSign size={16} />, label: 'Biaya Operasional', href: '/admin/biaya' },
+        {
+          icon: <DollarSign size={16} />,
+          label: 'Biaya Operasional',
+          href: '/admin/biaya',
+          children: [
+            { icon: <DollarSign size={16} />, label: 'Pengeluaran', href: '/admin/biaya' },
+            { icon: <Tags size={16} />, label: 'Kategori Biaya', href: '/admin/biaya/kategori' },
+          ]
+        },
         {
           icon: <Scale size={16} />,
           label: 'Hutang & Piutang',
