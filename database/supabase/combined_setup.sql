@@ -110,13 +110,20 @@ create table if not exists public.expense_categories (
   created_at timestamptz not null default now()
 );
 
--- 10. Expenses
+-- 10. Expenses (Pengeluaran Operasional & Kas Shift)
 create table if not exists public.expenses (
   id uuid primary key default gen_random_uuid(),
+  shift_id uuid references public.shifts(id) on delete set null,
   category_id uuid references public.expense_categories(id) on delete set null,
   amount integer not null check (amount > 0),
   description text not null,
   expense_date date not null default current_date,
+  status text not null default 'approved' check (status in ('pending', 'approved', 'rejected', 'clarification')),
+  cash_impact boolean not null default true,
+  reviewed_by uuid references public.profiles(id),
+  reviewed_at timestamptz,
+  rejection_reason text,
+  receipt_url text,
   created_by uuid not null references public.profiles(id),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -425,14 +432,22 @@ begin
     raise exception 'Akses ditolak: Anda tidak memiliki akses untuk menutup shift ini.';
   end if;
 
-  -- Hitung total penjualan uang tunai selama shift ini
+  -- 1. Hitung total penjualan uang tunai selama shift ini
   select coalesce(sum(final_amount), 0) into v_cash_sales
   from public.sales
   where shift_id = p_shift_id
     and payment_method = 'cash'
     and status = 'completed';
 
-  v_expected_cash := v_shift.initial_cash + v_cash_sales;
+  -- 2. Hitung total pengeluaran operasional toko dari laci kasir selama shift
+  select coalesce(sum(amount), 0) into v_shift_expenses
+  from public.expenses
+  where shift_id = p_shift_id
+    and cash_impact = true
+    and status <> 'rejected';
+
+  -- 3. Rumus Standar: Kas Diharapkan = Saldo Awal + Penjualan Tunai - Pengeluaran Kas
+  v_expected_cash := v_shift.initial_cash + v_cash_sales - v_shift_expenses;
   v_difference := p_final_cash - v_expected_cash;
 
   update public.shifts
@@ -448,6 +463,7 @@ begin
     'shift_id', p_shift_id,
     'initial_cash', v_shift.initial_cash,
     'cash_sales', v_cash_sales,
+    'cash_expenses', v_shift_expenses,
     'expected_cash', v_expected_cash,
     'final_cash', p_final_cash,
     'difference', v_difference
