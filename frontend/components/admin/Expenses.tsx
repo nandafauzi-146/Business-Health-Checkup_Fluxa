@@ -36,9 +36,11 @@ export interface Expense {
 export default function ExpensesClient({
   initialExpenses,
   categories,
+  hideHeader,
 }: {
   initialExpenses: Expense[]
   categories: ExpenseCategory[]
+  hideHeader?: boolean
 }) {
   const [expenses, setExpenses] = useState<Expense[]>(initialExpenses)
   const [search, setSearch] = useState('')
