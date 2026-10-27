@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag, KpiCard } from '@/components/ui/Cards'
 import { BukaShiftModal, TutupShiftModal } from '@/components/pos/KasMasukModal'
+import { cleanUUID, fetchShiftExpenses, ShiftExpenseItem } from '@/lib/cash-reconciliation'
 
 export interface ShiftSaleItem {
   id: string
@@ -43,6 +44,28 @@ function calculateDuration(start: string, end?: string | null) {
   const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
   if (hours === 0) return `${minutes} menit`
   return `${hours} jam ${minutes} mnt`
+}
+
+export function parseShiftNotes(rawNote?: string | null) {
+  if (!rawNote || !rawNote.trim()) {
+    return { openingNote: '—', closingNote: '—' }
+  }
+
+  const text = rawNote.trim()
+  const bukaMatch = text.match(/\[(?:Buka|Pembukaan)\]:\s*([\s\S]*?)(?=\[(?:Tutup|Penutupan)\]:|$)/i)
+  const tutupMatch = text.match(/\[(?:Tutup|Penutupan)\]:\s*([\s\S]*?)$/i)
+
+  if (bukaMatch || tutupMatch) {
+    return {
+      openingNote: bukaMatch && bukaMatch[1].trim() ? bukaMatch[1].trim() : '—',
+      closingNote: tutupMatch && tutupMatch[1].trim() ? tutupMatch[1].trim() : '—'
+    }
+  }
+
+  return {
+    openingNote: text,
+    closingNote: '—'
+  }
 }
 
 export interface ShiftItem {
@@ -95,6 +118,7 @@ export default function ShiftClient({
   const [filterTab, setFilterTab] = useState<'all' | 'active' | 'closed' | 'discrepancy'>('all')
 
   const [shiftSales, setShiftSales] = useState<ShiftSaleItem[]>([])
+  const [shiftExpenses, setShiftExpenses] = useState<ShiftExpenseItem[]>([])
   const [loadingSales, setLoadingSales] = useState(false)
 
   useEffect(() => {
@@ -105,19 +129,35 @@ export default function ShiftClient({
     }
 
     let isMounted = true
-    const fetchSales = async () => {
+    const fetchSalesAndExpenses = async () => {
       setLoadingSales(true)
       try {
-        const { data, error } = await supabase
-          .from('sales')
-          .select('id, invoice_number, created_at, total_amount, discount, final_amount, payment_method, payment_status, status')
-          .eq('shift_id', selectedDetail.id)
-          .order('created_at', { ascending: false })
+        const validShiftId = cleanUUID(selectedDetail?.id)
+        const validCashierId = cleanUUID(selectedDetail?.cashier_id)
+
+        const salesPromise = validShiftId
+          ? supabase
+              .from('sales')
+              .select('id, invoice_number, created_at, total_amount, discount, final_amount, payment_method, payment_status, status')
+              .eq('shift_id', validShiftId)
+              .order('created_at', { ascending: false })
+          : Promise.resolve({ data: [], error: null })
+
+        const [salesRes, expenseRes] = await Promise.all([
+          salesPromise,
+          fetchShiftExpenses(
+            supabase,
+            validShiftId,
+            validCashierId,
+            selectedDetail?.opened_at,
+            selectedDetail?.closed_at
+          )
+        ])
 
         if (!isMounted) return
 
-        if (!error && data && data.length > 0) {
-          setShiftSales(data as ShiftSaleItem[])
+        if (!salesRes.error && salesRes.data && salesRes.data.length > 0) {
+          setShiftSales(salesRes.data as ShiftSaleItem[])
         } else {
           // Fallback: match by cashier and time range if shift_id was unlinked
           if (selectedDetail.cashier_id && selectedDetail.opened_at) {
@@ -133,20 +173,27 @@ export default function ShiftClient({
             const fallbackRes = await query.order('created_at', { ascending: false })
             if (isMounted && fallbackRes.data) {
               setShiftSales(fallbackRes.data as ShiftSaleItem[])
-              return
+            } else {
+              setShiftSales([])
             }
+          } else {
+            setShiftSales([])
           }
-          setShiftSales([])
         }
+
+        setShiftExpenses(expenseRes.expenses)
       } catch (err) {
-        console.warn('Gagal memuat transaksi shift:', err)
-        if (isMounted) setShiftSales([])
+        console.warn('Gagal memuat transaksi/biaya shift:', err)
+        if (isMounted) {
+          setShiftSales([])
+          setShiftExpenses([])
+        }
       } finally {
         if (isMounted) setLoadingSales(false)
       }
     }
 
-    void fetchSales()
+    void fetchSalesAndExpenses()
     return () => {
       isMounted = false
     }
@@ -661,6 +708,8 @@ export default function ShiftClient({
                   <th style={{ textAlign: 'right', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>KAS SISTEM</th>
                   <th style={{ textAlign: 'right', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>KAS FISIK (AKHIR)</th>
                   <th style={{ textAlign: 'right', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>SELISIH</th>
+                  <th style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)', minWidth: 170 }}>CATATAN PEMBUKAAN (OPSIONAL)</th>
+                  <th style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)', minWidth: 170 }}>CATATAN PENUTUPAN (OPSIONAL)</th>
                   <th style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>STATUS</th>
                   <th style={{ textAlign: 'right', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>DETAIL</th>
                 </tr>
@@ -750,6 +799,27 @@ export default function ShiftClient({
                           {isBalanced ? 'Cocok (Rp 0)' : `${isSurplus ? '+' : ''}${formatRp(diff)}`}
                         </span>
                       </td>
+
+                      {/* Catatan Pembukaan (Opsional) */}
+                      {(() => {
+                        const { openingNote, closingNote } = parseShiftNotes(s.note)
+                        return (
+                          <>
+                            <td style={{ padding: '14px 14px', fontSize: 12.5, maxWidth: 200 }}>
+                              <div style={{ color: openingNote !== '—' ? 'var(--ink)' : 'var(--mute)', fontWeight: openingNote !== '—' ? 500 : 400 }}>
+                                {openingNote}
+                              </div>
+                            </td>
+
+                            {/* Catatan Penutupan (Opsional) */}
+                            <td style={{ padding: '14px 14px', fontSize: 12.5, maxWidth: 200 }}>
+                              <div style={{ color: closingNote !== '—' ? 'var(--ink)' : 'var(--mute)', fontWeight: closingNote !== '—' ? 500 : 400 }}>
+                                {closingNote}
+                              </div>
+                            </td>
+                          </>
+                        )
+                      })()}
 
                       {/* Status */}
                       <td style={{ padding: '14px 14px' }}>
@@ -851,8 +921,20 @@ export default function ShiftClient({
                 <span style={{ fontWeight: 600 }}>{formatRp(selectedDetail.initial_cash || 0)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5 }}>
-                <span style={{ color: 'var(--mute)' }}>Estimasi Kas Sistem:</span>
-                <span style={{ fontWeight: 600, color: 'var(--acc)' }}>{formatRp(selectedDetail.expected_cash || 0)}</span>
+                <span style={{ color: 'var(--mute)' }}>Penjualan Tunai Bersih:</span>
+                <span style={{ fontWeight: 600, color: 'var(--ok)' }}>+{formatRp(shiftSalesSummary.cashTotal)}</span>
+              </div>
+              {shiftExpenses.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5 }}>
+                  <span style={{ color: 'var(--mute)' }}>Pengeluaran Kas Laci ({shiftExpenses.length} pos):</span>
+                  <span style={{ fontWeight: 600, color: 'var(--bad)' }}>
+                    -{formatRp(shiftExpenses.filter(e => e.cash_impact !== false && e.status !== 'rejected').reduce((s, c) => s + c.amount, 0))}
+                  </span>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, borderTop: '1px solid var(--line)', paddingTop: 7 }}>
+                <span style={{ color: 'var(--mute)' }}>Estimasi Kas Sistem (Seharusnya):</span>
+                <span style={{ fontWeight: 700, color: 'var(--acc)' }}>{formatRp(selectedDetail.expected_cash || 0)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, borderTop: '1px dashed var(--line)', paddingTop: 9 }}>
                 <span style={{ color: 'var(--ink)', fontWeight: 600 }}>Kas Fisik Terhitung:</span>
@@ -1000,18 +1082,118 @@ export default function ShiftClient({
               )}
             </div>
 
-            {selectedDetail.note && (
+            {/* Rincian Pengeluaran Kas Laci Shift */}
+            {shiftExpenses.length > 0 && (
               <div style={{
-                fontSize: 12.5,
                 background: 'var(--bg)',
-                padding: '10px 12px',
-                borderRadius: 10,
-                color: 'var(--mute)',
-                marginBottom: 16
+                borderRadius: 14,
+                padding: 14,
+                marginBottom: 16,
+                border: '1px solid var(--line)'
               }}>
-                <strong>Catatan Kasir:</strong> {selectedDetail.note}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <TrendingDown size={15} color="var(--bad)" />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
+                      Pengeluaran Kas Laci Shift
+                    </span>
+                  </div>
+                  <span style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: 6,
+                    background: 'var(--bads)',
+                    color: 'var(--bad)'
+                  }}>
+                    {shiftExpenses.length} Pos
+                  </span>
+                </div>
+
+                <div style={{
+                  maxHeight: 160,
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6
+                }}>
+                  {shiftExpenses.map(exp => (
+                    <div
+                      key={exp.id}
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: 8,
+                        background: 'var(--panel)',
+                        border: '1px solid var(--line)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontSize: 12
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{exp.description}</div>
+                        <div style={{ fontSize: 10.5, color: 'var(--mute)', display: 'flex', gap: 6, marginTop: 2, alignItems: 'center' }}>
+                          <span>{exp.category_name || 'Operasional'}</span>
+                          <span>•</span>
+                          <span style={{
+                            padding: '1px 5px',
+                            borderRadius: 4,
+                            fontWeight: 600,
+                            fontSize: 10,
+                            background: exp.status === 'approved' ? 'var(--oks)' : exp.status === 'rejected' ? 'var(--bads)' : 'var(--warns)',
+                            color: exp.status === 'approved' ? 'var(--ok)' : exp.status === 'rejected' ? 'var(--bad)' : 'var(--warn)'
+                          }}>
+                            {exp.status === 'rejected' ? 'Ditolak' : 'Tercatat'}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ fontWeight: 700, color: 'var(--bad)', fontSize: 12.5, flexShrink: 0 }}>
+                        -{formatRp(exp.amount)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
+
+            {/* Tampilan Khusus: Catatan Pembukaan & Penutupan */}
+            {(() => {
+              const notes = parseShiftNotes(selectedDetail.note)
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 16 }}>
+                  <div style={{
+                    fontSize: 12.5,
+                    background: 'var(--bg)',
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    border: '1px solid var(--line)',
+                  }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mute)', textTransform: 'uppercase', marginBottom: 4 }}>
+                      CATATAN PEMBUKAAN (OPSIONAL)
+                    </div>
+                    <div style={{ color: notes.openingNote !== '—' ? 'var(--ink)' : 'var(--mute)', fontWeight: notes.openingNote !== '—' ? 600 : 400 }}>
+                      {notes.openingNote}
+                    </div>
+                  </div>
+
+                  <div style={{
+                    fontSize: 12.5,
+                    background: 'var(--bg)',
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    border: '1px solid var(--line)',
+                  }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mute)', textTransform: 'uppercase', marginBottom: 4 }}>
+                      CATATAN PENUTUPAN (OPSIONAL)
+                    </div>
+                    <div style={{ color: notes.closingNote !== '—' ? 'var(--ink)' : 'var(--mute)', fontWeight: notes.closingNote !== '—' ? 600 : 400 }}>
+                      {notes.closingNote}
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
 
             <button
               onClick={() => setSelectedDetail(null)}
