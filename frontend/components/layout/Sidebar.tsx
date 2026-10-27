@@ -81,11 +81,15 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
   // State untuk modal Tutup Shift (hanya kasir)
   const [showTutupModal, setShowTutupModal] = useState(false)
   const [currentShift, setCurrentShift] = useState<any>(initialShift || null)
+  const [currentUserId, setCurrentUserId] = useState<string>('')
 
   // 1. Sync jika initialShift dari server berubah
   useEffect(() => {
     if (initialShift !== undefined) {
       setCurrentShift(initialShift)
+      if (initialShift?.cashier_id) {
+        setCurrentUserId(initialShift.cashier_id)
+      }
     }
   }, [initialShift])
 
@@ -93,14 +97,18 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
   useEffect(() => {
     const handleShiftEvent = (e: any) => {
       setCurrentShift(e.detail || null)
+      if (e.detail?.cashier_id) {
+        setCurrentUserId(e.detail.cashier_id)
+      }
     }
     window.addEventListener('shift_changed', handleShiftEvent)
 
-    if (role === 'kasir') {
-      const fetchActiveShift = async () => {
-        try {
-          const { data: { user } } = await supabase.auth.getUser()
-          if (user) {
+    const fetchActiveShift = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          setCurrentUserId(user.id)
+          if (role === 'kasir') {
             const { data: shifts } = await supabase
               .from('shifts')
               .select('*')
@@ -112,12 +120,12 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
               setCurrentShift(shifts[0])
             }
           }
-        } catch (e) {
-          // ignore error
         }
+      } catch (e) {
+        // ignore error
       }
-      fetchActiveShift()
     }
+    fetchActiveShift()
 
     return () => {
       window.removeEventListener('shift_changed', handleShiftEvent)
@@ -246,7 +254,7 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
       {showTutupModal && currentShift && (
         <TutupShiftModal
           activeShift={currentShift}
-          userId=""
+          userId={currentUserId || currentShift?.cashier_id || ''}
           onSuccess={() => {
             setShowTutupModal(false)
             setCurrentShift(null)

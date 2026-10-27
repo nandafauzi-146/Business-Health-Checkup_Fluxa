@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, X, Check, Wallet, ArrowRight, Tag, ChevronDown, Percent, DollarSign as DollarIcon, Flame, Zap, Sparkles, Printer } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { BukaShiftModal } from '@/components/pos/KasMasukModal'
+import { fetchShiftExpenses } from '@/lib/cash-reconciliation'
 import { getUserFacingError } from '@/lib/user-facing-error'
 import { fetchActivePromotions } from '@/lib/active-promotions'
 
@@ -113,6 +114,34 @@ export default function POSClient({ products: initialProducts, productsError: in
   const [processing, setProcessing] = useState(false)
   const [receipt, setReceipt] = useState<CompletedReceipt | null>(null)
   const [toast, setToast] = useState('')
+
+  // State Pengeluaran Operasional Kasir
+  const [shiftExpenseTotal, setShiftExpenseTotal] = useState(0)
+
+  useEffect(() => {
+    async function loadExpenses() {
+      if (!activeShift?.id) {
+        setShiftExpenseTotal(0)
+        return
+      }
+      const { totalExpense } = await fetchShiftExpenses(
+        supabase,
+        activeShift.id,
+        userId,
+        activeShift.opened_at
+      )
+      setShiftExpenseTotal(totalExpense)
+    }
+
+    void loadExpenses()
+
+    const handleExpenseAdded = () => {
+      void loadExpenses()
+    }
+
+    window.addEventListener('shift_expense_added', handleExpenseAdded)
+    return () => window.removeEventListener('shift_expense_added', handleExpenseAdded)
+  }, [activeShift?.id, activeShift?.opened_at, userId, supabase])
 
   const refreshProducts = async () => {
     const { data, error } = await supabase
@@ -541,15 +570,40 @@ export default function POSClient({ products: initialProducts, productsError: in
           </div>
         </div>
 
-        {/* Shift badge aktif */}
-        <div style={{ background: 'var(--oks)', padding: '8px 12px', borderRadius: 10, marginBottom: 12, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--ok)', animation: 'pulse 2s infinite' }} />
-            <span style={{ fontSize: 12, color: 'var(--ok)', fontWeight: 600 }}>Shift Aktif</span>
+        {/* Shift badge aktif & Quick Action Pengeluaran */}
+        <div style={{
+          background: 'var(--oks)',
+          padding: '8px 12px',
+          borderRadius: 10,
+          marginBottom: 12,
+          display: 'flex',
+          gap: 8,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--ok)', animation: 'pulse 2s infinite' }} />
+              <span style={{ fontSize: 12, color: 'var(--ok)', fontWeight: 600 }}>Shift Aktif</span>
+            </div>
+            <span style={{ fontSize: 11.5, color: 'var(--ok)', opacity: 0.9 }}>
+              Kas Awal: <strong>{formatRp(activeShift.initial_cash || 0)}</strong>
+            </span>
+            {shiftExpenseTotal > 0 && (
+              <span style={{
+                fontSize: 11,
+                color: 'var(--bad)',
+                background: 'var(--bads)',
+                padding: '2px 7px',
+                borderRadius: 6,
+                fontWeight: 600,
+                border: '1px solid rgba(239, 68, 68, 0.2)'
+              }}>
+                Biaya Toko: -{formatRp(shiftExpenseTotal)}
+              </span>
+            )}
           </div>
-          <span style={{ fontSize: 11.5, color: 'var(--ok)', opacity: 0.8 }}>
-            Kas Awal: {formatRp(activeShift.initial_cash || 0)}
-          </span>
         </div>
 
         {isMounted && promoLoadError && (
