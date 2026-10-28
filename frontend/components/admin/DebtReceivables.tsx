@@ -350,29 +350,18 @@ export default function DebtReceivablesClient({
         title="Hutang & Piutang Usaha"
         subtitle="Kelola seluruh kewajiban hutang toko (supplier, sewa ruko, utilitas operasional) serta piutang usaha (konsinyasi mitra, pesanan B2B)"
         actions={
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              id="manage-categories-btn"
-              className="btn btn-secondary"
-              onClick={() => setCatOpen(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px', fontWeight: 600 }}
-            >
-              <Tags size={15} />
-              Kelola Kategori
-            </button>
-            <button
-              id="add-debt-receivable-btn"
-              className="btn btn-primary"
-              onClick={() => {
-                setForm({ type: 'payable', party_name: '', category: categories[0]?.name ?? '', description: '', total_amount: '', due_date: '', note: '' })
-                setAddOpen(true)
-              }}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', fontWeight: 600 }}
-            >
-              <Plus size={16} />
-              Catat Hutang / Piutang
-            </button>
-          </div>
+          <button
+            id="add-debt-receivable-btn"
+            className="btn btn-primary"
+            onClick={() => {
+              setForm({ type: 'payable', party_name: '', category: categories[0]?.name ?? '', description: '', total_amount: '', due_date: '', note: '' })
+              setAddOpen(true)
+            }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', fontWeight: 600 }}
+          >
+            <Plus size={16} />
+            Catat Hutang / Piutang
+          </button>
         }
       />
 
@@ -476,10 +465,17 @@ export default function DebtReceivablesClient({
           </div>
 
           {/* Type Segment Control */}
-          <div style={{ display: 'flex', background: 'var(--bg)', padding: 4, borderRadius: 8, border: '1px solid var(--line)', gap: 4 }}>
+          <div
+            role="group"
+            aria-label="Filter jenis transaksi"
+            style={{ display: 'flex', background: 'var(--bg)', padding: 4, borderRadius: 8, border: '1px solid var(--line)', gap: 4, alignItems: 'center' }}
+          >
             <button
+              id="filter-type-all-btn"
               type="button"
               onClick={() => setTypeFilter('all')}
+              aria-label="Semua Jenis"
+              aria-pressed={typeFilter === 'all'}
               style={{
                 padding: '6px 12px',
                 borderRadius: 6,
@@ -489,16 +485,29 @@ export default function DebtReceivablesClient({
                 cursor: 'pointer',
                 background: typeFilter === 'all' ? 'var(--panel)' : 'transparent',
                 color: typeFilter === 'all' ? 'var(--ink)' : 'var(--mute)',
-                boxShadow: typeFilter === 'all' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
+                boxShadow: typeFilter === 'all' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                height: 31,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 150ms ease'
               }}
             >
               Semua Jenis
             </button>
             <button
+              id="filter-type-payable-btn"
               type="button"
+              className="fluxa-filter-icon-btn"
               onClick={() => setTypeFilter('payable')}
+              title="Hutang Toko"
+              aria-label="Hutang Toko"
+              aria-pressed={typeFilter === 'payable'}
               style={{
-                padding: '6px 12px',
+                position: 'relative',
+                padding: '6px 10px',
+                minWidth: 36,
+                height: 31,
                 borderRadius: 6,
                 border: 'none',
                 fontSize: 12.5,
@@ -506,15 +515,29 @@ export default function DebtReceivablesClient({
                 cursor: 'pointer',
                 background: typeFilter === 'payable' ? 'var(--bads)' : 'transparent',
                 color: typeFilter === 'payable' ? 'var(--bad)' : 'var(--mute)',
-                boxShadow: typeFilter === 'payable' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
+                boxShadow: typeFilter === 'payable' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 150ms ease'
               }}
-            > 🧾 Hutang Toko
+            >
+              <ArrowUpRight size={16} />
+              <span className="filter-tooltip" role="tooltip">Hutang Toko</span>
             </button>
             <button
+              id="filter-type-receivable-btn"
               type="button"
+              className="fluxa-filter-icon-btn"
               onClick={() => setTypeFilter('receivable')}
+              title="Piutang Usaha"
+              aria-label="Piutang Usaha"
+              aria-pressed={typeFilter === 'receivable'}
               style={{
-                padding: '6px 12px',
+                position: 'relative',
+                padding: '6px 10px',
+                minWidth: 36,
+                height: 31,
                 borderRadius: 6,
                 border: 'none',
                 fontSize: 12.5,
@@ -522,10 +545,15 @@ export default function DebtReceivablesClient({
                 cursor: 'pointer',
                 background: typeFilter === 'receivable' ? 'var(--oks)' : 'transparent',
                 color: typeFilter === 'receivable' ? 'var(--ok)' : 'var(--mute)',
-                boxShadow: typeFilter === 'receivable' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
+                boxShadow: typeFilter === 'receivable' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 150ms ease'
               }}
             >
-              💰 Piutang Usaha
+              <ArrowDownLeft size={16} />
+              <span className="filter-tooltip" role="tooltip">Piutang Usaha</span>
             </button>
           </div>
 
