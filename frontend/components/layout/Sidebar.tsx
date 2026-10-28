@@ -382,7 +382,7 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
                     <div className="sidebar-submenu-block" key={item.href}>
                       <button
                         type="button"
-                        className="nav-item sidebar-link sidebar-parent"
+                        className={`nav-item sidebar-link sidebar-parent${childActive ? ' has-active-child' : ''}`}
                         aria-label={item.label}
                         aria-expanded={open}
                         title={isExpanded ? undefined : item.label}

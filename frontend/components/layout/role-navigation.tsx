@@ -90,7 +90,15 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
       items: [
         { icon: <TrendingUp size={16} />, label: 'Cashflow', href: '/owner/cashflow' },
         { icon: <BarChart3 size={16} />, label: 'Laporan Bulanan', href: '/owner/laporan' },
-        { icon: <Scale size={16} />, label: 'Hutang & Piutang', href: '/owner/hutang-piutang' },
+        {
+          icon: <Scale size={16} />,
+          label: 'Hutang & Piutang',
+          href: '/owner/hutang-piutang',
+          children: [
+            { icon: <Scale size={16} />, label: 'Daftar Hutang & Piutang', href: '/owner/hutang-piutang' },
+            { icon: <Tags size={16} />, label: 'Kelola Kategori', href: '/owner/hutang-piutang/kategori' },
+          ]
+        },
       ]
     },
     {
