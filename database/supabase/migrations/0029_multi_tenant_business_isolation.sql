@@ -66,7 +66,7 @@ stable
 as $$
   select coalesce(
     (select p.business_id from public.profiles p where p.id = auth.uid() and p.approval_status = 'approved'),
-    (select b.id from public.businesses b join public.profiles p on p.id = b.owner_id where b.owner_id = auth.uid() and p.approval_status = 'approved')
+    (select b.id from public.businesses b join public.profiles p on p.id = b.owner_id where b.owner_id = auth.uid() and p.approval_status = 'approved' order by b.created_at asc limit 1)
   );
 $$;
 
@@ -267,7 +267,7 @@ begin
     alter table public.supplier_payments add column if not exists business_id uuid references public.businesses(id) on delete cascade;
     create index if not exists idx_supplier_payments_business_id on public.supplier_payments(business_id);
     update public.supplier_payments sp set business_id = coalesce(
-      (select p.business_id from public.supplier_payables p where p.id = sp.payable_id),
+      (select p.business_id from public.supplier_payables p where p.id = sp.supplier_payable_id),
       (select id from public.businesses order by created_at asc limit 1)
     ) where sp.business_id is null;
   end if;
@@ -296,7 +296,7 @@ create index if not exists idx_subscriptions_business_id on public.subscriptions
 update public.subscriptions s
 set business_id = coalesce(
   (select p.business_id from public.profiles p where p.id = s.owner_id),
-  (select b.id from public.businesses b where b.owner_id = s.owner_id)
+  (select b.id from public.businesses b where b.owner_id = s.owner_id order by b.created_at asc limit 1)
 )
 where s.business_id is null;
 
@@ -307,7 +307,7 @@ create index if not exists idx_subscription_payments_business_id on public.subsc
 update public.subscription_payments sp
 set business_id = coalesce(
   (select p.business_id from public.profiles p where p.id = sp.owner_id),
-  (select b.id from public.businesses b where b.owner_id = sp.owner_id)
+  (select b.id from public.businesses b where b.owner_id = sp.owner_id order by b.created_at asc limit 1)
 )
 where sp.business_id is null;
 
@@ -479,6 +479,15 @@ $$;
 -- ==============================================================================
 -- 9. Re-define Transactional RPCs with Strict Tenant Verification
 -- ==============================================================================
+
+-- Drop existing functions first so PostgreSQL allows return type / signature adjustments
+drop function if exists public.open_shift(integer, text);
+drop function if exists public.close_shift(uuid, integer, text);
+drop function if exists public.create_sale(uuid, text, integer, jsonb);
+drop function if exists public.void_sale(uuid, text);
+drop function if exists public.adjust_stock(uuid, text, integer, text);
+drop function if exists public.record_business_debt_payment(uuid, integer, text, text);
+drop function if exists public.record_business_debt_payment(uuid, integer, text);
 
 -- 9.1 open_shift
 create or replace function public.open_shift(
@@ -755,9 +764,9 @@ $$;
 -- 9.4 void_sale
 create or replace function public.void_sale(
   p_sale_id uuid,
-  p_void_reason text
+  p_reason text
 )
-returns void
+returns boolean
 language plpgsql
 security definer
 set search_path = public
@@ -765,8 +774,11 @@ as $$
 declare
   v_sale public.sales%rowtype;
   v_item record;
+  v_product public.products%rowtype;
   v_business_id uuid;
+  v_user_id uuid;
 begin
+  v_user_id := auth.uid();
   v_business_id := public.current_business_id();
 
   select * into v_sale from public.sales where id = p_sale_id for update;
@@ -786,9 +798,15 @@ begin
     raise exception 'Akses ditolak: Hanya Admin atau Owner yang dapat melakukan void transaksi.';
   end if;
 
+  if p_reason is null or trim(p_reason) = '' then
+    raise exception 'Alasan pembatalan (void) wajib diisi.';
+  end if;
+
   for v_item in
     select product_id, quantity from public.sale_items where sale_id = p_sale_id
   loop
+    select * into v_product from public.products where id = v_item.product_id for update;
+
     update public.products
     set stock = stock + v_item.quantity
     where id = v_item.product_id;
@@ -804,26 +822,49 @@ begin
       note,
       created_by
     )
-    select
-      p.id,
+    values (
+      v_item.product_id,
       v_sale.business_id,
       'void_return',
       v_item.quantity,
-      p.stock - v_item.quantity,
-      p.stock,
+      v_product.stock,
+      v_product.stock + v_item.quantity,
       p_sale_id,
-      'Void invoice ' || v_sale.invoice_number || ': ' || coalesce(p_void_reason, 'Tanpa alasan'),
-      auth.uid()
-    from public.products p
-    where p.id = v_item.product_id;
+      'Void invoice ' || v_sale.invoice_number || ': ' || coalesce(p_reason, 'Tanpa alasan'),
+      v_user_id
+    );
   end loop;
+
+  -- Jika sebelumnya transaksi kredit, batalkan piutangnya
+  delete from public.receivables where sale_id = p_sale_id;
 
   update public.sales
   set status = 'voided',
-      void_reason = p_void_reason,
+      void_reason = p_reason,
       voided_at = now(),
-      voided_by = auth.uid()
+      voided_by = v_user_id
   where id = p_sale_id;
+
+  -- Catat ke audit log
+  insert into public.audit_logs (
+    business_id,
+    user_id,
+    action,
+    table_name,
+    record_id,
+    old_data,
+    new_data
+  ) values (
+    v_sale.business_id,
+    v_user_id,
+    'VOID_SALE',
+    'sales',
+    p_sale_id,
+    row_to_json(v_sale)::jsonb,
+    jsonb_build_object('void_reason', p_reason, 'voided_at', now(), 'voided_by', v_user_id)
+  );
+
+  return true;
 end;
 $$;
 
@@ -834,7 +875,7 @@ create or replace function public.adjust_stock(
   p_quantity integer,
   p_note text default null
 )
-returns void
+returns integer
 language plpgsql
 security definer
 set search_path = public
@@ -843,6 +884,7 @@ declare
   v_product public.products%rowtype;
   v_new_stock integer;
   v_business_id uuid;
+  v_effective_quantity integer;
 begin
   if not public.is_admin_or_owner() then
     raise exception 'Akses ditolak: Hanya Admin atau Owner yang dapat menyesuaikan stok.';
@@ -862,13 +904,16 @@ begin
   if p_type = 'in' then
     if p_quantity <= 0 then raise exception 'Jumlah stok masuk harus lebih dari 0.'; end if;
     v_new_stock := v_product.stock + p_quantity;
+    v_effective_quantity := p_quantity;
   elsif p_type = 'out' then
     if p_quantity <= 0 then raise exception 'Jumlah stok keluar harus lebih dari 0.'; end if;
     if v_product.stock < p_quantity then raise exception 'Stok tidak mencukupi.'; end if;
     v_new_stock := v_product.stock - p_quantity;
+    v_effective_quantity := -p_quantity;
   elsif p_type = 'adjustment' then
     if p_quantity < 0 then raise exception 'Nilai penyesuaian stok akhir tidak boleh negatif.'; end if;
     v_new_stock := p_quantity;
+    v_effective_quantity := v_new_stock - v_product.stock;
   else
     raise exception 'Tipe pergerakan stok tidak valid.';
   end if;
@@ -888,16 +933,44 @@ begin
     p_product_id,
     v_product.business_id,
     p_type,
-    case
-      when p_type = 'in' then p_quantity
-      when p_type = 'out' then -p_quantity
-      else (v_new_stock - v_product.stock)
-    end,
+    v_effective_quantity,
     v_product.stock,
     v_new_stock,
     p_note,
     auth.uid()
   );
+
+  insert into public.audit_logs (
+    business_id,
+    user_id,
+    action,
+    table_name,
+    record_id,
+    old_data,
+    new_data
+  ) values (
+    v_product.business_id,
+    auth.uid(),
+    'ADJUST_STOCK',
+    'products',
+    p_product_id,
+    jsonb_build_object(
+      'product_id', v_product.id,
+      'previous_stock', v_product.stock,
+      'type', p_type,
+      'quantity', p_quantity,
+      'note', p_note
+    ),
+    jsonb_build_object(
+      'product_id', p_product_id,
+      'new_stock', v_new_stock,
+      'type', p_type,
+      'quantity', v_effective_quantity,
+      'note', coalesce(p_note, 'Perubahan stok via adjust_stock()')
+    )
+  );
+
+  return v_new_stock;
 end;
 $$;
 
@@ -991,10 +1064,29 @@ grant execute on function public.record_business_debt_payment(uuid, integer, tex
 -- 10. Strict Row Level Security Policies
 -- ==============================================================================
 
+-- Drop ALL existing legacy policies on tenant-isolated tables to guarantee clean slate
+do $$
+declare
+  pol record;
+begin
+  for pol in (
+    select schemaname, tablename, policyname
+    from pg_policies
+    where schemaname = 'public'
+      and tablename in (
+        'businesses', 'profiles', 'categories', 'products', 'shifts',
+        'sales', 'sale_items', 'stock_movements', 'expense_categories',
+        'expenses', 'receivables', 'receivable_payments', 'checkups',
+        'audit_logs', 'promotions', 'refund_requests', 'supplier_payables',
+        'supplier_payments', 'debt_categories', 'subscriptions', 'subscription_payments'
+      )
+  ) loop
+    execute format('drop policy if exists %I on %I.%I', pol.policyname, pol.schemaname, pol.tablename);
+  end loop;
+end $$;
+
 -- 10.1 businesses table
 alter table public.businesses enable row level security;
-drop policy if exists "Tenant dapat melihat bisnis sendiri" on public.businesses;
-drop policy if exists "Owner dapat mengedit bisnis sendiri" on public.businesses;
 
 create policy "Tenant dapat melihat bisnis sendiri"
   on public.businesses for select
@@ -1013,9 +1105,6 @@ create policy "Owner dapat mengedit bisnis sendiri"
 
 -- 10.2 profiles table
 alter table public.profiles enable row level security;
-drop policy if exists "Pengguna dapat melihat profil yang diizinkan" on public.profiles;
-drop policy if exists "Profiles dapat dilihat oleh pengguna terotentikasi" on public.profiles;
-drop policy if exists "Pengguna dapat mengupdate profil sendiri" on public.profiles;
 
 create policy "Profil dapat dilihat oleh pemilik atau rekan satu bisnis"
   on public.profiles for select
@@ -1042,8 +1131,6 @@ create policy "Pengguna dapat mengupdate profil sendiri atau staf sendiri"
 
 -- 10.3 categories
 alter table public.categories enable row level security;
-drop policy if exists "Kategori dapat dibaca oleh staf" on public.categories;
-drop policy if exists "Kategori dapat dikelola oleh admin dan owner" on public.categories;
 
 create policy "Kategori dapat dibaca oleh staf bisnis"
   on public.categories for select
@@ -1058,8 +1145,6 @@ create policy "Kategori dapat dikelola oleh admin dan owner bisnis"
 
 -- 10.4 products
 alter table public.products enable row level security;
-drop policy if exists "Produk dapat dibaca oleh staf" on public.products;
-drop policy if exists "Produk dapat dikelola oleh admin dan owner" on public.products;
 
 create policy "Produk dapat dibaca oleh staf bisnis"
   on public.products for select
@@ -1074,7 +1159,6 @@ create policy "Produk dapat dikelola oleh admin dan owner bisnis"
 
 -- 10.5 shifts
 alter table public.shifts enable row level security;
-drop policy if exists "Shifts dapat dibaca oleh kasir pemilik atau admin/owner" on public.shifts;
 
 create policy "Shifts dapat dibaca oleh kasir pemilik atau staf berwenang bisnis"
   on public.shifts for select
@@ -1086,7 +1170,6 @@ create policy "Shifts dapat dibaca oleh kasir pemilik atau staf berwenang bisnis
 
 -- 10.6 sales
 alter table public.sales enable row level security;
-drop policy if exists "Sales dapat dibaca oleh kasir pembuat atau admin/owner" on public.sales;
 
 create policy "Sales dapat dibaca oleh kasir pembuat atau staf bisnis"
   on public.sales for select
@@ -1098,7 +1181,6 @@ create policy "Sales dapat dibaca oleh kasir pembuat atau staf bisnis"
 
 -- 10.7 sale_items
 alter table public.sale_items enable row level security;
-drop policy if exists "Sale items dapat dibaca oleh staf pemilik transaksi atau admin/owner" on public.sale_items;
 
 create policy "Sale items dapat dibaca oleh staf bisnis"
   on public.sale_items for select
@@ -1107,7 +1189,6 @@ create policy "Sale items dapat dibaca oleh staf bisnis"
 
 -- 10.8 stock_movements
 alter table public.stock_movements enable row level security;
-drop policy if exists "Pergerakan stok hanya dapat dilihat oleh admin dan owner" on public.stock_movements;
 
 create policy "Pergerakan stok hanya untuk admin dan owner bisnis"
   on public.stock_movements for select
@@ -1119,7 +1200,6 @@ create policy "Pergerakan stok hanya untuk admin dan owner bisnis"
 
 -- 10.9 expense_categories
 alter table public.expense_categories enable row level security;
-drop policy if exists "Kategori biaya hanya dapat diakses oleh admin dan owner" on public.expense_categories;
 
 create policy "Kategori biaya hanya untuk admin dan owner bisnis"
   on public.expense_categories for all
@@ -1129,7 +1209,6 @@ create policy "Kategori biaya hanya untuk admin dan owner bisnis"
 
 -- 10.10 expenses
 alter table public.expenses enable row level security;
-drop policy if exists "Data biaya operasional hanya untuk admin dan owner" on public.expenses;
 
 create policy "Data biaya operasional hanya untuk admin dan owner bisnis"
   on public.expenses for all
@@ -1139,7 +1218,6 @@ create policy "Data biaya operasional hanya untuk admin dan owner bisnis"
 
 -- 10.11 receivables
 alter table public.receivables enable row level security;
-drop policy if exists "Data piutang/kasbon hanya untuk admin dan owner" on public.receivables;
 
 create policy "Data piutang/kasbon hanya untuk admin dan owner bisnis"
   on public.receivables for all
@@ -1149,7 +1227,6 @@ create policy "Data piutang/kasbon hanya untuk admin dan owner bisnis"
 
 -- 10.12 receivable_payments
 alter table public.receivable_payments enable row level security;
-drop policy if exists "Pembayaran piutang hanya untuk admin dan owner" on public.receivable_payments;
 
 create policy "Pembayaran piutang hanya untuk admin dan owner bisnis"
   on public.receivable_payments for all
@@ -1159,7 +1236,6 @@ create policy "Pembayaran piutang hanya untuk admin dan owner bisnis"
 
 -- 10.13 checkups
 alter table public.checkups enable row level security;
-drop policy if exists "Rapor kesehatan bisnis eksklusif untuk owner" on public.checkups;
 
 create policy "Rapor kesehatan bisnis eksklusif untuk owner bisnis"
   on public.checkups for all
@@ -1169,26 +1245,89 @@ create policy "Rapor kesehatan bisnis eksklusif untuk owner bisnis"
 
 -- 10.14 audit_logs
 alter table public.audit_logs enable row level security;
-drop policy if exists "Audit log eksklusif untuk owner" on public.audit_logs;
 
 create policy "Audit log eksklusif untuk owner bisnis"
   on public.audit_logs for select
   to authenticated
   using ((business_id = public.current_business_id() and public.is_owner()) or public.is_super_admin());
 
--- 10.15 subscriptions & subscription_payments
+-- 10.15 Extended Modules (Promotions, Refunds, Suppliers, Debt Categories)
+do $$
+begin
+  if exists (select 1 from information_schema.tables where table_name = 'promotions' and table_schema = 'public') then
+    alter table public.promotions enable row level security;
+    create policy "Promosi dapat dibaca oleh staf bisnis"
+      on public.promotions for select
+      to authenticated
+      using (business_id = public.current_business_id() or public.is_super_admin());
+    create policy "Promosi dapat dikelola oleh admin dan owner bisnis"
+      on public.promotions for all
+      to authenticated
+      using ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin())
+      with check ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin());
+  end if;
+
+  if exists (select 1 from information_schema.tables where table_name = 'refund_requests' and table_schema = 'public') then
+    alter table public.refund_requests enable row level security;
+    create policy "Refund requests dapat dibaca oleh staf bisnis"
+      on public.refund_requests for select
+      to authenticated
+      using ((business_id = public.current_business_id() and (requested_by = auth.uid() or public.is_admin_or_owner())) or public.is_super_admin());
+    create policy "Kasir dapat membuat refund request bisnis"
+      on public.refund_requests for insert
+      to authenticated
+      with check ((business_id = public.current_business_id() and requested_by = auth.uid()) or public.is_super_admin());
+    create policy "Admin dan owner dapat mengelola refund request bisnis"
+      on public.refund_requests for update
+      to authenticated
+      using ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin())
+      with check ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin());
+  end if;
+
+  if exists (select 1 from information_schema.tables where table_name = 'supplier_payables' and table_schema = 'public') then
+    alter table public.supplier_payables enable row level security;
+    create policy "Hutang supplier hanya untuk admin dan owner bisnis"
+      on public.supplier_payables for all
+      to authenticated
+      using ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin())
+      with check ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin());
+  end if;
+
+  if exists (select 1 from information_schema.tables where table_name = 'supplier_payments' and table_schema = 'public') then
+    alter table public.supplier_payments enable row level security;
+    create policy "Pembayaran hutang supplier hanya untuk admin dan owner bisnis"
+      on public.supplier_payments for all
+      to authenticated
+      using ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin())
+      with check ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin());
+  end if;
+
+  if exists (select 1 from information_schema.tables where table_name = 'debt_categories' and table_schema = 'public') then
+    alter table public.debt_categories enable row level security;
+    create policy "Kategori hutang piutang dapat dibaca staf bisnis"
+      on public.debt_categories for select
+      to authenticated
+      using (business_id = public.current_business_id() or public.is_super_admin());
+    create policy "Kategori hutang piutang dapat dikelola admin dan owner bisnis"
+      on public.debt_categories for all
+      to authenticated
+      using ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin())
+      with check ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin());
+  end if;
+end $$;
+
+-- 10.16 Subscriptions & Subscription Payments
 alter table public.subscriptions enable row level security;
-drop policy if exists "Subscriptions dapat diakses oleh owner terkait atau super admin" on public.subscriptions;
 create policy "Subscriptions dapat diakses oleh owner terkait atau super admin"
   on public.subscriptions for select
   to authenticated
   using (owner_id = auth.uid() or public.is_super_admin());
 
 alter table public.subscription_payments enable row level security;
-drop policy if exists "Subscription payments dapat diakses oleh owner terkait atau super admin" on public.subscription_payments;
 create policy "Subscription payments dapat diakses oleh owner terkait atau super admin"
   on public.subscription_payments for select
   to authenticated
   using (owner_id = auth.uid() or public.is_super_admin());
 
 notify pgrst, 'reload schema';
+

@@ -1,5 +1,5 @@
 import {
-  Activity, BarChart3, Building2, ClipboardList, CreditCard, DollarSign, FileText, Globe,
+  Activity, BarChart3, Boxes, Building2, ClipboardList, CreditCard, DollarSign, FileText, Globe,
   Layers, LayoutDashboard, Package, Scale, Settings2, ShieldCheck, ShoppingCart,
   Sparkles, Tag, Tags, TrendingUp, Users
 } from 'lucide-react'
@@ -42,6 +42,7 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
       label: 'Produk',
       items: [
         { icon: <Package size={16} />, label: 'Kelola Produk', href: '/admin/produk' },
+        { icon: <Boxes size={16} />, label: 'Bahan Baku & Resep', href: '/admin/bahan-baku' },
         { icon: <Layers size={16} />, label: 'Stok & Kartu Stok', href: '/admin/stok' },
         { icon: <ClipboardList size={16} />, label: 'Kategori Produk', href: '/admin/kategori' },
       ]
@@ -106,6 +107,7 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
       items: [
         { icon: <Activity size={16} />, label: 'Buka / Tutup Shift', href: '/owner/shift' },
         { icon: <Package size={16} />, label: 'Monitoring Stok', href: '/owner/stok' },
+        { icon: <Boxes size={16} />, label: 'Bahan Baku & Resep', href: '/admin/bahan-baku' },
         { icon: <Users size={16} />, label: 'Kelola Pengguna', href: '/owner/pengguna' },
         { icon: <FileText size={16} />, label: 'Aktifitas', href: '/owner/audit' },
         { icon: <CreditCard size={16} />, label: 'Langganan', href: '/owner/langganan' },
