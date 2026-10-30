@@ -1,4 +1,4 @@
-// utils/supabase/types.ts
+﻿// utils/supabase/types.ts
 // Tipe TypeScript lengkap untuk skema database Supabase Fluxa POS & Business Health Checkup
 
 export type Json =
@@ -188,6 +188,160 @@ export interface Database {
         };
         Relationships: [];
       };
+      raw_materials: {
+        Row: {
+          id: string;
+          business_id: string;
+          name: string;
+          sku: string | null;
+          material_type: 'raw' | 'semi_finished';
+          stock: number;
+          min_stock: number;
+          unit: string;
+          cost_per_unit: number;
+          batch_yield: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id?: string;
+          name: string;
+          sku?: string | null;
+          material_type?: 'raw' | 'semi_finished';
+          stock?: number;
+          min_stock?: number;
+          unit?: string;
+          cost_per_unit?: number;
+          batch_yield?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          name?: string;
+          sku?: string | null;
+          material_type?: 'raw' | 'semi_finished';
+          stock?: number;
+          min_stock?: number;
+          unit?: string;
+          cost_per_unit?: number;
+          batch_yield?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      raw_material_sub_ingredients: {
+        Row: {
+          id: string;
+          business_id: string;
+          parent_material_id: string;
+          sub_material_id: string;
+          quantity: number;
+          unit: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id?: string;
+          parent_material_id: string;
+          sub_material_id: string;
+          quantity: number;
+          unit?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          parent_material_id?: string;
+          sub_material_id?: string;
+          quantity?: number;
+          unit?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      product_ingredients: {
+        Row: {
+          id: string;
+          business_id: string;
+          product_id: string;
+          raw_material_id: string;
+          quantity: number;
+          unit: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id?: string;
+          product_id: string;
+          raw_material_id: string;
+          quantity: number;
+          unit?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          product_id?: string;
+          raw_material_id?: string;
+          quantity?: number;
+          unit?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      raw_material_movements: {
+        Row: {
+          id: string;
+          business_id: string;
+          raw_material_id: string;
+          type: 'in' | 'out' | 'adjustment' | 'sale_usage' | 'void_return';
+          quantity: number;
+          previous_stock: number;
+          current_stock: number;
+          reference_id: string | null;
+          note: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id?: string;
+          raw_material_id: string;
+          type: 'in' | 'out' | 'adjustment' | 'sale_usage' | 'void_return';
+          quantity: number;
+          previous_stock: number;
+          current_stock: number;
+          reference_id?: string | null;
+          note?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          raw_material_id?: string;
+          type?: 'in' | 'out' | 'adjustment' | 'sale_usage' | 'void_return';
+          quantity?: number;
+          previous_stock?: number;
+          current_stock?: number;
+          reference_id?: string | null;
+          note?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+
       shifts: {
         Row: {
           id: string;
@@ -791,6 +945,23 @@ export interface Database {
           credit_revenue: number;
         };
       };
+      v_raw_materials_summary: {
+        Row: {
+          id: string;
+          business_id: string;
+          name: string;
+          sku: string | null;
+          stock: number;
+          min_stock: number;
+          unit: string;
+          cost_per_unit: number;
+          stock_status: 'safe' | 'low_stock' | 'out_of_stock';
+          is_need_restock: boolean;
+          products_count: number;
+          updated_at: string;
+        };
+      };
+
       v_low_stock_products: {
         Row: {
           id: string;
@@ -805,6 +976,44 @@ export interface Database {
       };
     }>;
     Functions: {
+      submit_cashier_expense: {
+        Args: {
+          p_amount: number;
+          p_description: string;
+          p_category_id?: string | null;
+          p_shift_id?: string | null;
+          p_cash_impact?: boolean;
+          p_receipt_url?: string | null;
+        };
+        Returns: string;
+      };
+      verify_cashier_expense: {
+        Args: {
+          p_expense_id: string;
+          p_action: "approve" | "reject" | "clarification";
+          p_reason?: string | null;
+        };
+        Returns: boolean;
+      };
+      produce_semi_finished_material: {
+        Args: {
+          p_material_id: string;
+          p_produced_quantity: number;
+          p_note?: string | null;
+        };
+        Returns: number;
+      };
+
+      adjust_raw_material_stock: {
+        Args: {
+          p_raw_material_id: string;
+          p_type: 'in' | 'out' | 'adjustment';
+          p_quantity: number;
+          p_note?: string | null;
+        };
+        Returns: number;
+      };
+
       open_shift: {
         Args: {
           p_initial_cash: number;
@@ -851,25 +1060,6 @@ export interface Database {
       };
       is_staff: {
         Args: Record<PropertyKey, never>;
-        Returns: boolean;
-      };
-      submit_cashier_expense: {
-        Args: {
-          p_amount: number;
-          p_description: string;
-          p_category_id?: string | null;
-          p_shift_id?: string | null;
-          p_cash_impact?: boolean;
-          p_receipt_url?: string | null;
-        };
-        Returns: string;
-      };
-      verify_cashier_expense: {
-        Args: {
-          p_expense_id: string;
-          p_action: "approve" | "reject" | "clarification";
-          p_reason?: string | null;
-        };
         Returns: boolean;
       };
     };
