@@ -82,20 +82,47 @@ create index if not exists idx_raw_material_movements_material on public.raw_mat
 create index if not exists idx_raw_material_movements_created_at on public.raw_material_movements(created_at desc);
 
 -- 5. Triggers (updated_at & Tenant Isolation)
+create or replace function public.handle_updated_at()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+create or replace function public.update_updated_at_column()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
 drop trigger if exists update_raw_materials_updated_at on public.raw_materials;
-create trigger update_raw_materials_updated_at
+drop trigger if exists trg_raw_materials_updated_at on public.raw_materials;
+create trigger trg_raw_materials_updated_at
   before update on public.raw_materials
-  for each row execute function public.update_updated_at_column();
+  for each row execute function public.handle_updated_at();
 
 drop trigger if exists update_product_ingredients_updated_at on public.product_ingredients;
-create trigger update_product_ingredients_updated_at
+drop trigger if exists trg_product_ingredients_updated_at on public.product_ingredients;
+create trigger trg_product_ingredients_updated_at
   before update on public.product_ingredients
-  for each row execute function public.update_updated_at_column();
+  for each row execute function public.handle_updated_at();
 
 drop trigger if exists update_raw_material_sub_ingredients_updated_at on public.raw_material_sub_ingredients;
-create trigger update_raw_material_sub_ingredients_updated_at
+drop trigger if exists trg_raw_material_sub_ingredients_updated_at on public.raw_material_sub_ingredients;
+create trigger trg_raw_material_sub_ingredients_updated_at
   before update on public.raw_material_sub_ingredients
-  for each row execute function public.update_updated_at_column();
+  for each row execute function public.handle_updated_at();
 
 -- Attach tenant isolation trigger
 do $$
