@@ -44,14 +44,22 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
         { icon: <Package size={16} />, label: 'Kelola Produk', href: '/admin/produk' },
         { icon: <Boxes size={16} />, label: 'Bahan Baku & Resep', href: '/admin/bahan-baku' },
         { icon: <Layers size={16} />, label: 'Stok & Kartu Stok', href: '/admin/stok' },
-        { icon: <ClipboardList size={16} />, label: 'Kategori', href: '/admin/kategori' },
+        { icon: <ClipboardList size={16} />, label: 'Kategori Produk', href: '/admin/kategori' },
       ]
     },
     {
       label: 'Keuangan',
       items: [
         { icon: <Tag size={16} />, label: 'Diskon & Promo', href: '/admin/diskon' },
-        { icon: <DollarSign size={16} />, label: 'Biaya Operasional', href: '/admin/biaya' },
+        {
+          icon: <DollarSign size={16} />,
+          label: 'Biaya Operasional',
+          href: '/admin/biaya',
+          children: [
+            { icon: <DollarSign size={16} />, label: 'Pengeluaran', href: '/admin/biaya' },
+            { icon: <Tags size={16} />, label: 'Kategori Biaya', href: '/admin/biaya/kategori' },
+          ]
+        },
         {
           icon: <Scale size={16} />,
           label: 'Hutang & Piutang',
@@ -83,7 +91,15 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
       items: [
         { icon: <TrendingUp size={16} />, label: 'Cashflow', href: '/owner/cashflow' },
         { icon: <BarChart3 size={16} />, label: 'Laporan Bulanan', href: '/owner/laporan' },
-        { icon: <Scale size={16} />, label: 'Hutang & Piutang', href: '/owner/hutang-piutang' },
+        {
+          icon: <Scale size={16} />,
+          label: 'Hutang & Piutang',
+          href: '/owner/hutang-piutang',
+          children: [
+            { icon: <Scale size={16} />, label: 'Daftar Hutang & Piutang', href: '/owner/hutang-piutang' },
+            { icon: <Tags size={16} />, label: 'Kelola Kategori', href: '/owner/hutang-piutang/kategori' },
+          ]
+        },
       ]
     },
     {

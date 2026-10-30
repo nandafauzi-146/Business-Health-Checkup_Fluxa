@@ -4,54 +4,72 @@
     "badge": "Data usaha, satu dashboard",
     "title": "Bisnis lebih terarah.",
     "titleHighlight": "Tumbuh lebih percaya diri.",
-    "description": "Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan AI — semua dalam satu platform.",
+    "description": "Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan Fluxa — semua dalam satu platform.",
     "ctaText": "Coba gratis 7 hari",
     "ctaSecondaryText": "Kenali cara kerjanya",
-    "trustNote": "Satu platform untuk operasional dan insight bisnis"
+    "trustNote": "Data pelanggan Anda aman dan selalu terlindungi"
   },
   "features": [
     {
+      "number": "01",
       "icon": "ShoppingCart",
+      "label": "KASIR CEPAT",
       "title": "Kasir praktis",
       "description": "Catat transaksi lebih cepat, kelola shift, dan pantau penjualan dalam satu tempat.",
-      "tone": "blue"
+      "tone": "blue",
+      "detail": "Shift kasir · Multi-pembayaran · Struk instan"
     },
     {
+      "number": "02",
       "icon": "BarChart3",
+      "label": "REKAP OTOMATIS",
       "title": "Laporan otomatis",
       "description": "Lihat ringkasan omzet, laba, arus kas, dan performa bisnis tanpa rekap manual.",
-      "tone": "purple"
+      "tone": "purple",
+      "detail": "Omzet · Laba bersih · Arus kas real-time"
     },
     {
+      "number": "03",
       "icon": "Bot",
+      "label": "INSIGHT CERDAS",
       "title": "Analisis dengan AI",
       "description": "Dapatkan diagnosis kesehatan usaha dan insight untuk menentukan langkah berikutnya.",
-      "tone": "green"
+      "tone": "green",
+      "detail": "Skor kesehatan · Rekomendasi · Tren risiko"
     },
     {
+      "number": "04",
       "icon": "Package",
+      "label": "MANAJEMEN GUDANG",
       "title": "Kontrol stok",
       "description": "Pantau persediaan, nilai stok, dan produk yang perlu segera diperhatikan.",
-      "tone": "orange"
+      "tone": "orange",
+      "detail": "Peringatan stok · Nilai aset · Mutasi barang"
     },
     {
+      "number": "05",
       "icon": "Wallet",
+      "label": "KEUANGAN USAHA",
       "title": "Kelola kas & piutang",
       "description": "Pantau uang masuk, pengeluaran, kasbon, serta hutang-piutang bisnis.",
-      "tone": "cyan"
+      "tone": "cyan",
+      "detail": "Buku kas · Catatan piutang · Jatuh tempo"
     },
     {
+      "number": "06",
       "icon": "Users",
+      "label": "KOLABORASI TIM",
       "title": "Tim lebih teratur",
       "description": "Atur akses owner, admin, dan kasir sesuai peran masing-masing.",
-      "tone": "pink"
+      "tone": "pink",
+      "detail": "Hak akses · Multi-peran · Log aktivitas"
     }
   ],
   "aiInsight": {
-    "eyebrow": "INSIGHT BISNIS BERBANTU AI",
+    "eyebrow": "PEMAHAMAN BISNIS",
     "title": "Bukan sekadar angka.",
     "titleHighlight": "Pahami ceritanya.",
-    "description": "FluxAI membantu merangkum kondisi usaha dari data operasional Anda, mengidentifikasi tren, dan menyajikan rekomendasi yang lebih mudah ditindaklanjuti.",
+    "description": "Fluxa membantu merangkum kondisi usaha dari data operasional Anda, mengidentifikasi tren, dan menyajikan rekomendasi yang lebih mudah ditindaklanjuti.",
     "checklist": [
       "Diagnosis kesehatan bisnis",
       "Tren penjualan dan arus kas",
@@ -95,7 +113,7 @@
   "contact": {
     "whatsappNumber": "628980148297",
     "whatsappMessage": "Halo Admin FLUXA 👋\n\nSaya tertarik untuk menggunakan FLUXA sebagai sistem pengelolaan bisnis saya.\n\nSaya ingin mengetahui lebih lanjut mengenai fitur, cara pendaftaran, dan cara memulai trial gratis selama 7 hari.\n\nMohon informasi dan panduannya, ya. Terima kasih! 😊",
-    "eyebrow": "ADA PERTANYAAN?",
+    "eyebrow": "BUTUH BANTUAN?",
     "heading": "Mari bicarakan kebutuhan bisnis Anda.",
     "description": "Tim Fluxa siap membantu Anda memahami fitur, trial, dan pilihan paket yang sesuai.",
     "buttonText": "Tanya via WhatsApp"
@@ -119,7 +137,7 @@
         "name": "Starter",
         "description": "Untuk usaha kecil yang ingin mulai lebih rapi.",
         "priceLabel": "Hubungi kami",
-        "priceSublabel": "untuk informasi harga",
+        "priceSublabel": "Hubungi tim kami untuk detail harga",
         "featured": false,
         "badge": "",
         "features": [
@@ -132,7 +150,7 @@
         "name": "Growth",
         "description": "Untuk bisnis yang ingin memahami performa lebih dalam.",
         "priceLabel": "Hubungi kami",
-        "priceSublabel": "untuk informasi harga",
+        "priceSublabel": "Hubungi tim kami untuk detail harga",
         "featured": true,
         "badge": "Pilihan bisnis",
         "features": [
@@ -145,7 +163,7 @@
         "name": "Multi-cabang",
         "description": "Untuk tim dan operasional dengan kebutuhan lebih luas.",
         "priceLabel": "Hubungi kami",
-        "priceSublabel": "untuk informasi harga",
+        "priceSublabel": "Hubungi tim kami untuk detail harga",
         "featured": false,
         "badge": "",
         "features": [

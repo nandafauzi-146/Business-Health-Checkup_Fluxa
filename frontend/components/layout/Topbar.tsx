@@ -61,8 +61,8 @@ function getDefaultNotifications(role: 'kasir' | 'admin' | 'owner' | 'super_admi
         badge: 'Operasional',
         badgeColor: 'var(--ok)',
         badgeBg: 'var(--oks)',
-        link: '/kasir/shift',
-        actionLabel: 'Kelola Shift',
+        link: '/kasir',
+        actionLabel: 'Buka Kasir',
         read: false,
         isReport: false,
       },
@@ -154,6 +154,20 @@ function getDefaultNotifications(role: 'kasir' | 'admin' | 'owner' | 'super_admi
         actionLabel: 'Cek Tagihan',
         read: true,
         isReport: true,
+      },
+      {
+        id: 'notif-a-6',
+        title: 'Pengajuan Pengeluaran Kasir',
+        message: 'Terdapat catatan pengeluaran kas toko dari kasir yang memerlukan verifikasi administrasi.',
+        time: 'Baru saja',
+        type: 'biaya',
+        badge: 'Verifikasi Biaya',
+        badgeColor: 'var(--warn)',
+        badgeBg: 'var(--warns)',
+        link: '/admin/biaya',
+        actionLabel: 'Verifikasi Biaya',
+        read: false,
+        isReport: false,
       },
     ]
   }
@@ -702,9 +716,8 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
             <div className="appearance-popover" role="menu" aria-label="Appearance">
               <strong>Appearance</strong>
               {([
-                ['light', 'Light'],
                 ['dark', 'Dark'],
-                ['system', 'System'],
+                ['light', 'Light'],
               ] as const).map(([value, label]) => (
                 <button
                   key={value}

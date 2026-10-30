@@ -3,23 +3,28 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useLayoutEffect, useState, type MouseEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
 import {
   ArrowDown,
   ArrowRight,
   BarChart3,
   Bot,
+  Calendar,
   Check,
   ChevronDown,
+  ChevronRight,
   CircleDollarSign,
   ClipboardCheck,
   Clock3,
   Database,
   Headset,
   Package,
+  Receipt,
   ShieldCheck,
+  ShoppingBag,
   ShoppingCart,
   Sparkles,
+  Store,
   Sun,
   TrendingUp,
   Users,
@@ -29,11 +34,28 @@ import {
   CreditCard,
   Activity,
   Layers,
+  X,
+  type LucideIcon,
 } from 'lucide-react'
 import { useTheme } from '@/components/layout/ThemeProvider'
 import type { LandingCMSContent } from '@/lib/cms'
 import defaultContent from '@/content/landing-default.json'
 import styles from './landingpage.module.css'
+
+function WhatsAppIcon({ size = 18, className }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.711 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+    </svg>
+  )
+}
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>> = {
   ShoppingCart,
@@ -66,24 +88,299 @@ const defaultPackages = [
 ]
 
 function ExampleChart() {
+  const [inView, setInView] = useState(false)
+  const [count, setCount] = useState(0)
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduceMotion) {
+      setInView(true)
+      setCount(82)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setInView(true)
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.2 }
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!inView) return
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduceMotion) {
+      setCount(82)
+      return
+    }
+
+    const target = 82
+    const duration = 1200
+    const start = performance.now()
+
+    let frameId: number
+    const step = (now: number) => {
+      const elapsed = now - start
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setCount(Math.round(eased * target))
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(step)
+      }
+    }
+
+    frameId = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frameId)
+  }, [inView])
+
   return (
-    <div className={styles.chartCard}>
+    <div className={styles.chartCard} ref={cardRef}>
       <div className={styles.chartHeader}>
-        <div><span className={styles.eyebrow}>CONTOH ANALISIS AI</span><h3>Skor kesehatan bisnis</h3></div>
+        <div>
+          <h3>Performa Bisnis</h3>
+        </div>
         <span className={styles.chartPeriod}>6 bulan terakhir</span>
       </div>
-      <div className={styles.chartValue}><strong>82</strong><span>/ 100</span><span className={styles.chartTrend}><TrendingUp size={15} /> +18 poin</span></div>
-      <div className={styles.chart} role="img" aria-label="Grafik ilustrasi skor kesehatan bisnis yang meningkat dari 64 ke 82 selama enam bulan">
-        <div className={styles.chartGrid}><span>100</span><span>75</span><span>50</span><span>25</span></div>
-        <svg viewBox="0 0 540 190" preserveAspectRatio="none" aria-hidden="true">
-          <defs><linearGradient id="chart-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#3878f6" stopOpacity=".19" /><stop offset="100%" stopColor="#3878f6" stopOpacity="0" /></linearGradient></defs>
-          <path d="M0 68 C42 66 48 58 90 61 S142 54 180 58 S231 48 270 52 S319 44 360 46 S412 37 450 42 S504 31 540 34 L540 190 L0 190 Z" fill="url(#chart-fill)" />
-          <path d="M0 68 C42 66 48 58 90 61 S142 54 180 58 S231 48 270 52 S319 44 360 46 S412 37 450 42 S504 31 540 34" fill="none" stroke="#3878f6" strokeWidth="3" vectorEffect="non-scaling-stroke" />
-          <circle cx="540" cy="34" r="5" fill="#fff" stroke="#3878f6" strokeWidth="3" vectorEffect="non-scaling-stroke" />
+
+      <div className={styles.chartValueRow}>
+        <div className={styles.chartScoreBadge}>
+          <TrendingUp size={16} />
+        </div>
+        <div className={styles.chartScoreText}>
+          <strong>{count}</strong>
+          <span>/100</span>
+        </div>
+        <span className={styles.chartTrend}>
+          <TrendingUp size={13} /> +18 poin
+        </span>
+      </div>
+
+      <div
+        className={styles.chart}
+        role="img"
+        aria-label="Grafik performa bisnis yang meningkat dari 40 ke 82 selama enam bulan terakhir"
+      >
+        <div className={styles.chartGrid}>
+          <span>100</span>
+          <span>75</span>
+          <span>50</span>
+          <span>25</span>
+        </div>
+
+        <svg viewBox="0 0 500 160" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="chart-growth-fill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#2563eb" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#2563eb" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+
+          {/* Area fill under curve */}
+          <path
+            className={`${styles.chartFillPath} ${inView ? styles.chartFillVisible : ''}`}
+            d="M 10 112 C 55 110, 65 90, 100 88 C 135 86, 160 80, 195 78 C 235 76, 255 84, 290 82 C 325 80, 355 56, 385 52 C 415 48, 450 32, 485 28 L 485 160 L 10 160 Z"
+            fill="url(#chart-growth-fill)"
+          />
+
+          {/* Spline line with drawing animation */}
+          <path
+            className={`${styles.chartLinePath} ${inView ? styles.chartLineAnimated : ''}`}
+            d="M 10 112 C 55 110, 65 90, 100 88 C 135 86, 160 80, 195 78 C 235 76, 255 84, 290 82 C 325 80, 355 56, 385 52 C 415 48, 450 32, 485 28"
+            fill="none"
+            stroke="#2563eb"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+
+          {/* Endpoint glowing dot & pulse */}
+          <g className={`${styles.chartEndpoint} ${inView ? styles.chartEndpointVisible : ''}`}>
+            <circle cx="485" cy="28" r="9" className={styles.pulseRing} />
+            <circle cx="485" cy="28" r="4.5" className={styles.chartDot} />
+          </g>
         </svg>
       </div>
-      <div className={styles.chartMonths} aria-hidden="true"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>Mei</span><span>Jun</span></div>
-      <div className={styles.insight}><span className={styles.insightIcon}><Sparkles size={16} /></span><p><strong>Insight FluxAI</strong><br />Arus kas dan konsistensi transaksi menunjukkan tren yang membaik.</p><span className={styles.sampleNote}>Ilustrasi</span></div>
+
+      <div className={styles.chartMonths} aria-hidden="true">
+        <span>Jan</span>
+        <span>Feb</span>
+        <span>Mar</span>
+        <span>Apr</span>
+        <span>Mei</span>
+        <span>Jun</span>
+      </div>
+
+      <div className={`${styles.insight} ${inView ? styles.insightVisible : ''}`}>
+        <div className={styles.insightIcon}>
+          <TrendingUp size={16} />
+        </div>
+        <div className={styles.insightContent}>
+          <strong>Tren Penjualan</strong>
+          <p>Penjualan meningkat 18% dibanding bulan lalu.</p>
+        </div>
+        <ArrowRight size={15} className={styles.insightArrow} />
+      </div>
+    </div>
+  )
+}
+
+interface MobileCardItem {
+  number?: string
+  icon: string
+  title: string
+  description: string
+  label?: string
+  detail?: string
+}
+
+function getConciseDetail(item: MobileCardItem, fallbackIndex: number): string {
+  if (item.detail && item.detail !== 'Operasional · Bisnis · Insight') {
+    return item.detail
+  }
+  const featureShort: Record<string, string> = {
+    '01': 'Kasir · Shift · Struk',
+    '02': 'Omzet · Laba · Arus kas',
+    '03': 'Skor AI · Rekomendasi',
+    '04': 'Stok · Aset · Mutasi',
+    '05': 'Buku kas · Piutang',
+    '06': 'Akses · Multi-peran',
+  }
+  return featureShort[item.number || `0${fallbackIndex + 1}`] || item.label || 'Operasional'
+}
+
+function MobilePairsList({
+  items,
+  defaultIcon = Sparkles,
+}: {
+  items: MobileCardItem[]
+  defaultIcon?: LucideIcon
+}) {
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
+
+  const pairs: Array<[MobileCardItem, MobileCardItem | undefined]> = []
+  for (let i = 0; i < items.length; i += 2) {
+    pairs.push([items[i], items[i + 1]])
+  }
+
+  const toggleExpand = (idx: number) => {
+    setExpandedIdx(prev => prev === idx ? null : idx)
+  }
+
+  return (
+    <div className={styles.mobilePairsList} aria-label="Mobile paired containers">
+      {pairs.map(([col1, col2], pIdx) => {
+        const idx1 = pIdx * 2
+        const isExpanded1 = expandedIdx === idx1
+        const Icon1 = resolveIcon(col1.icon, defaultIcon)
+        const num1 = col1.number || `0${idx1 + 1}`
+        const detail1 = getConciseDetail(col1, idx1)
+
+        const idx2 = pIdx * 2 + 1
+        const isExpanded2 = expandedIdx === idx2
+        const Icon2 = col2 ? resolveIcon(col2.icon, defaultIcon) : null
+        const num2 = col2 ? (col2.number || `0${idx2 + 1}`) : ''
+        const detail2 = col2 ? getConciseDetail(col2, idx2) : ''
+
+        return (
+          <div className={styles.mobilePairCard} key={pIdx}>
+            {/* Column 1 */}
+            <article
+              className={`${styles.mobilePairCol}${isExpanded1 ? ` ${styles.mobilePairColExpanded}` : ''}`}
+              onClick={() => toggleExpand(idx1)}
+              role="button"
+              tabIndex={0}
+              aria-expanded={isExpanded1}
+              aria-label={`Kartu ${num1}: ${col1.title}. Ketuk untuk ${isExpanded1 ? 'tutup' : 'baca selengkapnya'}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  toggleExpand(idx1)
+                }
+              }}
+            >
+              <div className={styles.mobileColTop}>
+                <span className={styles.mobileColNumber}>{num1}</span>
+                <span className={`${styles.mobileExpandIcon}${isExpanded1 ? ` ${styles.mobileExpandIconRotated}` : ''}`} aria-hidden="true">
+                  <ChevronDown size={12} />
+                </span>
+              </div>
+              <div className={styles.mobileColNotch} aria-hidden="true">
+                <div className={styles.mobileNotchDish}>
+                  <div className={styles.mobileNotchGlow} />
+                  <div className={styles.mobileIconBadge}>
+                    <Icon1 size={14} strokeWidth={2.2} />
+                  </div>
+                </div>
+              </div>
+              <h3 className={styles.mobileColTitle}>{col1.title}</h3>
+              <p className={`${styles.mobileColDescription}${isExpanded1 ? ` ${styles.mobileColDescriptionExpanded}` : ''}`}>
+                {col1.description}
+              </p>
+              <div className={`${styles.mobileColMeta}${isExpanded1 ? ` ${styles.mobileColMetaExpanded}` : ''}`}>
+                <Clock3 size={10} className={styles.mobileMetaClock} />
+                <span>{detail1}</span>
+              </div>
+            </article>
+
+            {/* Subtle Vertical Divider */}
+            {col2 && <div className={styles.mobilePairDivider} aria-hidden="true" />}
+
+            {/* Column 2 */}
+            {col2 && (
+              <article
+                className={`${styles.mobilePairCol}${isExpanded2 ? ` ${styles.mobilePairColExpanded}` : ''}`}
+                onClick={() => toggleExpand(idx2)}
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded2}
+                aria-label={`Kartu ${num2}: ${col2.title}. Ketuk untuk ${isExpanded2 ? 'tutup' : 'baca selengkapnya'}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    toggleExpand(idx2)
+                  }
+                }}
+              >
+                <div className={styles.mobileColTop}>
+                  <span className={styles.mobileColNumber}>{num2}</span>
+                  <span className={`${styles.mobileExpandIcon}${isExpanded2 ? ` ${styles.mobileExpandIconRotated}` : ''}`} aria-hidden="true">
+                    <ChevronDown size={12} />
+                  </span>
+                </div>
+                <div className={styles.mobileColNotch} aria-hidden="true">
+                  <div className={styles.mobileNotchDish}>
+                    <div className={styles.mobileNotchGlow} />
+                    <div className={styles.mobileIconBadge}>
+                      {Icon2 && <Icon2 size={14} strokeWidth={2.2} />}
+                    </div>
+                  </div>
+                </div>
+                <h3 className={styles.mobileColTitle}>{col2.title}</h3>
+                <p className={`${styles.mobileColDescription}${isExpanded2 ? ` ${styles.mobileColDescriptionExpanded}` : ''}`}>
+                  {col2.description}
+                </p>
+                <div className={`${styles.mobileColMeta}${isExpanded2 ? ` ${styles.mobileColMetaExpanded}` : ''}`}>
+                  <Clock3 size={10} className={styles.mobileMetaClock} />
+                  <span>{detail2}</span>
+                </div>
+              </article>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -93,8 +390,21 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
   const { isDark, setPreference } = useTheme()
   const [introActive, setIntroActive] = useState(true)
   const [isLeaving, setIsLeaving] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const cms = content || (defaultContent as unknown as LandingCMSContent)
+  const [selectedPlan, setSelectedPlan] = useState<string>(() => {
+    const pkgs = content?.pricing?.packages || defaultPackages
+    const featured = pkgs.find(p => p.featured)
+    return featured ? featured.name : 'Growth'
+  })
+
+  const getPlanWhatsappUrl = (planName: string) => {
+    const phone = (cms.contact?.whatsappNumber || '628980148297').replace(/\D/g, '')
+    const msg = `Halo Admin FLUXA 👋\n\nSaya tertarik dengan paket ${planName} di FLUXA.\n\nMohon informasi lebih lanjut mengenai detail harga, cara pendaftaran, dan cara aktivasi. Terima kasih!`
+    return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
+  }
+
   const whatsappUrl = `https://wa.me/${(cms.contact?.whatsappNumber || '628980148297').replace(/\D/g, '')}?text=${encodeURIComponent(cms.contact?.whatsappMessage || '')}`
   const featuresList = cms.features || []
   const stepsList = cms.steps || []
@@ -104,6 +414,16 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const timeout = window.setTimeout(() => setIntroActive(false), reduceMotion ? 0 : 2100)
     return () => window.clearTimeout(timeout)
+  }, [])
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setMobileMenuOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   useLayoutEffect(() => {
@@ -135,7 +455,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
         behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
         block: 'start',
       })
-      anchor.closest('details[open]')?.removeAttribute('open')
+      setMobileMenuOpen(false)
       window.history.pushState(null, '', destination.hash)
       return
     }
@@ -146,6 +466,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
     if (isLeaving) return
 
     setIsLeaving(true)
+    setMobileMenuOpen(false)
     window.setTimeout(() => router.push(`${destination.pathname}${destination.search}${destination.hash}`), 420)
   }
 
@@ -164,20 +485,119 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
       )}
       <header className={styles.header}>
         <div className={styles.navWrap}>
-          <Link className={styles.brand} href="/" aria-label="Fluxa, beranda"><Image src="/Fluxa-Logo.webp" alt="" width={42} height={42} priority /><span>fluxa<span className={styles.brandDot}>.</span></span></Link>
-          <nav className={styles.desktopNav} aria-label="Navigasi utama"><a href="#fitur">Fitur</a><a href="#cara-kerja">Cara kerja</a><a href="#kontak">Kontak</a><a href="#paket">Subscribe</a></nav>
+          <Link className={styles.brand} href="/" aria-label="Fluxa, beranda">
+            <Image src="/Fluxa-Logo.webp" alt="Logo Fluxa" width={38} height={38} priority />
+            <span>fluxa<span className={styles.brandDot}>.</span></span>
+          </Link>
+
+          <nav className={styles.desktopNav} aria-label="Navigasi utama">
+            <a href="#fitur">Fitur</a>
+            <a href="#cara-kerja">Cara kerja</a>
+            <a href="#kontak">Kontak</a>
+            <a href="#paket">Subscribe</a>
+          </nav>
+
           <div className={styles.navActions}>
-            <button className={styles.themeToggle} type="button" onClick={() => setPreference(isDark ? 'light' : 'dark')} aria-label={`Aktifkan mode ${isDark ? 'terang' : 'gelap'}`} title={`Mode ${isDark ? 'terang' : 'gelap'}`}>
-              {isDark ? <Sun size={17} /> : <Moon size={17} />}
+            <button
+              className={styles.themeToggle}
+              type="button"
+              onClick={() => setPreference(isDark ? 'light' : 'dark')}
+              aria-label={`Aktifkan mode ${isDark ? 'terang' : 'gelap'}`}
+              title={`Mode ${isDark ? 'terang' : 'gelap'}`}
+            >
+              {isDark ? <Sun size={15} /> : <Moon size={15} />}
               <span>{isDark ? 'Terang' : 'Gelap'}</span>
             </button>
-            <Link className={styles.loginLink} href="/login">Masuk</Link><Link className={styles.navCta} href="/register">Registrasi <ArrowRight size={15} /></Link>
+            <Link className={styles.loginLink} href="/login">Masuk</Link>
+            <Link className={styles.navCta} href="/register">
+              <span>Registrasi</span>
+              <ArrowRight size={15} />
+            </Link>
           </div>
-          <details className={styles.mobileMenu}>
-            <summary aria-label="Buka menu"><span /><span /><span /></summary>
-            <nav aria-label="Navigasi seluler"><a href="#fitur">Fitur</a><a href="#cara-kerja">Cara kerja</a><a href="#kontak">Kontak</a><a href="#paket">Subscribe</a><Link href="/login">Login</Link><Link href="/register">Registrasi</Link></nav>
-          </details>
+
+          <div className={styles.tabletThemeWrap}>
+            <button
+              className={styles.themeToggle}
+              type="button"
+              onClick={() => setPreference(isDark ? 'light' : 'dark')}
+              aria-label={`Aktifkan mode ${isDark ? 'terang' : 'gelap'}`}
+              title={`Mode ${isDark ? 'terang' : 'gelap'}`}
+            >
+              {isDark ? <Sun size={15} /> : <Moon size={15} />}
+              <span>{isDark ? 'Terang' : 'Gelap'}</span>
+            </button>
+          </div>
+
+          <button
+            className={styles.hamburgerBtn}
+            type="button"
+            onClick={() => setMobileMenuOpen(prev => !prev)}
+            aria-label={mobileMenuOpen ? 'Tutup navigasi' : 'Buka navigasi'}
+            aria-expanded={mobileMenuOpen}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </div>
+
+        {mobileMenuOpen && (
+          <div className={styles.mobileBackdrop} onClick={() => setMobileMenuOpen(false)}>
+            <div className={styles.mobileMenuPanel} onClick={e => e.stopPropagation()}>
+              <div className={styles.mobileMenuTop}>
+                <button
+                  className={styles.themeToggle}
+                  type="button"
+                  onClick={() => setPreference(isDark ? 'light' : 'dark')}
+                  aria-label={`Aktifkan mode ${isDark ? 'terang' : 'gelap'}`}
+                  title={`Mode ${isDark ? 'terang' : 'gelap'}`}
+                >
+                  {isDark ? <Sun size={15} /> : <Moon size={15} />}
+                  <span>{isDark ? 'Terang' : 'Gelap'}</span>
+                </button>
+                <button
+                  className={styles.mobileCloseBtn}
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  aria-label="Tutup navigasi"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <nav className={styles.mobileNavList} aria-label="Navigasi seluler">
+                <a href="#fitur" onClick={() => setMobileMenuOpen(false)}>
+                  <span>Fitur</span>
+                  <ChevronRight size={15} />
+                </a>
+                <a href="#cara-kerja" onClick={() => setMobileMenuOpen(false)}>
+                  <span>Cara kerja</span>
+                  <ChevronRight size={15} />
+                </a>
+                <a href="#kontak" onClick={() => setMobileMenuOpen(false)}>
+                  <span>Kontak</span>
+                  <ChevronRight size={15} />
+                </a>
+                <a href="#paket" onClick={() => setMobileMenuOpen(false)}>
+                  <span>Subscribe</span>
+                  <ChevronRight size={15} />
+                </a>
+              </nav>
+
+              <div className={styles.mobileDivider} />
+
+              <div className={styles.mobileNavBottom}>
+                <Link className={styles.mobileLoginLink} href="/login" onClick={() => setMobileMenuOpen(false)}>
+                  Masuk
+                </Link>
+                <Link className={styles.mobileRegisterBtn} href="/register" onClick={() => setMobileMenuOpen(false)}>
+                  <span>Registrasi</span>
+                  <ArrowRight size={15} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       <section className={styles.hero}>
@@ -189,22 +609,146 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
               <div className={styles.heroStamp}><CircleDollarSign size={18} /> {cms.hero?.badge || 'Data usaha, satu dashboard'}</div>
             </div>
             <h1>{cms.hero?.title || 'Bisnis lebih terarah.'}<br /><span>{cms.hero?.titleHighlight || 'Tumbuh lebih percaya diri.'}</span></h1>
-            <p className={styles.heroDescription}>{cms.hero?.description || 'Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan AI — semua dalam satu platform.'}</p>
+            <p className={styles.heroDescription}>{cms.hero?.description || 'Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan Fluxa — semua dalam satu platform.'}</p>
             <div className={styles.heroActions}>
               <Link className={styles.primaryButton} href="/register">{cms.hero?.ctaText || 'Coba gratis 7 hari'} <ArrowRight size={17} /></Link>
-              <a className={styles.secondaryButton} href="#cara-kerja"><span className={styles.playIcon}>↓</span> {cms.hero?.ctaSecondaryText || 'Kenali cara kerjanya'}</a>
+              <a className={styles.secondaryButton} href="#cara-kerja">{cms.hero?.ctaSecondaryText || 'Kenali cara kerjanya'}</a>
             </div>
-            <div className={styles.trustNote}><ShieldCheck size={17} /> {cms.hero?.trustNote || 'Satu platform untuk operasional dan insight bisnis'}</div>
+            <div className={styles.trustNote}><ShieldCheck size={17} /> {cms.hero?.trustNote || 'Data pelanggan Anda aman dan selalu terlindungi'}</div>
           </div>
           <div className={styles.heroVisual}>
             <div className={styles.visualOrb} aria-hidden="true" />
             <div className={styles.dashboardCard}>
-              <div className={styles.dashboardTop}><span className={styles.dashTitle}>Contoh ringkasan bisnis</span><span className={styles.liveDot}>● Simulasi</span></div>
-              <div className={styles.metricGrid}><div className={styles.metric}><span>Total penjualan</span><strong>Rp 12,8 jt</strong><small className={styles.positive}>↗ 12,4%</small></div><div className={styles.metric}><span>Transaksi</span><strong>248</strong><small>Periode ini</small></div></div>
-              <div className={styles.miniChart}><div className={styles.miniChartTitle}><span>Performa penjualan</span><span>7 hari</span></div><svg viewBox="0 0 410 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 94 C25 83 28 52 61 65 S97 90 121 70 S153 45 180 55 S216 28 243 42 S279 58 300 35 S333 49 354 24 S390 28 410 8" fill="none" stroke="#4485ff" strokeWidth="3" vectorEffect="non-scaling-stroke" /><path d="M0 94 C25 83 28 52 61 65 S97 90 121 70 S153 45 180 55 S216 28 243 42 S279 58 300 35 S333 49 354 24 S390 28 410 8 L410 120 L0 120Z" fill="url(#mini-fill)" opacity=".55" /><defs><linearGradient id="mini-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#4485ff" stopOpacity=".28" /><stop offset="100%" stopColor="#4485ff" stopOpacity="0" /></linearGradient></defs></svg><div className={styles.miniChartLabels}><span>Sen</span><span>Rab</span><span>Jum</span><span>Min</span></div></div>
-              <div className={styles.aiTip}><span><Sparkles size={16} /></span><div><strong>Insight FluxAI</strong><p>Penjualan tertinggi terjadi pada akhir pekan.</p></div><ArrowRight size={16} /></div>
+              {/* Header Ringkasan Bisnis */}
+              <div className={styles.dashboardTop}>
+                <div className={styles.dashHeaderLeft}>
+                  <span className={styles.dashHeaderIcon}>
+                    <Store size={15} />
+                  </span>
+                  <span className={styles.dashTitle}>Ringkasan Bisnis</span>
+                </div>
+                <div className={styles.dashPeriodBtn}>
+                  <Calendar size={12} />
+                  <span>7 hari terakhir</span>
+                  <ChevronRight size={12} />
+                </div>
+              </div>
+
+              {/* Kartu Statistik Total Penjualan & Transaksi */}
+              <div className={styles.metricGrid}>
+                <div className={styles.metric}>
+                  <div className={styles.metricHeader}>
+                    <span className={styles.metricIconWrap}>
+                      <ShoppingBag size={14} />
+                    </span>
+                    <span className={styles.metricLabel}>Total Penjualan</span>
+                  </div>
+                  <strong className={styles.metricValue}>Rp 12,8 jt</strong>
+                  <small className={styles.metricTrend}>
+                    <span className={styles.positive}>↗ 12,4%</span> <span>dari 7 hari sebelumnya</span>
+                  </small>
+                </div>
+
+                <div className={styles.metric}>
+                  <div className={styles.metricHeader}>
+                    <span className={styles.metricIconWrap}>
+                      <Receipt size={14} />
+                    </span>
+                    <span className={styles.metricLabel}>Jumlah Transaksi</span>
+                  </div>
+                  <strong className={styles.metricValue}>248</strong>
+                  <small className={styles.metricTrend}>
+                    <span className={styles.positive}>↗ 9,3%</span> <span>dari 7 hari sebelumnya</span>
+                  </small>
+                </div>
+              </div>
+
+              {/* Grafik Performa Penjualan */}
+              <div className={styles.miniChart}>
+                <div className={styles.miniChartHeader}>
+                  <span className={styles.miniChartTitle}>Performa Penjualan</span>
+                  <div className={styles.miniChartDropdown}>
+                    <span>7 hari</span>
+                    <ChevronDown size={13} />
+                  </div>
+                </div>
+
+                <div className={styles.chartWrapper}>
+                  <div className={styles.chartYAxis} aria-hidden="true">
+                    <span>15 jt</span>
+                    <span>10 jt</span>
+                    <span>5 jt</span>
+                    <span>0</span>
+                  </div>
+                  <div className={styles.chartCanvas}>
+                    <svg viewBox="0 0 340 100" preserveAspectRatio="none" aria-hidden="true">
+                      <defs>
+                        <linearGradient id="mini-fill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.22" />
+                          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+                      <line x1="0" y1="8" x2="340" y2="8" stroke="#f1f5f9" strokeDasharray="3 3" />
+                      <line x1="0" y1="38" x2="340" y2="38" stroke="#f1f5f9" strokeDasharray="3 3" />
+                      <line x1="0" y1="68" x2="340" y2="68" stroke="#f1f5f9" strokeDasharray="3 3" />
+                      <line x1="0" y1="96" x2="340" y2="96" stroke="#f1f5f9" />
+                      <path
+                        d="M 0 84 C 28 72 45 62 80 65 C 115 68 135 55 170 58 C 205 61 225 44 260 48 C 295 52 315 22 340 8 L 340 96 L 0 96 Z"
+                        fill="url(#mini-fill)"
+                      />
+                      <path
+                        d="M 0 84 C 28 72 45 62 80 65 C 115 68 135 55 170 58 C 205 61 225 44 260 48 C 295 52 315 22 340 8"
+                        fill="none"
+                        stroke="#2563eb"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                      />
+                      <circle cx="340" cy="8" r="4.5" fill="#2563eb" />
+                      <circle cx="340" cy="8" r="7.5" fill="none" stroke="#2563eb" strokeOpacity="0.35" strokeWidth="2" />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className={styles.miniChartLabels} aria-hidden="true">
+                  <span>Sen</span>
+                  <span>Sel</span>
+                  <span>Rab</span>
+                  <span>Kam</span>
+                  <span>Jum</span>
+                  <span>Sab</span>
+                  <span>Min</span>
+                </div>
+              </div>
+
+              {/* Dua Kartu Operasional di Bagian Bawah */}
+              <div className={styles.dashBottomCards}>
+                <div className={styles.bottomCardSales}>
+                  <span className={styles.bottomCardIconBlue}>
+                    <BarChart3 size={16} />
+                  </span>
+                  <div className={styles.bottomCardContent}>
+                    <div className={styles.bottomCardTitleRow}>
+                      <strong>Ringkasan penjualan</strong>
+                      <ChevronRight size={12} className={styles.bottomCardArrow} />
+                    </div>
+                    <p>Penjualan tertinggi terjadi pada akhir pekan.</p>
+                  </div>
+                </div>
+
+                <div className={styles.bottomCardStatus}>
+                  <span className={styles.bottomCardIconGreen}>
+                    <Store size={16} />
+                  </span>
+                  <div className={styles.bottomCardContent}>
+                    <div className={styles.bottomCardTitleRow}>
+                      <strong>Bisnis terpantau</strong>
+                      <ChevronRight size={12} className={styles.bottomCardArrow} />
+                    </div>
+                    <p>Operasional berjalan normal.</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className={styles.floatBadge}><span><ClipboardCheck size={17} /></span><div><strong>Bisnis terpantau</strong><small>Laporan diperbarui otomatis</small></div></div>
           </div>
         </div>
         <a className={styles.scrollCue} href="#fitur" aria-label="Lihat fitur"><ArrowDown size={16} /></a>
@@ -215,31 +759,47 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
         <div className={styles.featureGrid}>
           {featuresList.map((item, idx) => {
             const IconComponent = resolveIcon(item.icon)
+            const itemNumber = item.number || `0${idx + 1}`
+            const itemDetail = item.detail || 'Operasional · Bisnis · Insight'
             return (
-              <article className={styles.featureCard} key={idx}>
-                <span className={`${styles.featureIcon} ${styles[item.tone] || styles.blue}`}>
-                  <IconComponent size={21} strokeWidth={1.8} />
-                </span>
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-                <span className={styles.cardArrow}><ArrowRight size={16} /></span>
+              <article className={styles.notchCard} key={idx}>
+                <div className={styles.notchCardHeader}>
+                  <span className={styles.notchCardNumber}>{itemNumber}</span>
+                </div>
+                <div className={styles.cardNotch} aria-hidden="true">
+                  <div className={styles.notchDish}>
+                    <div className={styles.notchGlow} />
+                    <div className={styles.notchIconBadge}>
+                      <IconComponent size={22} strokeWidth={2.2} />
+                    </div>
+                  </div>
+                </div>
+                <h3 className={styles.notchCardTitle}>{item.title}</h3>
+                <p className={styles.notchCardDescription}>{item.description}</p>
+                <div className={styles.notchCardDivider} />
+                <div className={styles.notchCardMeta}>{itemDetail}</div>
               </article>
             )
           })}
         </div>
+        <MobilePairsList items={featuresList} />
       </div></section>
 
       <section className={styles.aiSection}><div className={`${styles.sectionWrap} ${styles.aiLayout}`}>
         <div className={styles.aiCopy}>
-          <span className={styles.eyebrow}><Sparkles size={14} /> {cms.aiInsight?.eyebrow || 'INSIGHT BISNIS BERBANTU AI'}</span>
+          <span className={styles.eyebrow}><TrendingUp size={14} /> {cms.aiInsight?.eyebrow || 'PEMAHAMAN BISNIS'}</span>
           <h2>{cms.aiInsight?.title || 'Bukan sekadar angka.'}<br /><span>{cms.aiInsight?.titleHighlight || 'Pahami ceritanya.'}</span></h2>
-          <p>{cms.aiInsight?.description || 'FluxAI membantu merangkum kondisi usaha dari data operasional Anda, mengidentifikasi tren, dan menyajikan rekomendasi yang lebih mudah ditindaklanjuti.'}</p>
+          <p>{cms.aiInsight?.description || 'Fluxa membantu merangkum kondisi usaha dari data operasional Anda, mengidentifikasi tren, dan menyajikan rekomendasi yang lebih mudah ditindaklanjuti.'}</p>
           <ul className={styles.checkList}>
-            {(cms.aiInsight?.checklist || []).map((checkItem, idx) => (
+            {(cms.aiInsight?.checklist || [
+              'Diagnosis kesehatan bisnis',
+              'Tren penjualan dan arus kas',
+              'Rekomendasi berdasarkan data',
+            ]).map((checkItem, idx) => (
               <li key={idx}><Check size={16} /> {checkItem}</li>
             ))}
           </ul>
-          <a href="#cara-kerja" className={styles.textLink}>Pelajari cara kerja FluxAI <ArrowRight size={16} /></a>
+          <a href="#cara-kerja" className={styles.textLink}>Pelajari cara kerja Fluxa! <ArrowRight size={16} /></a>
         </div>
         <ExampleChart />
       </div></section>
@@ -249,32 +809,66 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
         <div className={styles.steps}>
           {stepsList.map((step, idx) => {
             const StepIcon = resolveIcon(step.icon, Database)
+            const stepNumber = step.number || `0${idx + 1}`
             return (
-              <article className={styles.step} key={idx}>
-                <div className={styles.stepHead}>
-                  <span className={styles.stepNumber}>{step.number || `0${idx + 1}`}</span>
-                  <span className={styles.stepIcon}><StepIcon size={19} /></span>
-                  <span className={styles.stepLabel}>{step.label}</span>
+              <article className={styles.notchCard} key={idx}>
+                <div className={styles.notchCardHeader}>
+                  <span className={styles.notchCardNumber}>{stepNumber}</span>
                 </div>
-                <h3>{step.title}</h3>
-                <p>{step.description}</p>
-                <div className={styles.stepDetail}><Clock3 size={14} /><span>{step.detail}</span></div>
+                <div className={styles.cardNotch} aria-hidden="true">
+                  <div className={styles.notchDish}>
+                    <div className={styles.notchGlow} />
+                    <div className={styles.notchIconBadge}>
+                      <StepIcon size={22} strokeWidth={2.2} />
+                    </div>
+                  </div>
+                </div>
+                <h3 className={styles.notchCardTitle}>{step.title}</h3>
+                <p className={styles.notchCardDescription}>{step.description}</p>
+                <div className={styles.notchCardDivider} />
+                <div className={styles.notchCardMeta}>{step.detail}</div>
               </article>
             )
           })}
         </div>
+        <MobilePairsList items={stepsList} defaultIcon={Database} />
       </div></section>
 
       <section className={styles.contactSection} id="kontak">
         <div className={styles.contactCard}>
-          <span className={styles.contactIcon}><Headset size={23} /></span>
-          <div>
-            <span className={styles.eyebrow}>{cms.contact?.eyebrow || 'ADA PERTANYAAN?'}</span>
-            <h2>{cms.contact?.heading || 'Mari bicarakan kebutuhan bisnis Anda.'}</h2>
-            <p>{cms.contact?.description || 'Tim Fluxa siap membantu Anda memahami fitur, trial, dan pilihan paket yang sesuai.'}</p>
+          <div className={styles.contactIconBox} aria-hidden="true">
+            <WhatsAppIcon size={24} />
           </div>
-          <a className={styles.secondaryButton} href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-            {cms.contact?.buttonText || 'Tanya via WhatsApp'} <ArrowRight size={16} />
+          <div className={styles.contactTextContent}>
+            <span className={styles.contactEyebrow}>{cms.contact?.eyebrow || 'BUTUH BANTUAN?'}</span>
+            <h2 className={styles.contactHeading}>
+              {cms.contact?.heading ? (
+                cms.contact.heading.includes('bisnis Anda') ? (
+                  <>
+                    {cms.contact.heading.split('bisnis Anda')[0]}
+                    <span>bisnis Anda{cms.contact.heading.split('bisnis Anda')[1]}</span>
+                  </>
+                ) : (
+                  cms.contact.heading
+                )
+              ) : (
+                <>Mari bicarakan kebutuhan <span>bisnis Anda.</span></>
+              )}
+            </h2>
+            <p className={styles.contactDescription}>
+              {cms.contact?.description || 'Tim Fluxa siap membantu Anda memahami fitur, trial, dan pilihan paket yang sesuai.'}
+            </p>
+          </div>
+          <a
+            className={styles.contactWhatsappButton}
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Tanya tim Fluxa via WhatsApp"
+          >
+            <WhatsAppIcon size={16} />
+            <span>{cms.contact?.buttonText || 'Tanya via WhatsApp'}</span>
+            <ArrowRight size={15} />
           </a>
         </div>
       </section>
@@ -301,27 +895,57 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
             <p>{cms.pricing?.description || 'Mulai dengan trial 7 hari, lalu pilih kategori paket yang paling sesuai dengan tahap bisnis Anda.'}</p>
           </div>
           <div className={styles.packageGrid}>
-            {(cms.pricing?.packages || defaultPackages).map((plan, idx) => (
-              <article className={`${styles.packageCard} ${plan.featured ? styles.packageFeatured : ''}`} key={plan.name || idx}>
-                {plan.featured && <span className={styles.popularBadge}>{plan.badge || 'Pilihan bisnis'}</span>}
-                <h3>{plan.name}</h3>
-                <p className={styles.packageDescription}>{plan.description}</p>
-                <div className={styles.packagePrice}>
-                  {plan.priceLabel || 'Hubungi kami'}
-                  <small>{plan.priceSublabel || 'untuk informasi harga'}</small>
-                </div>
-                <a className={plan.featured ? styles.primaryButton : styles.packageButton} href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                  {cms.pricing?.buttonText || 'Tanyakan paket'} <ArrowRight size={16} />
-                </a>
-                <div className={styles.packageDivider} />
-                <span className={styles.packageIncludes}>Yang termasuk:</span>
-                <ul>
-                  {(plan.features || []).map((feature, fIdx) => (
-                    <li key={fIdx}><Check size={15} />{feature}</li>
-                  ))}
-                </ul>
-              </article>
-            ))}
+            {(cms.pricing?.packages || defaultPackages).map((plan, idx) => {
+              const isSelected = selectedPlan === plan.name
+              return (
+                <article
+                  className={`${styles.packageCard} ${isSelected ? styles.packageFeatured : ''}`}
+                  key={plan.name || idx}
+                  onClick={() => setSelectedPlan(plan.name)}
+                >
+                  <div className={styles.packageCardTop}>
+                    <div className={styles.packageTitleRow}>
+                      <h3 className={styles.packageName}>{plan.name}</h3>
+                      {isSelected && (
+                        <span className={styles.popularBadge}>{plan.badge || 'Pilihan bisnis'}</span>
+                      )}
+                    </div>
+                    <p className={styles.packageDescription}>{plan.description}</p>
+                  </div>
+
+                  <div className={styles.packagePriceWrap}>
+                    <div className={styles.packagePrice}>{plan.priceLabel || 'Hubungi kami'}</div>
+                    <small className={styles.packagePriceSub}>{plan.priceSublabel || 'Hubungi tim kami untuk detail harga'}</small>
+                  </div>
+
+                  <a
+                    className={isSelected ? styles.primaryButton : styles.packageButton}
+                    href={getPlanWhatsappUrl(plan.name)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                      setSelectedPlan(plan.name)
+                    }}
+                  >
+                    {cms.pricing?.buttonText || 'Tanyakan paket'} <ArrowRight size={15} />
+                  </a>
+
+                  <div className={styles.packageDivider} />
+
+                  <div className={styles.packageFeaturesWrap}>
+                    <span className={styles.packageIncludes}>Yang termasuk:</span>
+                    <ul className={styles.packageFeaturesList}>
+                      {(plan.features || []).map((feature, fIdx) => (
+                        <li key={fIdx}>
+                          <Check size={15} />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
+              )
+            })}
           </div>
         </div>
       </section>
