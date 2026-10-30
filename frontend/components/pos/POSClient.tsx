@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, X, Check, Wallet, ArrowRight, Tag, ChevronDown, Percent, DollarSign as DollarIcon, Flame, Zap, Sparkles, Printer } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, X, Check, Wallet, ArrowRight, Tag, ChevronDown, Percent, DollarSign as DollarIcon, Flame, Zap, Sparkles, Printer, AlertCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { BukaShiftModal } from '@/components/pos/KasMasukModal'
+import { fetchShiftExpenses } from '@/lib/cash-reconciliation'
 import { getUserFacingError } from '@/lib/user-facing-error'
 import { fetchActivePromotions } from '@/lib/active-promotions'
 
@@ -113,6 +114,34 @@ export default function POSClient({ products: initialProducts, productsError: in
   const [processing, setProcessing] = useState(false)
   const [receipt, setReceipt] = useState<CompletedReceipt | null>(null)
   const [toast, setToast] = useState('')
+
+  // State Pengeluaran Operasional Kasir
+  const [shiftExpenseTotal, setShiftExpenseTotal] = useState(0)
+
+  useEffect(() => {
+    async function loadExpenses() {
+      if (!activeShift?.id) {
+        setShiftExpenseTotal(0)
+        return
+      }
+      const { totalExpense } = await fetchShiftExpenses(
+        supabase,
+        activeShift.id,
+        userId,
+        activeShift.opened_at
+      )
+      setShiftExpenseTotal(totalExpense)
+    }
+
+    void loadExpenses()
+
+    const handleExpenseAdded = () => {
+      void loadExpenses()
+    }
+
+    window.addEventListener('shift_expense_added', handleExpenseAdded)
+    return () => window.removeEventListener('shift_expense_added', handleExpenseAdded)
+  }, [activeShift?.id, activeShift?.opened_at, userId, supabase])
 
   const refreshProducts = async () => {
     const { data, error } = await supabase
@@ -350,7 +379,30 @@ export default function POSClient({ products: initialProducts, productsError: in
   const subtotal = cart.reduce((s, c) => s + c.sell_price * c.quantity, 0)
   const discountAmount = parseInt(discount) || 0
   const total = Math.max(0, subtotal - discountAmount)
-  const cashChange = payMethod === 'cash' && cashInput ? Math.max(0, parseInt(cashInput) - total) : 0
+  const parsedCash = cashInput ? parseInt(cashInput, 10) : 0
+  const isCashMissing = payMethod === 'cash' && (!cashInput || parsedCash <= 0)
+  const isCashUnder = payMethod === 'cash' && parsedCash > 0 && parsedCash < total
+  const isCashInvalid = payMethod === 'cash' && (isCashMissing || isCashUnder)
+  const cashChange = payMethod === 'cash' && parsedCash >= total ? parsedCash - total : 0
+
+  const quickCashOptions = useMemo(() => {
+    if (total <= 0) return []
+    const opts = new Set<number>()
+    opts.add(total) // Uang pas
+
+    const denominations = [10000, 20000, 50000, 100000, 200000, 500000]
+    for (const d of denominations) {
+      if (d > total) {
+        opts.add(d)
+      }
+    }
+    const next50k = Math.ceil(total / 50000) * 50000
+    if (next50k > total) opts.add(next50k)
+    const next100k = Math.ceil(total / 100000) * 100000
+    if (next100k > total) opts.add(next100k)
+
+    return Array.from(opts).sort((a, b) => a - b).slice(0, 4)
+  }, [total])
 
   // Re-validasi promo jika subtotal berubah (item dihapus/ditambah)
   useEffect(() => {
@@ -364,6 +416,18 @@ export default function POSClient({ products: initialProducts, productsError: in
   const handleCheckout = async () => {
     if (cart.length === 0) { showToast('Keranjang kosong!'); return }
     if (!activeShift) { showToast('Buka shift terlebih dahulu!'); return }
+
+    if (payMethod === 'cash') {
+      const val = cashInput ? parseInt(cashInput, 10) : 0
+      if (!cashInput || val <= 0) {
+        showToast('Uang diterima (Rp) wajib diisi untuk transaksi tunai!')
+        return
+      }
+      if (val < total) {
+        showToast(`Uang diterima kurang! Kurang ${formatRp(total - val)}`)
+        return
+      }
+    }
 
     setProcessing(true)
     try {
@@ -541,15 +605,40 @@ export default function POSClient({ products: initialProducts, productsError: in
           </div>
         </div>
 
-        {/* Shift badge aktif */}
-        <div style={{ background: 'var(--oks)', padding: '8px 12px', borderRadius: 10, marginBottom: 12, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--ok)', animation: 'pulse 2s infinite' }} />
-            <span style={{ fontSize: 12, color: 'var(--ok)', fontWeight: 600 }}>Shift Aktif</span>
+        {/* Shift badge aktif & Quick Action Pengeluaran */}
+        <div style={{
+          background: 'var(--oks)',
+          padding: '8px 12px',
+          borderRadius: 10,
+          marginBottom: 12,
+          display: 'flex',
+          gap: 8,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--ok)', animation: 'pulse 2s infinite' }} />
+              <span style={{ fontSize: 12, color: 'var(--ok)', fontWeight: 600 }}>Shift Aktif</span>
+            </div>
+            <span style={{ fontSize: 11.5, color: 'var(--ok)', opacity: 0.9 }}>
+              Kas Awal: <strong>{formatRp(activeShift.initial_cash || 0)}</strong>
+            </span>
+            {shiftExpenseTotal > 0 && (
+              <span style={{
+                fontSize: 11,
+                color: 'var(--bad)',
+                background: 'var(--bads)',
+                padding: '2px 7px',
+                borderRadius: 6,
+                fontWeight: 600,
+                border: '1px solid rgba(239, 68, 68, 0.2)'
+              }}>
+                Biaya Toko: -{formatRp(shiftExpenseTotal)}
+              </span>
+            )}
           </div>
-          <span style={{ fontSize: 11.5, color: 'var(--ok)', opacity: 0.8 }}>
-            Kas Awal: {formatRp(activeShift.initial_cash || 0)}
-          </span>
         </div>
 
         {isMounted && promoLoadError && (
@@ -1005,11 +1094,103 @@ export default function POSClient({ products: initialProducts, productsError: in
 
             {payMethod === 'cash' && (
               <div style={{ marginBottom: 14 }}>
-                <label className="label" htmlFor="cash-input">Uang diterima (Rp)</label>
-                <input id="cash-input" className="input" type="number" placeholder={String(total)} value={cashInput} onChange={e => setCashInput(e.target.value)} />
-                {cashInput && parseInt(cashInput) >= total && (
-                  <div style={{ marginTop: 8, padding: '8px 12px', background: 'var(--oks)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: 'var(--ok)' }}>
-                    Kembalian: {formatRp(parseInt(cashInput) - total)}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label className="label" htmlFor="cash-input" style={{ margin: 0, fontWeight: 600 }}>
+                    Uang diterima (Rp) <span style={{ color: 'var(--err)', fontWeight: 700 }}>*wajib diisi</span>
+                  </label>
+                  <span style={{ fontSize: 11, color: 'var(--mute)' }}>
+                    Tagihan: <strong>{formatRp(total)}</strong>
+                  </span>
+                </div>
+
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="cash-input"
+                    className="input"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder={`Min. ${formatRp(total)}`}
+                    value={cashInput ? new Intl.NumberFormat('id-ID').format(Number(cashInput)) : ''}
+                    onChange={e => {
+                      const raw = e.target.value.replace(/\D/g, '')
+                      setCashInput(raw)
+                    }}
+                    autoFocus
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      paddingLeft: 38,
+                      borderColor: !cashInput
+                        ? 'var(--line)'
+                        : parsedCash < total
+                        ? 'var(--err)'
+                        : 'var(--ok)',
+                      background: !cashInput
+                        ? 'var(--panel)'
+                        : parsedCash < total
+                        ? 'rgba(239, 68, 68, 0.05)'
+                        : 'rgba(34, 197, 94, 0.05)',
+                    }}
+                  />
+                  <span style={{
+                    position: 'absolute',
+                    left: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: 'var(--mute)',
+                    pointerEvents: 'none'
+                  }}>
+                    Rp
+                  </span>
+                </div>
+
+                {/* Quick Cash Presets */}
+                {quickCashOptions.length > 0 && (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                    {quickCashOptions.map(amount => (
+                      <button
+                        key={amount}
+                        type="button"
+                        onClick={() => setCashInput(String(amount))}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          fontSize: 11.5,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          border: Number(cashInput) === amount ? '1.5px solid var(--acc)' : '1px solid var(--line)',
+                          background: Number(cashInput) === amount ? 'var(--accs)' : 'var(--bg)',
+                          color: Number(cashInput) === amount ? 'var(--acc)' : 'var(--ink)',
+                          transition: 'all 0.12s'
+                        }}
+                      >
+                        {amount === total ? 'Uang Pas' : formatRp(amount)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Validation Status */}
+                {isCashMissing && (
+                  <div style={{ marginTop: 8, padding: '7px 10px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: 8, fontSize: 12, color: 'var(--err)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <AlertCircle size={14} style={{ flexShrink: 0 }} />
+                    <span>Uang diterima wajib diisi sebelum pembayaran dapat diproses.</span>
+                  </div>
+                )}
+
+                {isCashUnder && (
+                  <div style={{ marginTop: 8, padding: '7px 10px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 8, fontSize: 12.5, fontWeight: 600, color: 'var(--err)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <AlertCircle size={14} style={{ flexShrink: 0 }} />
+                    <span>Uang kurang {formatRp(total - parsedCash)}</span>
+                  </div>
+                )}
+
+                {!isCashMissing && !isCashUnder && parsedCash >= total && (
+                  <div style={{ marginTop: 8, padding: '8px 12px', background: 'var(--oks)', border: '1px solid rgba(34, 197, 94, 0.25)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: 'var(--ok)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Kembalian:</span>
+                    <span style={{ fontSize: 14, fontWeight: 700 }}>{formatRp(parsedCash - total)}</span>
                   </div>
                 )}
               </div>
@@ -1020,9 +1201,14 @@ export default function POSClient({ products: initialProducts, productsError: in
               <button
                 id="confirm-payment-btn"
                 className="btn btn-primary"
-                style={{ flex: 2, justifyContent: 'center' }}
+                style={{
+                  flex: 2,
+                  justifyContent: 'center',
+                  opacity: (processing || isCashInvalid) ? 0.6 : 1,
+                  cursor: (processing || isCashInvalid) ? 'not-allowed' : 'pointer'
+                }}
                 onClick={handleCheckout}
-                disabled={processing}
+                disabled={processing || isCashInvalid}
               >
                 <Check size={15} />
                 {processing ? 'Memproses...' : `Bayar ${formatRp(total)}`}

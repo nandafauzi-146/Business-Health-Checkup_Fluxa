@@ -1,4 +1,4 @@
-// utils/supabase/types.ts
+﻿// utils/supabase/types.ts
 // Tipe TypeScript lengkap untuk skema database Supabase Fluxa POS & Business Health Checkup
 
 export type Json =
@@ -340,7 +340,8 @@ export interface Database {
           created_at?: string;
         };
         Relationships: [];
-      };
+      };
+
       shifts: {
         Row: {
           id: string;
@@ -533,30 +534,51 @@ export interface Database {
       expenses: {
         Row: {
           id: string;
+          shift_id: string | null;
           category_id: string | null;
           amount: number;
           description: string;
           expense_date: string;
+          status: "pending" | "approved" | "rejected" | "clarification";
+          cash_impact: boolean;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          rejection_reason: string | null;
+          receipt_url: string | null;
           created_by: string;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
+          shift_id?: string | null;
           category_id?: string | null;
           amount: number;
           description: string;
           expense_date?: string;
+          status?: "pending" | "approved" | "rejected" | "clarification";
+          cash_impact?: boolean;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          rejection_reason?: string | null;
+          receipt_url?: string | null;
           created_by: string;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
+          shift_id?: string | null;
           category_id?: string | null;
           amount?: number;
           description?: string;
           expense_date?: string;
+          status?: "pending" | "approved" | "rejected" | "clarification";
+          cash_impact?: boolean;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          rejection_reason?: string | null;
+          receipt_url?: string | null;
           created_by?: string;
           created_at?: string;
           updated_at?: string;
@@ -938,7 +960,8 @@ export interface Database {
           products_count: number;
           updated_at: string;
         };
-      };
+      };
+
       v_low_stock_products: {
         Row: {
           id: string;
@@ -953,6 +976,25 @@ export interface Database {
       };
     }>;
     Functions: {
+      submit_cashier_expense: {
+        Args: {
+          p_amount: number;
+          p_description: string;
+          p_category_id?: string | null;
+          p_shift_id?: string | null;
+          p_cash_impact?: boolean;
+          p_receipt_url?: string | null;
+        };
+        Returns: string;
+      };
+      verify_cashier_expense: {
+        Args: {
+          p_expense_id: string;
+          p_action: "approve" | "reject" | "clarification";
+          p_reason?: string | null;
+        };
+        Returns: boolean;
+      };
       produce_semi_finished_material: {
         Args: {
           p_material_id: string;
@@ -960,7 +1002,8 @@ export interface Database {
           p_note?: string | null;
         };
         Returns: number;
-      };
+      };
+
       adjust_raw_material_stock: {
         Args: {
           p_raw_material_id: string;
@@ -969,7 +1012,8 @@ export interface Database {
           p_note?: string | null;
         };
         Returns: number;
-      };
+      };
+
       open_shift: {
         Args: {
           p_initial_cash: number;

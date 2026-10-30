@@ -1,5 +1,5 @@
 .page { min-height: auto; color: var(--ink); font-family: inherit; }
-.content { width: min(100%, 1080px); margin: 0 auto; padding: 0 0 24px; }
+.content { width: 100%; padding: 0 0 24px; }
 .heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 22px; }
 .eyebrow { color: var(--role-acc, var(--acc)); font-size: 10px; font-weight: 750; letter-spacing: .1em; }
 .heading h1 { margin-top: 6px; color: var(--ink); font-size: clamp(23px, 3vw, 30px); letter-spacing: -.04em; }

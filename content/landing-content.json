@@ -5,7 +5,7 @@
     "ctaText": "Coba gratis 7 hari",
     "eyebrow": "Platform bisnis untuk UMKM modern",
     "trustNote": "Satu platform untuk operasional dan insight bisnis",
-    "description": "Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan AI — semua dalam satu platform.",
+    "description": "Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan AI semua dalam satu platform.",
     "titleHighlight": "Tumbuh lebih percaya diri.",
     "ctaSecondaryText": "Kenali cara kerjanya"
   },
@@ -49,13 +49,13 @@
   ],
   "aiInsight": {
     "title": "Bukan sekadar angka.",
-    "eyebrow": "INSIGHT BISNIS BERBANTU AI",
+    "eyebrow": "PEMAHAMAN BISNIS",
     "checklist": [
       "Diagnosis kesehatan bisnis",
       "Tren penjualan dan arus kas",
       "Rekomendasi berdasarkan data"
     ],
-    "description": "FluxAI membantu merangkum kondisi usaha dari data operasional Anda, mengidentifikasi tren, dan menyajikan rekomendasi yang lebih mudah ditindaklanjuti.",
+    "description": "Fluxa membantu merangkum kondisi usaha dari data operasional Anda, mengidentifikasi tren, dan menyajikan rekomendasi yang lebih mudah ditindaklanjuti.",
     "titleHighlight": "Pahami ceritanya."
   },
   "steps": [
@@ -93,7 +93,7 @@
     }
   ],
   "contact": {
-    "eyebrow": "ADA PERTANYAAN?",
+    "eyebrow": "BUTUH BANTUAN?",
     "heading": "Mari bicarakan kebutuhan bisnis Anda.",
     "buttonText": "Tanya via WhatsApp",
     "description": "Tim Fluxa siap membantu Anda memahami fitur, trial, dan pilihan paket yang sesuai.",
@@ -123,7 +123,7 @@
         ],
         "priceLabel": "Hubungi kami",
         "description": "Untuk usaha kecil yang ingin mulai lebih rapi.",
-        "priceSublabel": "untuk informasi harga"
+        "priceSublabel": "Hubungi tim kami untuk detail harga"
       },
       {
         "name": "Growth",
@@ -136,7 +136,7 @@
         ],
         "priceLabel": "Hubungi kami",
         "description": "Untuk bisnis yang ingin memahami performa lebih dalam.",
-        "priceSublabel": "untuk informasi harga"
+        "priceSublabel": "Hubungi tim kami untuk detail harga"
       },
       {
         "name": "Multi-cabang",
@@ -149,7 +149,7 @@
         ],
         "priceLabel": "Hubungi kami",
         "description": "Untuk tim dan operasional dengan kebutuhan lebih luas.",
-        "priceSublabel": "untuk informasi harga"
+        "priceSublabel": "Hubungi tim kami untuk detail harga"
       }
     ],
     "buttonText": "Tanyakan paket",

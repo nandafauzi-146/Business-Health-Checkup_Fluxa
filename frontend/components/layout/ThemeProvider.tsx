@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-export type ThemePreference = 'light' | 'dark' | 'system'
+export type ThemePreference = 'dark' | 'light'
 
 interface ThemeContextValue {
   preference: ThemePreference
@@ -22,7 +22,7 @@ const authListeners = new Set<() => void>()
 let stopAuthListener: (() => void) | undefined
 
 function isThemePreference(value: string | null): value is ThemePreference {
-  return value === 'light' || value === 'dark' || value === 'system'
+  return value === 'light' || value === 'dark'
 }
 
 function getPreferenceSnapshot(): ThemePreference {
@@ -41,7 +41,7 @@ function getPreferenceSnapshot(): ThemePreference {
       storageErrorReported = true
     }
   }
-  return memoryPreferences.get(key) ?? 'system'
+  return memoryPreferences.get(key) ?? 'dark'
 }
 
 function getLastActiveUserId() {
@@ -93,24 +93,13 @@ function subscribeToPreference(onChange: () => void) {
   }
 }
 
-function subscribeToSystemTheme(onChange: () => void) {
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-  mediaQuery.addEventListener('change', onChange)
-  return () => mediaQuery.removeEventListener('change', onChange)
-}
-
-function getSystemThemeSnapshot() {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const preference = useSyncExternalStore(
     subscribeToPreference,
     getPreferenceSnapshot,
-    (): ThemePreference => 'system'
+    (): ThemePreference => 'dark'
   )
-  const systemIsDark = useSyncExternalStore(subscribeToSystemTheme, getSystemThemeSnapshot, () => false)
-  const isDark = preference === 'dark' || (preference === 'system' && systemIsDark)
+  const isDark = preference === 'dark'
 
   const setPreference = useCallback((nextPreference: ThemePreference) => {
     const userId = activeUserId ?? getLastActiveUserId()
