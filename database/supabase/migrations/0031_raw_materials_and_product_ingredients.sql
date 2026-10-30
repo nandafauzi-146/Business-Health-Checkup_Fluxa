@@ -82,20 +82,47 @@ create index if not exists idx_raw_material_movements_material on public.raw_mat
 create index if not exists idx_raw_material_movements_created_at on public.raw_material_movements(created_at desc);
 
 -- 5. Triggers (updated_at & Tenant Isolation)
+create or replace function public.handle_updated_at()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+create or replace function public.update_updated_at_column()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
 drop trigger if exists update_raw_materials_updated_at on public.raw_materials;
-create trigger update_raw_materials_updated_at
+drop trigger if exists trg_raw_materials_updated_at on public.raw_materials;
+create trigger trg_raw_materials_updated_at
   before update on public.raw_materials
-  for each row execute function public.update_updated_at_column();
+  for each row execute function public.handle_updated_at();
 
 drop trigger if exists update_product_ingredients_updated_at on public.product_ingredients;
-create trigger update_product_ingredients_updated_at
+drop trigger if exists trg_product_ingredients_updated_at on public.product_ingredients;
+create trigger trg_product_ingredients_updated_at
   before update on public.product_ingredients
-  for each row execute function public.update_updated_at_column();
+  for each row execute function public.handle_updated_at();
 
 drop trigger if exists update_raw_material_sub_ingredients_updated_at on public.raw_material_sub_ingredients;
-create trigger update_raw_material_sub_ingredients_updated_at
+drop trigger if exists trg_raw_material_sub_ingredients_updated_at on public.raw_material_sub_ingredients;
+create trigger trg_raw_material_sub_ingredients_updated_at
   before update on public.raw_material_sub_ingredients
-  for each row execute function public.update_updated_at_column();
+  for each row execute function public.handle_updated_at();
 
 -- Attach tenant isolation trigger
 do $$
@@ -120,54 +147,74 @@ alter table public.raw_material_sub_ingredients enable row level security;
 alter table public.raw_material_movements enable row level security;
 
 -- Policies for raw_materials
+-- Staf bisnis (Admin & Owner) dapat membaca untuk monitoring stok
 drop policy if exists "Bahan baku dapat dibaca oleh staf bisnis" on public.raw_materials;
 create policy "Bahan baku dapat dibaca oleh staf bisnis"
   on public.raw_materials for select
   to authenticated
   using (business_id = public.current_business_id() or public.is_super_admin());
 
+-- Pengelolaan bahan baku (tambah, edit, hapus) HANYA oleh Admin bisnis
 drop policy if exists "Bahan baku dapat dikelola oleh admin dan owner bisnis" on public.raw_materials;
-create policy "Bahan baku dapat dikelola oleh admin dan owner bisnis"
+drop policy if exists "Bahan baku dapat dikelola hanya oleh admin bisnis" on public.raw_materials;
+create policy "Bahan baku dapat dikelola hanya oleh admin bisnis"
   on public.raw_materials for all
   to authenticated
-  using ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin())
-  with check ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin());
+  using ((business_id = public.current_business_id() and public.current_role() = 'admin') or public.is_super_admin())
+  with check ((business_id = public.current_business_id() and public.current_role() = 'admin') or public.is_super_admin());
 
 -- Policies for product_ingredients
+-- Resep produk dapat dibaca oleh staf bisnis (Admin & Owner untuk monitoring)
 drop policy if exists "Resep produk dapat dibaca oleh staf bisnis" on public.product_ingredients;
 create policy "Resep produk dapat dibaca oleh staf bisnis"
   on public.product_ingredients for select
   to authenticated
   using (business_id = public.current_business_id() or public.is_super_admin());
 
+-- Resep produk HANYA dikelola oleh Admin bisnis
 drop policy if exists "Resep produk dapat dikelola oleh admin dan owner bisnis" on public.product_ingredients;
-create policy "Resep produk dapat dikelola oleh admin dan owner bisnis"
+drop policy if exists "Resep produk dapat dikelola hanya oleh admin bisnis" on public.product_ingredients;
+create policy "Resep produk dapat dikelola hanya oleh admin bisnis"
   on public.product_ingredients for all
   to authenticated
-  using ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin())
-  with check ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin());
+  using ((business_id = public.current_business_id() and public.current_role() = 'admin') or public.is_super_admin())
+  with check ((business_id = public.current_business_id() and public.current_role() = 'admin') or public.is_super_admin());
 
 -- Policies for raw_material_sub_ingredients
+-- Sub-resep bumbu olahan dapat dibaca oleh staf bisnis
 drop policy if exists "Sub-resep bahan dapat dibaca oleh staf bisnis" on public.raw_material_sub_ingredients;
 create policy "Sub-resep bahan dapat dibaca oleh staf bisnis"
   on public.raw_material_sub_ingredients for select
   to authenticated
   using (business_id = public.current_business_id() or public.is_super_admin());
 
+-- Sub-resep bumbu olahan HANYA dikelola oleh Admin bisnis
 drop policy if exists "Sub-resep bahan dapat dikelola admin dan owner bisnis" on public.raw_material_sub_ingredients;
-create policy "Sub-resep bahan dapat dikelola admin dan owner bisnis"
+drop policy if exists "Sub-resep bahan dapat dikelola hanya oleh admin bisnis" on public.raw_material_sub_ingredients;
+create policy "Sub-resep bahan dapat dikelola hanya oleh admin bisnis"
   on public.raw_material_sub_ingredients for all
   to authenticated
-  using ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin())
-  with check ((business_id = public.current_business_id() and public.is_admin_or_owner()) or public.is_super_admin());
+  using ((business_id = public.current_business_id() and public.current_role() = 'admin') or public.is_super_admin())
+  with check ((business_id = public.current_business_id() and public.current_role() = 'admin') or public.is_super_admin());
 
--- Policies for raw_material_movements
+-- Policies for raw_material_movements (History pengelolaan bahan baku)
+-- Admin dan Owner dapat membaca riwayat mutasi bahan baku milik tenant usahanya sendiri
 drop policy if exists "Mutasi bahan baku hanya untuk admin dan owner bisnis" on public.raw_material_movements;
 create policy "Mutasi bahan baku hanya untuk admin dan owner bisnis"
   on public.raw_material_movements for select
   to authenticated
   using (
     (business_id = public.current_business_id() and public.is_admin_or_owner())
+    or public.is_super_admin()
+  );
+
+-- Isolasi Audit Log: Owner hanya dapat melihat log aktivitas bisnis miliknya (TIDAK whole system/platform)
+drop policy if exists "Audit log eksklusif untuk owner bisnis" on public.audit_logs;
+create policy "Audit log eksklusif untuk owner bisnis"
+  on public.audit_logs for select
+  to authenticated
+  using (
+    (business_id is not null and business_id = public.current_business_id() and public.is_owner())
     or public.is_super_admin()
   );
 
@@ -197,8 +244,8 @@ begin
     raise exception 'Pengguna harus login dan terasosiasi dengan bisnis.';
   end if;
 
-  if not public.is_admin_or_owner() then
-    raise exception 'Akses ditolak: Hanya Admin atau Owner yang dapat menyesuaikan stok bahan baku.';
+  if public.current_role() <> 'admin' and not public.is_super_admin() then
+    raise exception 'Akses ditolak: Pengelolaan stok bahan baku hanya dapat dilakukan oleh Admin.';
   end if;
 
   if p_quantity is null or p_quantity < 0 then
@@ -305,8 +352,8 @@ begin
     raise exception 'Pengguna harus login dan terasosiasi dengan bisnis.';
   end if;
 
-  if not public.is_admin_or_owner() then
-    raise exception 'Akses ditolak: Hanya Admin atau Owner yang dapat memproduksi bahan olahan.';
+  if public.current_role() <> 'admin' and not public.is_super_admin() then
+    raise exception 'Akses ditolak: Pengelolaan dan produksi bahan olahan hanya dapat dilakukan oleh Admin.';
   end if;
 
   if p_produced_quantity is null or p_produced_quantity <= 0 then
