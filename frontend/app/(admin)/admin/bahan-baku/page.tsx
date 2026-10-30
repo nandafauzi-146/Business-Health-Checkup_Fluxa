@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import RawMaterialsClient, { type RawMaterialItem, type RawMaterialMovement } from '@/components/admin/RawMaterials'
 
@@ -5,6 +6,28 @@ export const metadata = { title: 'Bahan Baku & Resep Bumbu — Fluxa Admin' }
 
 export default async function BahanBakuPage() {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, approval_status, business_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile || profile.approval_status !== 'approved') {
+    redirect('/login')
+  }
+
+  // Jika owner membuka link pengelolaan bahan baku admin, alihkan ke halaman monitoring riwayat khusus owner
+  if (profile.role === 'owner') {
+    redirect('/owner/bahan-baku')
+  }
+
+  // Pengelolaan bahan baku dan resep hanya dapat digunakan oleh admin
+  if (profile.role !== 'admin' && profile.role !== 'super_admin') {
+    redirect('/login')
+  }
 
   const [materialsRes, movementsRes, ingredientsRes, subIngredientsRes] = await Promise.all([
     supabase

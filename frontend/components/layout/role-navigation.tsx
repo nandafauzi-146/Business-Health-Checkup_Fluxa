@@ -107,9 +107,9 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
       items: [
         { icon: <Activity size={16} />, label: 'Buka / Tutup Shift', href: '/owner/shift' },
         { icon: <Package size={16} />, label: 'Monitoring Stok', href: '/owner/stok' },
-        { icon: <Boxes size={16} />, label: 'Bahan Baku & Resep', href: '/admin/bahan-baku' },
+        { icon: <Boxes size={16} />, label: 'Riwayat Bahan Baku', href: '/owner/bahan-baku' },
         { icon: <Users size={16} />, label: 'Kelola Pengguna', href: '/owner/pengguna' },
-        { icon: <FileText size={16} />, label: 'Aktifitas', href: '/owner/audit' },
+        { icon: <FileText size={16} />, label: 'Aktivitas Usaha', href: '/owner/audit' },
         { icon: <CreditCard size={16} />, label: 'Langganan', href: '/owner/langganan' },
       ]
     }
