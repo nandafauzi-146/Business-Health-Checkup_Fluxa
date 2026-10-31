@@ -227,13 +227,13 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
         </div>
 
         <div className="table-container">
-          <table className="data-table">
+          <table className="data-table" style={{ minWidth: 720 }}>
             <thead>
               <tr>
                 <th>No. Invoice</th>
-                <th className="hide-sm">Waktu</th>
-                <th className="hide-md">Pelanggan</th>
-                <th className="hide-sm">Metode</th>
+                <th>Waktu</th>
+                <th>Pelanggan</th>
+                <th>Metode</th>
                 <th>Total Belanja</th>
                 <th>Status</th>
                 <th style={{ textAlign: 'right' }}>Aksi</th>
@@ -265,17 +265,17 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
                           </div>
                         )}
                       </td>
-                      <td className="hide-sm" style={{ fontSize: 12, color: 'var(--mute)', whiteSpace: 'nowrap' }}>
+                      <td style={{ fontSize: 12, color: 'var(--mute)', whiteSpace: 'nowrap' }}>
                         {new Date(sale.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
                       </td>
-                      <td className="hide-md" style={{ fontSize: 13 }}>
+                      <td style={{ fontSize: 13 }}>
                         {sale.customer_name ? (
                           <span style={{ fontWeight: 500 }}>{sale.customer_name}</span>
                         ) : (
                           <span style={{ color: 'var(--mute)', fontStyle: 'italic' }}>Umum</span>
                         )}
                       </td>
-                      <td className="hide-sm">
+                      <td>
                         <span style={{
                           padding: '2px 8px',
                           borderRadius: 6,
@@ -330,7 +330,9 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
             style={{
               maxWidth: 540,
               width: '100%',
-              padding: '24px',
+              padding: 'clamp(16px, 4vw, 24px)',
+              maxHeight: 'min(90vh, 90dvh)',
+              overflowY: 'auto',
               borderRadius: 18,
               boxShadow: '0 24px 64px rgba(0, 0, 0, 0.28)'
             }}

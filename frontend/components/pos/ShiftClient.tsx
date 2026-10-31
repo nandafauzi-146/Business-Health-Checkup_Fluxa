@@ -699,7 +699,7 @@ export default function ShiftClient({
           </div>
         ) : (
           <div className="table-wrap">
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', minWidth: 920, borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
                   <th style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>KASIR</th>

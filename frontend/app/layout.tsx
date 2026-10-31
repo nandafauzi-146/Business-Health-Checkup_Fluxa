@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import DynamicTitle from "@/components/layout/DynamicTitle";
 import Script from "next/script";
 import "./globals.css";
 
@@ -10,8 +11,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Fluxa — Kasir & Diagnosis Kesehatan Bisnis UMKM",
-  description: "Sistem kasir (POS) terintegrasi dengan diagnosis kesehatan bisnis berbasis AI untuk UMKM. Setiap transaksi otomatis membentuk rapor finansial yang actionable.",
+  title: "Fluxa | Kasir & Analisis Kesehatan Bisnis",
+  description: "Sistem kasir (POS) terintegrasi dengan analisis kesehatan bisnis berbasis AI untuk UMKM. Setiap transaksi otomatis membentuk rapor finansial yang terarah.",
   icons: {
     icon: "/Fluxa-Logo.webp",
     apple: "/Fluxa-Logo.webp",
@@ -48,7 +49,10 @@ export default function RootLayout({
         />
       </head>
       <body suppressHydrationWarning>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <DynamicTitle />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

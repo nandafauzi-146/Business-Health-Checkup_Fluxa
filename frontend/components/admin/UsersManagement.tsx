@@ -290,14 +290,14 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
         </div>
 
         <div className="table-container">
-          <table className="data-table">
+          <table className="data-table" style={{ minWidth: 700 }}>
             <thead>
               <tr>
                 <th>Pengguna</th>
                 <th>Peran / Role</th>
-                <th className="hide-sm">No. Telepon</th>
-                <th className="hide-md">Terdaftar Sejak</th>
-                <th className="hide-sm">Status Akses</th>
+                <th>No. Telepon</th>
+                <th>Terdaftar Sejak</th>
+                <th>Status Akses</th>
                 <th style={{ textAlign: 'right' }}>Aksi Kelola</th>
               </tr>
             </thead>
@@ -364,7 +364,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
                           {roleCfg.label}
                         </span>
                       </td>
-                      <td className="hide-sm" style={{ fontSize: 13, color: 'var(--mute)' }}>
+                      <td style={{ fontSize: 13, color: 'var(--mute)' }}>
                         {u.phone ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--ink)' }}>
                             <Phone size={13} color="var(--mute)" />
@@ -374,10 +374,10 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
                           <span style={{ color: 'var(--mute)' }}>—</span>
                         )}
                       </td>
-                      <td className="hide-md" style={{ fontSize: 12.5, color: 'var(--mute)' }}>
+                      <td style={{ fontSize: 12.5, color: 'var(--mute)' }}>
                         {new Date(u.created_at).toLocaleDateString('id-ID', { dateStyle: 'medium' })}
                       </td>
-                      <td className="hide-sm">
+                      <td>
                         <StatusTag type="ok" label="Aktif" />
                       </td>
 
@@ -534,7 +534,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
                 )}
               </div>
 
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 22 }}>
+              <div className="modal-footer-sticky">
                 <button
                   type="button"
                   onClick={() => setAddModalOpen(false)}
@@ -631,7 +631,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 22 }}>
+              <div className="modal-footer-sticky">
                 <button
                   type="button"
                   onClick={() => setEditModalOpen(false)}

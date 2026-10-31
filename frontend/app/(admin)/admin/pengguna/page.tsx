@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import UsersManagementClient from '@/components/admin/UsersManagement'
 
-export const metadata = { title: 'Kelola Akun Kasir — Fluxa Admin' }
+export const metadata = { title: 'Fluxa | Kelola Kasir' }
 
 export default async function AdminPenggunaPage() {
   const supabase = await createClient()

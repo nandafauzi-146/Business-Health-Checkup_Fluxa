@@ -4,7 +4,7 @@ import Topbar from '@/components/layout/Topbar'
 import AuditLogClient, { type AuditLogItem } from '@/components/owner/AuditLogClient'
 import { createClient } from '@/lib/supabase/server'
 
-export const metadata = { title: 'Aktivitas Operasional Toko — Fluxa Owner' }
+export const metadata = { title: 'Fluxa | Aktivitas Usaha' }
 
 function sanitizeSensitiveData(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sanitizeSensitiveData)

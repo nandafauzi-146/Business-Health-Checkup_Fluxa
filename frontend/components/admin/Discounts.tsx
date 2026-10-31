@@ -459,15 +459,15 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
           </div>
         ) : (
           <div className="table-wrap">
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', minWidth: 740, borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
                   <th style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>KODE PROMO</th>
                   <th style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>NAMA PROMO</th>
                   <th style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>NILAI POTONGAN</th>
-                  <th className="hide-sm" style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>MIN. BELANJA</th>
-                  <th className="hide-md" style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>PERIODE</th>
-                  <th className="hide-sm" style={{ textAlign: 'center', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>STATUS DI KASIR</th>
+                  <th style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>MIN. BELANJA</th>
+                  <th style={{ textAlign: 'left', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>PERIODE</th>
+                  <th style={{ textAlign: 'center', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>STATUS DI KASIR</th>
                   <th style={{ textAlign: 'right', padding: '12px 14px', fontSize: 12, color: 'var(--mute)', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>AKSI</th>
                 </tr>
               </thead>
@@ -538,7 +538,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
                       </td>
 
                       {/* Min Belanja */}
-                      <td className="hide-sm" style={{ padding: '14px 14px', fontSize: 13 }}>
+                      <td style={{ padding: '14px 14px', fontSize: 13 }}>
                         {promo.min_purchase > 0 ? (
                           <span>Rp {promo.min_purchase.toLocaleString('id-ID')}</span>
                         ) : (
@@ -547,7 +547,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
                       </td>
 
                       {/* Periode */}
-                      <td className="hide-md" style={{ padding: '14px 14px', fontSize: 12, color: 'var(--mute)' }}>
+                      <td style={{ padding: '14px 14px', fontSize: 12, color: 'var(--mute)' }}>
                         <div>{new Date(promo.start_date).toLocaleDateString('id-ID')}</div>
                         {promo.end_date ? (
                           <div>s/d {new Date(promo.end_date).toLocaleDateString('id-ID')}</div>
@@ -557,7 +557,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
                       </td>
 
                       {/* Status Toggle */}
-                      <td className="hide-sm" style={{ padding: '14px 14px', textAlign: 'center' }}>
+                      <td style={{ padding: '14px 14px', textAlign: 'center' }}>
                         <button
                           onClick={() => handleToggleActive(promo)}
                           style={{
@@ -663,8 +663,9 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
             width: '100%',
             maxWidth: 540,
             boxShadow: '0 24px 64px rgba(0,0,0,0.25)',
-            maxHeight: '92vh',
-            overflowY: 'auto'
+            maxHeight: 'calc(100dvh - 32px)',
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch'
           }}>
             {/* Header Modal */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -865,7 +866,18 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
               </label>
 
               {/* Tombol Aksi */}
-              <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+              <div style={{
+                display: 'flex',
+                gap: 10,
+                marginTop: 16,
+                position: 'sticky',
+                bottom: -28,
+                background: 'var(--panel)',
+                paddingTop: 12,
+                paddingBottom: 4,
+                borderTop: '1px solid var(--line)',
+                zIndex: 10
+              }}>
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}

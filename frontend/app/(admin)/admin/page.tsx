@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import AdminDashboardClient from '@/components/admin/AdminDashboard'
 import AdminDashboardSkeleton from '@/components/admin/AdminDashboardSkeleton'
 
-export const metadata = { title: 'Dashboard Admin — Fluxa' }
+export const metadata = { title: 'Fluxa | Dashboard' }
 
 export default async function AdminDashboardPage() {
   return (

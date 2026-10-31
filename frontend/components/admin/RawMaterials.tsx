@@ -758,16 +758,16 @@ export default function RawMaterialsClient({
       {/* Materials Table */}
       <SectionCard title={`Daftar Bahan Baku & Bumbu (${filteredMaterials.length})`}>
         <div className="table-container">
-          <table className="data-table">
+          <table className="data-table" style={{ minWidth: 840 }}>
             <thead>
               <tr>
                 <th>Nama Bahan / Bumbu</th>
                 <th>Tipe</th>
                 <th>Stok Saat Ini</th>
                 <th>Batas Min. Restock</th>
-                <th className="hide-md">Harga Modal / Satuan</th>
-                <th className="hide-sm">Total Nilai</th>
-                <th className="hide-md">Penggunaan / Komposisi</th>
+                <th>Harga Modal / Satuan</th>
+                <th>Total Nilai</th>
+                <th>Penggunaan / Komposisi</th>
                 <th style={{ textAlign: 'right' }}>Aksi</th>
               </tr>
             </thead>
@@ -848,15 +848,15 @@ export default function RawMaterialsClient({
                         </span>
                       </td>
 
-                      <td className="hide-md" style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600 }}>
+                      <td style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600 }}>
                         {formatRp(m.cost_per_unit)} / {m.unit}
                       </td>
 
-                      <td className="hide-sm" style={{ fontWeight: 600, fontSize: 13, color: 'var(--ink)' }}>
+                      <td style={{ fontWeight: 600, fontSize: 13, color: 'var(--ink)' }}>
                         {formatRp(m.stock * m.cost_per_unit)}
                       </td>
 
-                      <td className="hide-md">
+                      <td>
                         {isSemi ? (
                           <div>
                             <div style={{ fontSize: 11, fontWeight: 600, color: '#9333ea', marginBottom: 2 }}>
@@ -976,7 +976,7 @@ export default function RawMaterialsClient({
       {/* Add / Edit Material Modal */}
       {showAddEditDialog && (
         <div className="dialog-overlay" onClick={e => e.target === e.currentTarget && setShowAddEditDialog(false)}>
-          <div className="dialog" style={{ maxWidth: 640, maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="dialog" style={{ maxWidth: 640, maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 700 }}>
@@ -1286,7 +1286,7 @@ export default function RawMaterialsClient({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 24 }}>
+              <div className="modal-footer-sticky">
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -1312,7 +1312,7 @@ export default function RawMaterialsClient({
       {/* Produce Semi-Finished Material Modal (Olah Bumbu Basah) */}
       {produceModalOpen && produceMaterial && (
         <div className="dialog-overlay" onClick={e => e.target === e.currentTarget && setProduceModalOpen(false)}>
-          <div className="dialog" style={{ maxWidth: 540 }}>
+          <div className="dialog" style={{ maxWidth: 540, maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1427,7 +1427,7 @@ export default function RawMaterialsClient({
       {/* Restock / Adjust Stock Modal */}
       {adjustModalOpen && selectedMaterial && (
         <div className="dialog-overlay" onClick={e => e.target === e.currentTarget && setAdjustModalOpen(false)}>
-          <div className="dialog">
+          <div className="dialog" style={{ maxWidth: 480, maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 700 }}>
@@ -1588,7 +1588,7 @@ export default function RawMaterialsClient({
       {/* History Modal */}
       {historyModalOpen && historyMaterial && (
         <div className="dialog-overlay" onClick={e => e.target === e.currentTarget && setHistoryModalOpen(false)}>
-          <div className="dialog" style={{ maxWidth: 640 }}>
+          <div className="dialog" style={{ maxWidth: 640, maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 700 }}>

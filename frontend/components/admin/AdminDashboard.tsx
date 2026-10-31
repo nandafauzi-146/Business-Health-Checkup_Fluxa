@@ -250,9 +250,9 @@ export default function AdminDashboardClient({
       </div>
 
       {/* 2-column layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: 20 }}>
         {/* Left: Chart & Recent Sales */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18, minWidth: 0 }}>
           {/* Revenue chart */}
           <div className="admin-dashboard-enter" style={{ animationDelay: '75ms' }}>
             <SectionCard title="Tren Penjualan 7 Hari Terakhir">
@@ -318,63 +318,66 @@ export default function AdminDashboardClient({
                   Belum ada transaksi penjualan yang tercatat hari ini
                 </div>
               ) : (
-                <div className="table-container">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>No. Invoice</th>
-                        <th>Waktu</th>
-                        <th>Metode</th>
-                        <th>Total</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sales.map((s, index) => {
-                        const pm = payMethodLabel[s.payment_method] || { label: s.payment_method, bg: 'var(--bg)', color: 'var(--ink)' }
-                        return (
-                          <tr
-                            key={s.id}
-                            className="admin-dashboard-row"
-                            style={{ ['--row-delay' as string]: `${index * 45}ms` }}
-                          >
-                            <td style={{ fontWeight: 600, fontSize: 12.5, fontFamily: 'monospace' }}>
-                              {s.invoice_number}
-                            </td>
-                            <td style={{ fontSize: 12, color: 'var(--mute)' }}>
-                              {new Date(s.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                            </td>
-                            <td>
-                              <span style={{
-                                padding: '2px 8px',
-                                borderRadius: 6,
-                                fontSize: 11,
-                                fontWeight: 600,
-                                background: pm.bg,
-                                color: pm.color
-                              }}>
-                                {pm.label}
-                              </span>
-                            </td>
-                            <td style={{ fontWeight: 700, fontSize: 13 }}>
-                              {formatRp(s.final_amount)}
-                            </td>
-                            <td>
-                              <StatusTag status={s.status === 'completed' ? 'ok' : 'void'} label={s.status === 'completed' ? 'Selesai' : 'Void'} />
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <>
+                  {/* Table View dengan Horizontal Swipe pada Layar Kecil */}
+                  <div className="table-container">
+                    <table className="data-table" style={{ minWidth: 520 }}>
+                      <thead>
+                        <tr>
+                          <th>No. Invoice</th>
+                          <th>Waktu</th>
+                          <th>Metode</th>
+                          <th>Total</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sales.map((s, index) => {
+                          const pm = payMethodLabel[s.payment_method] || { label: s.payment_method, bg: 'var(--bg)', color: 'var(--ink)' }
+                          return (
+                            <tr
+                              key={s.id}
+                              className="admin-dashboard-row"
+                              style={{ ['--row-delay' as string]: `${index * 45}ms` }}
+                            >
+                              <td style={{ fontWeight: 600, fontSize: 12.5, fontFamily: 'monospace' }}>
+                                {s.invoice_number}
+                              </td>
+                              <td style={{ fontSize: 12, color: 'var(--mute)' }}>
+                                {new Date(s.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                              </td>
+                              <td>
+                                <span style={{
+                                  padding: '2px 8px',
+                                  borderRadius: 6,
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  background: pm.bg,
+                                  color: pm.color
+                                }}>
+                                  {pm.label}
+                                </span>
+                              </td>
+                              <td style={{ fontWeight: 700, fontSize: 13 }}>
+                                {formatRp(s.final_amount)}
+                              </td>
+                              <td>
+                                <StatusTag status={s.status === 'completed' ? 'ok' : 'void'} label={s.status === 'completed' ? 'Selesai' : 'Void'} />
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </SectionCard>
           </div>
         </div>
 
         {/* Right: Low Stock, Raw Materials & Quick Actions */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18, minWidth: 0 }}>
           {/* Peringatan Restock Bahan Baku (Resep / BOM) */}
           <div className="admin-dashboard-enter" style={{ animationDelay: '200ms' }}>
             <SectionCard

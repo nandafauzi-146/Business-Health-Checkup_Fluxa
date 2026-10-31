@@ -1044,7 +1044,7 @@ export default function POSClient({ products: initialProducts, productsError: in
       {/* Checkout dialog */}
       {showCheckout && (
         <div className="dialog-overlay">
-          <div className="dialog" style={{ maxWidth: 420 }}>
+          <div className="dialog" style={{ maxWidth: 420, maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 16, fontWeight: 700 }}>Konfirmasi Pembayaran</h2>
               <button className="icon-btn" onClick={() => setShowCheckout(false)} aria-label="Tutup"><X size={16} /></button>
@@ -1196,7 +1196,7 @@ export default function POSClient({ products: initialProducts, productsError: in
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <div className="modal-footer-sticky" style={{ marginTop: 12 }}>
               <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowCheckout(false)}>Batal</button>
               <button
                 id="confirm-payment-btn"
@@ -1221,7 +1221,7 @@ export default function POSClient({ products: initialProducts, productsError: in
       {/* Receipt dialog */}
       {receipt && (
         <div className="dialog-overlay">
-          <div className="dialog pos-receipt-dialog" style={{ maxWidth: 380, textAlign: 'center' }}>
+          <div className="dialog pos-receipt-dialog" style={{ maxWidth: 380, textAlign: 'center', maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <div className="pos-receipt-success">
               <div style={{ fontSize: 48, marginBottom: 8 }}>✅</div>
               <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Transaksi Berhasil!</h2>

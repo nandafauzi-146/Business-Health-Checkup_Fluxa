@@ -53,8 +53,8 @@
 .profileForm label span { color: var(--mute); font-size: 10px; font-weight: 400; }
 .profileForm input { min-height: 40px; width: 100%; padding: 0 11px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: var(--input-bg); font: inherit; }
 .profileForm hr { width: 100%; border: 0; border-top: 1px solid var(--line); }
-.tableWrap { width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
-.table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
+.tableWrap { width: 100%; max-width: 100%; min-width: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.table { width: 100%; min-width: 640px; border-collapse: collapse; text-align: left; white-space: nowrap; }
 .table th { padding: 12px 14px; color: var(--mute); background: var(--bg); font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .table td { padding: 12px 14px; border-top: 1px solid var(--line); color: var(--ink); font-size: 11px; vertical-align: middle; }
 .table td strong { display: block; font-size: 12px; }
@@ -75,5 +75,5 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes shimmer { to { background-position: -220% 0; } }
 @media (max-width: 1000px) { .statsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dashboardGrid { grid-template-columns: 1fr; } }
-@media (max-width: 560px) { .heading { align-items: flex-start; flex-direction: column; } .statsGrid { grid-template-columns: 1fr 1fr; gap: 8px; } .statCard { min-height: 78px; gap: 8px; padding: 10px; } .statIcon { width: 32px; height: 32px; flex-basis: 32px; } .statCard strong { font-size: 18px; } .statCard > div > span { font-size: 10px; } .panel { padding: 13px; } .pager { align-items: flex-start; flex-direction: column; } .errorBox { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 560px) { .heading { align-items: flex-start; flex-direction: column; } .filters { flex-direction: column; } .filters input, .filters select, .filters button { width: 100%; min-width: 0; } .statsGrid { grid-template-columns: 1fr 1fr; gap: 8px; } .statCard { min-height: 78px; gap: 8px; padding: 10px; } .statIcon { width: 32px; height: 32px; flex-basis: 32px; } .statCard strong { font-size: 18px; } .statCard > div > span { font-size: 10px; } .panel { padding: 13px; } .pager { align-items: flex-start; flex-direction: column; } .errorBox { align-items: flex-start; flex-direction: column; } }
 @media (prefers-reduced-motion: reduce) { .spinner, .spin, .loading span { animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }

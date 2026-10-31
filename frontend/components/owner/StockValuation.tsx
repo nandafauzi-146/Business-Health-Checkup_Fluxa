@@ -129,14 +129,15 @@ export default function StockValuationClient({
           </select>
         </div>
 
+        {/* Desktop & Tablet Table */}
         <div className="table-container">
-          <table className="data-table">
+          <table className="data-table" style={{ minWidth: 780 }}>
             <thead>
               <tr>
                 <th>Produk</th>
                 <th>Kategori</th>
                 <th>Sisa Stok</th>
-                <th>Harga Beli (Modal)</th>
+                <th>Harga Beli</th>
                 <th>Harga Jual</th>
                 <th>Nilai Aset Modal</th>
                 <th>Potensi Omzet</th>
@@ -181,6 +182,7 @@ export default function StockValuationClient({
             </tbody>
           </table>
         </div>
+
       </SectionCard>
     </div>
   )

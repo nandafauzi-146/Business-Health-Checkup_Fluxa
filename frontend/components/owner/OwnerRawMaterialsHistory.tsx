@@ -541,7 +541,7 @@ export default function OwnerRawMaterialsHistoryClient({
 
           {/* Table */}
           <div className="table-wrap">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <table style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)', color: 'var(--mute)', textAlign: 'left' }}>
                   <th style={{ padding: '10px 14px', fontWeight: 650 }}>Waktu</th>
@@ -645,7 +645,7 @@ export default function OwnerRawMaterialsHistoryClient({
           </div>
 
           <div className="table-wrap">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <table style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)', color: 'var(--mute)', textAlign: 'left' }}>
                   <th style={{ padding: '10px 14px', fontWeight: 650 }}>Nama Bahan</th>
@@ -757,6 +757,9 @@ export default function OwnerRawMaterialsHistoryClient({
             width: '100%',
             maxWidth: 520,
             padding: 24,
+            maxHeight: 'calc(100dvh - 32px)',
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
             boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>

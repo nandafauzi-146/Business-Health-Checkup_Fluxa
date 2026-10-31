@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import OwnerDashboardClient from '@/components/owner/OwnerDashboard'
 
 export const metadata = {
-  title: 'Dashboard Owner — Fluxa',
+  title: 'Fluxa | Dashboard',
 }
 
 function splitIntoBatches(ids: string[], batchSize = 100) {

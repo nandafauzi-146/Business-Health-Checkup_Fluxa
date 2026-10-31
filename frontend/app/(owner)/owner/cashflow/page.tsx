@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import CashflowClient from '@/components/owner/Cashflow'
 
-export const metadata = { title: 'Cashflow — Fluxa Owner' }
+export const metadata = { title: 'Fluxa | Cashflow' }
 
 export default async function OwnerCashflowPage() {
   const supabase = await createClient()

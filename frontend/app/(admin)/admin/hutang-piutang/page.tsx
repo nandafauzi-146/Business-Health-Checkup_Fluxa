@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import DebtReceivablesClient, { DebtReceivableItem } from '@/components/admin/DebtReceivables'
 
-export const metadata = { title: 'Kelola Hutang & Piutang Usaha — Fluxa Admin' }
+export const metadata = { title: 'Fluxa | Hutang & Piutang' }
 
 export default async function AdminHutangPiutangPage() {
   const supabase = await createClient()
