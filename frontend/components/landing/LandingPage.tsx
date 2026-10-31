@@ -762,16 +762,13 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
             const itemNumber = item.number || `0${idx + 1}`
             const itemDetail = item.detail || 'Operasional · Bisnis · Insight'
             return (
-              <article className={styles.notchCard} key={idx}>
+              <article className={`${styles.notchCard} ${styles.notchCardVivid}`} key={idx}>
                 <div className={styles.notchCardHeader}>
                   <span className={styles.notchCardNumber}>{itemNumber}</span>
                 </div>
                 <div className={styles.cardNotch} aria-hidden="true">
-                  <div className={styles.notchDish}>
-                    <div className={styles.notchGlow} />
-                    <div className={styles.notchIconBadge}>
-                      <IconComponent size={22} strokeWidth={2.2} />
-                    </div>
+                  <div className={styles.notchDishVivid}>
+                    <IconComponent className={styles.notchVividIcon} size={24} strokeWidth={2.2} />
                   </div>
                 </div>
                 <h3 className={styles.notchCardTitle}>{item.title}</h3>
@@ -782,7 +779,6 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
             )
           })}
         </div>
-        <MobilePairsList items={featuresList} />
       </div></section>
 
       <section className={styles.aiSection}><div className={`${styles.sectionWrap} ${styles.aiLayout}`}>
@@ -811,16 +807,13 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
             const StepIcon = resolveIcon(step.icon, Database)
             const stepNumber = step.number || `0${idx + 1}`
             return (
-              <article className={styles.notchCard} key={idx}>
+              <article className={`${styles.notchCard} ${styles.notchCardVivid}`} key={idx}>
                 <div className={styles.notchCardHeader}>
                   <span className={styles.notchCardNumber}>{stepNumber}</span>
                 </div>
                 <div className={styles.cardNotch} aria-hidden="true">
-                  <div className={styles.notchDish}>
-                    <div className={styles.notchGlow} />
-                    <div className={styles.notchIconBadge}>
-                      <StepIcon size={22} strokeWidth={2.2} />
-                    </div>
+                  <div className={styles.notchDishVivid}>
+                    <StepIcon className={styles.notchVividIcon} size={24} strokeWidth={2.2} />
                   </div>
                 </div>
                 <h3 className={styles.notchCardTitle}>{step.title}</h3>
@@ -831,7 +824,6 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
             )
           })}
         </div>
-        <MobilePairsList items={stepsList} defaultIcon={Database} />
       </div></section>
 
       <section className={styles.contactSection} id="kontak">
