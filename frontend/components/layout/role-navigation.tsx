@@ -89,6 +89,7 @@ export const menuByRole: Record<UserRole, NavGroup[]> = {
     {
       label: 'Laporan',
       items: [
+        { icon: <ShoppingCart size={16} />, label: 'Riwayat Transaksi', href: '/owner/transaksi' },
         { icon: <TrendingUp size={16} />, label: 'Cashflow', href: '/owner/cashflow' },
         { icon: <BarChart3 size={16} />, label: 'Laporan Bulanan', href: '/owner/laporan' },
         {

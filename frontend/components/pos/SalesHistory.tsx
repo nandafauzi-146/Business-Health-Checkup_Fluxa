@@ -11,6 +11,8 @@ import {
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
 import { getUserFacingError } from '@/lib/user-facing-error'
+import { createClient } from '@/lib/supabase/client'
+import MonthNavigator, { getCurrentYearMonth, formatMonthIndo } from '@/components/ui/MonthNavigator'
 
 interface SaleItem {
   id: string
@@ -63,10 +65,14 @@ const PRESET_REASONS = [
 export default function SalesHistoryClient({ initialSales }: { initialSales: Sale[] }) {
   const router = useRouter()
   const [sales, setSales] = useState<Sale[]>(initialSales)
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => getCurrentYearMonth())
+  const [loadingMonth, setLoadingMonth] = useState(false)
   const [search, setSearch] = useState('')
   const [filterTab, setFilterTab] = useState<'all' | 'cash' | 'non_cash' | 'refund'>('all')
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const supabase = createClient()
 
   // State untuk modal refund/void
   const [voidingSale, setVoidingSale] = useState<Sale | null>(null)
@@ -80,6 +86,120 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
     setPrevInitialSales(initialSales)
     setSales(initialSales)
   }
+
+  // Kunci scroll halaman saat modal detail transaksi / void aktif
+  useEffect(() => {
+    if (!selectedSale && !voidingSale) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (voidingSale) setVoidingSale(null)
+        else setSelectedSale(null)
+      }
+    }
+    const origOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = origOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [selectedSale, voidingSale])
+
+  // Muat riwayat transaksi sesuai periode bulan yang dipilih
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchMonthSales = async () => {
+      try {
+        setLoadingMonth(true)
+        const [year, month] = selectedMonth.split('-').map(Number)
+        const startISO = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0)).toISOString()
+        const endISO = new Date(Date.UTC(year, month, 1, 0, 0, 0)).toISOString()
+
+        const [salesRes, refundsRes] = await Promise.all([
+          supabase
+            .from('sales')
+            .select(`
+              id,
+              invoice_number,
+              created_at,
+              payment_method,
+              total_amount,
+              discount,
+              final_amount,
+              status,
+              void_reason,
+              voided_at,
+              profiles:cashier_id (full_name),
+              sale_items (
+                id,
+                quantity,
+                unit_price,
+                subtotal,
+                products (name)
+              )
+            `)
+            .gte('created_at', startISO)
+            .lt('created_at', endISO)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('refund_requests')
+            .select('sale_id, status, created_at, reviewer:reviewed_by(full_name)')
+        ])
+
+        if (salesRes.error) {
+          console.error('Error fetching sales history for month:', salesRes.error)
+          return
+        }
+
+        const refundMap = new Map((refundsRes.data || []).map((r: any) => [
+          r.sale_id,
+          {
+            status: r.status,
+            approverName: r.reviewer?.full_name || null
+          }
+        ]))
+
+        const formatted = (salesRes.data || []).map((s: any) => {
+          const ref = refundMap.get(s.id)
+          return {
+            id: s.id,
+            invoice_number: s.invoice_number,
+            created_at: s.created_at,
+            payment_method: s.payment_method,
+            subtotal: s.total_amount,
+            discount: s.discount,
+            final_amount: s.final_amount,
+            status: s.status,
+            void_reason: s.void_reason,
+            voided_at: s.voided_at,
+            cashier_name: s.profiles?.full_name || null,
+            refund_status: ref?.status,
+            refund_approver_name: ref?.approverName,
+            items: (s.sale_items || []).map((item: any) => ({
+              id: item.id,
+              product_name: item.products?.name || 'Produk',
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              subtotal: item.subtotal,
+            }))
+          }
+        })
+
+        if (isMounted) {
+          setSales(formatted)
+        }
+      } catch (err) {
+        console.error('Error loading month sales:', err)
+      } finally {
+        if (isMounted) setLoadingMonth(false)
+      }
+    }
+
+    fetchMonthSales()
+
+    return () => { isMounted = false }
+  }, [selectedMonth, supabase])
 
   const showToast = (text: string, type: 'ok' | 'bad' = 'ok') => {
     setToast({ text, type })
@@ -155,13 +275,14 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
   }
 
   const stats = useMemo(() => {
-    const totalCount = sales.length
-    const completed = sales.filter(s => s.status === 'completed')
+    const monthSales = sales.filter(s => !s.created_at || s.created_at.slice(0, 7) === selectedMonth)
+    const totalCount = monthSales.length
+    const completed = monthSales.filter(s => s.status === 'completed')
     const totalRevenue = completed.reduce((sum, s) => sum + (s.final_amount || 0), 0)
     const cashCount = completed.filter(s => s.payment_method === 'cash').length
     const nonCashCount = completed.filter(s => s.payment_method !== 'cash' && s.payment_method !== 'credit').length
-    const refundPendingCount = sales.filter(s => s.refund_status === 'pending').length
-    const voidedCount = sales.filter(s => s.status === 'voided').length
+    const refundPendingCount = monthSales.filter(s => s.refund_status === 'pending').length
+    const voidedCount = monthSales.filter(s => s.status === 'voided').length
     return {
       totalCount,
       completedCount: completed.length,
@@ -172,10 +293,13 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
       voidedCount,
       totalRefundAction: refundPendingCount + voidedCount
     }
-  }, [sales])
+  }, [sales, selectedMonth])
 
   const filteredSales = useMemo(() => {
     return sales.filter(s => {
+      // Filter periode bulan
+      if (s.created_at && s.created_at.slice(0, 7) !== selectedMonth) return false
+
       const q = search.trim().toLowerCase()
       const matchesSearch = !q ||
         s.invoice_number?.toLowerCase().includes(q) ||
@@ -190,7 +314,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
       if (filterTab === 'refund') return s.refund_status === 'pending' || s.status === 'voided'
       return true
     })
-  }, [sales, search, filterTab])
+  }, [sales, selectedMonth, search, filterTab])
 
   const printReceipt = () => {
     window.print()
@@ -265,6 +389,57 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
           </div>
         }
       />
+
+      {/* Toolbar Pemilih Periode Bulanan */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 12,
+        marginBottom: 16,
+        padding: '12px 16px',
+        background: 'var(--panel)',
+        borderRadius: 14,
+        border: '1px solid var(--line)',
+        boxShadow: 'var(--shadow-soft)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            background: 'var(--accs)',
+            color: 'var(--acc)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <Calendar size={18} />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
+              Periode Riwayat Transaksi
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--mute)' }}>
+              {loadingMonth ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <RefreshCw size={11} className="spin" /> Memuat transaksi {formatMonthIndo(selectedMonth)}...
+                </span>
+              ) : (
+                `Menampilkan riwayat kasir bulan ${formatMonthIndo(selectedMonth)}`
+              )}
+            </div>
+          </div>
+        </div>
+
+        <MonthNavigator
+          selectedMonth={selectedMonth}
+          onChange={setSelectedMonth}
+          label="Pilih Periode"
+        />
+      </div>
 
       {/* KPI Summary Cards */}
       <div style={{
@@ -393,9 +568,16 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
         </div>
       )}
 
-      <div className={`detail-grid${selectedSale ? ' has-aside' : ''}`}>
-        <div>
-          <SectionCard>
+      <SectionCard
+        title={`Riwayat Transaksi — ${formatMonthIndo(selectedMonth)} (${filteredSales.length})`}
+        action={
+          loadingMonth ? (
+            <span style={{ fontSize: 12, color: 'var(--mute)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <RefreshCw size={13} className="spin" /> Memperbarui...
+            </span>
+          ) : undefined
+        }
+      >
             {/* Filter Tabs & Search Row */}
             <div style={{
               display: 'flex',
@@ -637,22 +819,45 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
               </table>
             </div>
           </SectionCard>
-        </div>
 
-        {/* Panel Detail Struk */}
-        {selectedSale && (
-            <>
-            <SectionCard>
+      {/* Modal Popup Detail Transaksi di Tengah Layar */}
+      {selectedSale && (
+        <div
+          className="modal-backdrop"
+          onClick={e => e.target === e.currentTarget && setSelectedSale(null)}
+          style={{ zIndex: 1100 }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-pos-detail-title"
+        >
+          <div
+            className="modal-content"
+            style={{
+              maxWidth: 520,
+              width: '100%',
+              padding: 'clamp(16px, 4vw, 24px)',
+              maxHeight: 'min(90vh, 90dvh, calc(100dvh - 32px))',
+              overflowY: 'auto',
+              borderRadius: 18,
+              boxShadow: '0 24px 64px rgba(0, 0, 0, 0.28)',
+              position: 'relative'
+            }}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Receipt size={18} color="var(--acc)" />
-                <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Detail Struk POS</h3>
+                <h3 id="modal-pos-detail-title" style={{ fontSize: 16, fontWeight: 700, margin: 0, color: 'var(--ink)' }}>
+                  Detail Struk Transaksi
+                </h3>
               </div>
               <button
                 onClick={() => setSelectedSale(null)}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--mute)' }}
+                className="icon-btn"
+                style={{ width: 32, height: 32, borderRadius: 8 }}
+                title="Tutup Rincian"
+                aria-label="Tutup Rincian Transaksi"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 
@@ -686,7 +891,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
             )}
 
             <div style={{
-              background: '#F9FAFB', border: '1px dashed var(--line)', borderRadius: 12, padding: 16,
+              background: 'var(--bg)', border: '1px dashed var(--line)', borderRadius: 12, padding: 16,
               fontFamily: 'monospace', fontSize: 13, marginBottom: 16,
               position: 'relative'
             }}>
@@ -702,42 +907,42 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                 </div>
               )}
 
-              <div style={{ textAlign: 'center', borderBottom: '1px dashed #ccc', paddingBottom: 10, marginBottom: 10 }}>
-                <div style={{ fontWeight: 800, fontSize: 16 }}>FLUXA POS</div>
-                <div style={{ fontSize: 11, color: '#666' }}>Smart Retail & F&B Store</div>
-                <div style={{ fontSize: 11, color: '#666' }}>No. Transaksi: {selectedSale.invoice_number}</div>
-                <div style={{ fontSize: 11, color: '#666' }}>
+              <div style={{ textAlign: 'center', borderBottom: '1px dashed var(--line)', paddingBottom: 10, marginBottom: 10 }}>
+                <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--ink)' }}>FLUXA POS</div>
+                <div style={{ fontSize: 11, color: 'var(--mute)' }}>Smart Retail & F&B Store</div>
+                <div style={{ fontSize: 11, color: 'var(--mute)' }}>No. Transaksi: {selectedSale.invoice_number}</div>
+                <div style={{ fontSize: 11, color: 'var(--mute)' }}>
                   {new Date(selectedSale.created_at).toLocaleString('id-ID')}
                 </div>
               </div>
 
-              <div style={{ borderBottom: '1px dashed #ccc', paddingBottom: 10, marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                  <span>Kasir:</span>
-                  <span>{selectedSale.cashier_name || 'Kasir'}</span>
+              <div style={{ borderBottom: '1px dashed var(--line)', paddingBottom: 10, marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                  <span style={{ color: 'var(--mute)' }}>Kasir:</span>
+                  <span style={{ color: 'var(--ink)' }}>{selectedSale.cashier_name || 'Kasir'}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                  <span>Metode:</span>
-                  <span style={{ fontWeight: 600 }}>{paymentLabels[selectedSale.payment_method]?.label || selectedSale.payment_method}</span>
+                  <span style={{ color: 'var(--mute)' }}>Metode:</span>
+                  <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{paymentLabels[selectedSale.payment_method]?.label || selectedSale.payment_method}</span>
                 </div>
               </div>
 
               {selectedSale.items && selectedSale.items.length > 0 && (
-                <div style={{ borderBottom: '1px dashed #ccc', paddingBottom: 10, marginBottom: 10 }}>
+                <div style={{ borderBottom: '1px dashed var(--line)', paddingBottom: 10, marginBottom: 10 }}>
                   {selectedSale.items.map((item, idx) => (
                     <div key={idx} style={{ marginBottom: 6 }}>
-                      <div style={{ fontWeight: 600 }}>{item.product_name}</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666' }}>
+                      <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{item.product_name}</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--mute)', fontSize: 12 }}>
                         <span>{item.quantity} x Rp {item.unit_price.toLocaleString('id-ID')}</span>
-                        <span>Rp {item.subtotal.toLocaleString('id-ID')}</span>
+                        <span style={{ color: 'var(--ink)' }}>Rp {item.subtotal.toLocaleString('id-ID')}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span>Subtotal</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, color: 'var(--ink)' }}>
+                <span style={{ color: 'var(--mute)' }}>Subtotal</span>
                 <span>Rp {selectedSale.subtotal.toLocaleString('id-ID')}</span>
               </div>
               {selectedSale.discount > 0 && (
@@ -746,7 +951,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                   <span>-Rp {selectedSale.discount.toLocaleString('id-ID')}</span>
                 </div>
               )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 14, marginTop: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 15, marginTop: 8, color: 'var(--ink)' }}>
                 <span>TOTAL</span>
                 <span style={{ textDecoration: selectedSale.status === 'voided' ? 'line-through' : 'none' }}>
                   Rp {selectedSale.final_amount.toLocaleString('id-ID')}
@@ -789,56 +994,59 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                 </button>
               )}
             </div>
-          </SectionCard>
-          <div className="thermal-receipt" aria-hidden="true">
-            <header>
-              <strong>FLUXA POS</strong>
-              <span>{selectedSale.status === 'voided' ? 'Bukti Transaksi Dibatalkan' : 'Bukti Pembayaran'}</span>
-            </header>
-            {selectedSale.status === 'voided' && (
-              <div className="thermal-receipt-meta"><strong>TRANSAKSI VOID / REFUND</strong></div>
-            )}
-            <div className="thermal-receipt-meta">
-              <div>No. Transaksi: {selectedSale.invoice_number}</div>
-              <div>{new Date(selectedSale.created_at).toLocaleString('id-ID')}</div>
-              <div>Kasir: {selectedSale.cashier_name || 'Kasir'}</div>
-              <div>Metode: {paymentLabels[selectedSale.payment_method]?.label || selectedSale.payment_method}</div>
-            </div>
-            <div className="thermal-receipt-items">
-              {(selectedSale.items || []).map(item => (
-                <div className="thermal-receipt-item" key={item.id}>
-                  <div>{item.product_name}</div>
-                  <div className="thermal-receipt-line">
-                    <span>{item.quantity} x Rp {item.unit_price.toLocaleString('id-ID')}</span>
-                    <span>Rp {item.subtotal.toLocaleString('id-ID')}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="thermal-receipt-totals">
-              <div>
-                <span>Subtotal</span>
-                <span>Rp {selectedSale.subtotal.toLocaleString('id-ID')}</span>
-              </div>
-              {selectedSale.discount > 0 && (
-                <div>
-                  <span>Diskon</span>
-                  <span>-Rp {selectedSale.discount.toLocaleString('id-ID')}</span>
-                </div>
-              )}
-              <div className="thermal-receipt-total">
-                <strong>TOTAL</strong>
-                <strong>Rp {selectedSale.final_amount.toLocaleString('id-ID')}</strong>
-              </div>
-            </div>
-            {selectedSale.status === 'voided' && selectedSale.void_reason && (
-              <div className="thermal-receipt-meta">Alasan void: {selectedSale.void_reason}</div>
-            )}
-            <footer>Terima kasih atas kunjungan Anda</footer>
           </div>
-          </>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Struk thermal untuk window.print() */}
+      {selectedSale && (
+        <div className="thermal-receipt" aria-hidden="true">
+          <header>
+            <strong>FLUXA POS</strong>
+            <span>{selectedSale.status === 'voided' ? 'Bukti Transaksi Dibatalkan' : 'Bukti Pembayaran'}</span>
+          </header>
+          {selectedSale.status === 'voided' && (
+            <div className="thermal-receipt-meta"><strong>TRANSAKSI VOID / REFUND</strong></div>
+          )}
+          <div className="thermal-receipt-meta">
+            <div>No. Transaksi: {selectedSale.invoice_number}</div>
+            <div>{new Date(selectedSale.created_at).toLocaleString('id-ID')}</div>
+            <div>Kasir: {selectedSale.cashier_name || 'Kasir'}</div>
+            <div>Metode: {paymentLabels[selectedSale.payment_method]?.label || selectedSale.payment_method}</div>
+          </div>
+          <div className="thermal-receipt-items">
+            {(selectedSale.items || []).map(item => (
+              <div className="thermal-receipt-item" key={item.id}>
+                <div>{item.product_name}</div>
+                <div className="thermal-receipt-line">
+                  <span>{item.quantity} x Rp {item.unit_price.toLocaleString('id-ID')}</span>
+                  <span>Rp {item.subtotal.toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="thermal-receipt-totals">
+            <div>
+              <span>Subtotal</span>
+              <span>Rp {selectedSale.subtotal.toLocaleString('id-ID')}</span>
+            </div>
+            {selectedSale.discount > 0 && (
+              <div>
+                <span>Diskon</span>
+                <span>-Rp {selectedSale.discount.toLocaleString('id-ID')}</span>
+              </div>
+            )}
+            <div className="thermal-receipt-total">
+              <strong>TOTAL</strong>
+              <strong>Rp {selectedSale.final_amount.toLocaleString('id-ID')}</strong>
+            </div>
+          </div>
+          {selectedSale.status === 'voided' && selectedSale.void_reason && (
+            <div className="thermal-receipt-meta">Alasan void: {selectedSale.void_reason}</div>
+          )}
+          <footer>Terima kasih atas kunjungan Anda</footer>
+        </div>
+      )}
 
       {/* Modal pengajuan refund untuk persetujuan Admin */}
       {voidingSale && (
