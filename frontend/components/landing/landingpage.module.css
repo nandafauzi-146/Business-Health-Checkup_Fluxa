@@ -76,7 +76,7 @@
 
 .desktopNav a {
   color: #64748b;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   text-decoration: none;
   padding: 6px 2px;
@@ -104,7 +104,7 @@
   color: #475569;
   background: #ffffff;
   font-family: inherit;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all .2s ease;
@@ -122,7 +122,7 @@
 }
 
 .loginLink {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #475569;
   text-decoration: none;
@@ -143,7 +143,7 @@
   border-radius: 10px;
   background: #2563eb;
   color: #ffffff !important;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: -0.1px;
   text-decoration: none;
@@ -261,12 +261,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 8px;
-  font-size: 13.5px;
-  font-weight: 600;
+  padding: 12px 10px;
+  font-size: 15.5px;
+  font-weight: 650;
   color: #334155;
   text-decoration: none;
-  border-radius: 8px;
+  border-radius: 9px;
   transition: background .15s ease, color .15s ease;
 }
 
@@ -299,9 +299,9 @@
 
 .mobileLoginLink {
   display: block;
-  padding: 8px 8px;
-  font-size: 13.5px;
-  font-weight: 600;
+  padding: 10px 10px;
+  font-size: 15px;
+  font-weight: 650;
   color: #334155;
   text-decoration: none;
   transition: color .2s ease;
@@ -317,11 +317,11 @@
   justify-content: center;
   gap: 8px;
   width: 100%;
-  min-height: 44px;
-  border-radius: 10px;
+  min-height: 48px;
+  border-radius: 11px;
   background: #2563eb;
   color: #ffffff !important;
-  font-size: 13.5px;
+  font-size: 15px;
   font-weight: 700;
   text-decoration: none;
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
@@ -332,29 +332,29 @@
   background: #1d4ed8;
 }
 
-.primaryButton, .secondaryButton, .packageButton, .trialButton { display: inline-flex; justify-content: center; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; transition: transform .2s, background .2s, box-shadow .2s; }
+.primaryButton, .secondaryButton, .packageButton, .trialButton { display: inline-flex; justify-content: center; align-items: center; gap: 10px; font-size: 14.5px; font-weight: 700; transition: transform .2s, background .2s, box-shadow .2s; }
 
 .hero { position: relative; min-height: 630px; display: flex; align-items: center; background: linear-gradient(115deg, #f5f8ff, #fff 55%, #f6f8ff); }
 .heroGlow { position: absolute; width: 560px; height: 560px; top: 10%; right: 3%; border-radius: 50%; background: radial-gradient(circle, rgb(80 129 248 / 10%), transparent 70%); }
 .heroInner, .sectionWrap { width: min(1120px, calc(100% - 64px)); margin: 0 auto; }
-.heroInner { position: relative; display: grid; grid-template-columns: 1fr .95fr; align-items: center; gap: 64px; padding: 72px 0 85px; }
+.heroInner { position: relative; display: grid; grid-template-columns: 1fr .95fr; align-items: center; gap: 64px; padding: 72px 0; }
 .heroCopy { max-width: 570px; animation: fadeUp .75s both; }
 .heroEyebrowRow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
-.pill, .trialPill { display: inline-flex; align-items: center; gap: 9px; padding: 8px 12px; border: 1px solid #e0e9ff; border-radius: 99px; color: #536786; background: rgb(255 255 255 / 78%); font-size: 11px; font-weight: 700; }
+.pill, .trialPill { display: inline-flex; align-items: center; gap: 9px; padding: 8px 13px; border: 1px solid #e0e9ff; border-radius: 99px; color: #536786; background: rgb(255 255 255 / 78%); font-size: 12px; font-weight: 700; }
 .pill > span { width: 7px; height: 7px; border-radius: 50%; background: #22bf89; box-shadow: 0 0 0 4px #22bf891c; }
-.hero h1 { margin: 23px 0 18px; font-size: clamp(43px, 5vw, 62px); line-height: 1.12; letter-spacing: -3.4px; font-weight: 800; }
+.hero h1 { margin: 23px 0 18px; font-size: clamp(40px, 4.8vw, 58px); line-height: 1.14; letter-spacing: -2.8px; font-weight: 800; }
 .hero h1 span, .sectionHeading h2 span, .aiCopy h2 span, .faqIntro h2 span { color: var(--blue); }
-.heroDescription { max-width: 490px; color: #687994; font-size: 16px; line-height: 1.8; }
+.heroDescription { max-width: 510px; color: #687994; font-size: 16px; line-height: 1.8; }
 .heroActions { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; margin-top: 30px; }
-.primaryButton { min-height: 48px; padding: 0 19px; border-radius: 11px; color: #fff !important; background: var(--blue); box-shadow: 0 7px 18px rgb(56 120 246 / 17%); }
+.primaryButton { min-height: 50px; padding: 0 22px; border-radius: 12px; color: #fff !important; background: var(--blue); box-shadow: 0 7px 18px rgb(56 120 246 / 17%); font-size: 14.5px; }
 .secondaryButton {
-  min-height: 48px;
-  padding: 0 20px;
+  min-height: 50px;
+  padding: 0 22px;
   border: 1.5px solid #d0e2ff;
   border-radius: 12px;
   background: #ffffff;
   color: #1e3a8a !important;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: -0.1px;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
@@ -388,7 +388,7 @@
   flex: 0 0 auto;
   transition: transform .2s ease, border-color .2s ease, background .2s ease;
 }
-.trustNote { display: flex; align-items: center; gap: 8px; margin-top: 31px; color: #8290a6; font-size: 11px; font-weight: 600; }
+.trustNote { display: flex; align-items: center; gap: 8px; margin-top: 31px; color: #8290a6; font-size: 12.5px; font-weight: 600; }
 .trustNote svg { color: #27a981; }
 .heroVisual { position: relative; min-height: 440px; display: grid; place-items: center; animation: fadeUp .8s .12s both; }
 .visualOrb { position: absolute; inset: 6% 3% 6%; border-radius: 47%; background: linear-gradient(140deg, #eaf1ff, #f8edff); transform: rotate(-8deg); animation: orbFloat 8s ease-in-out infinite; }
@@ -474,11 +474,11 @@
 }
 .metricLabel {
   color: #64748b;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 .metricValue {
-  font-size: 20px;
+  font-size: 21px;
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.4px;
@@ -490,7 +490,7 @@
   align-items: baseline;
   gap: 4px;
   margin-top: 5px;
-  font-size: 9.5px;
+  font-size: 11px;
   color: #8896ab;
 }
 .metric .positive {
@@ -508,7 +508,7 @@
   margin-bottom: 8px;
 }
 .miniChartTitle {
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 750;
   color: var(--ink);
 }
@@ -517,7 +517,7 @@
   align-items: center;
   gap: 3px;
   color: #64748b;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 600;
   cursor: default;
 }
@@ -535,7 +535,7 @@
   flex-direction: column;
   justify-content: space-between;
   color: #94a3b8;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 500;
   text-align: right;
   min-width: 24px;
@@ -559,7 +559,7 @@
   margin-left: 34px;
   margin-top: 8px;
   color: #94a3b8;
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 500;
 }
 
@@ -626,7 +626,7 @@
 }
 
 .bottomCardTitleRow strong {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 750;
   color: var(--ink);
   letter-spacing: -0.1px;
@@ -640,13 +640,12 @@
 .bottomCardContent p {
   margin-top: 3px;
   color: #64748b;
-  font-size: 9.5px;
-  line-height: 1.4;
+  font-size: 11.5px;
+  line-height: 1.45;
 }
 
-.heroStamp { display: flex; align-items: center; gap: 7px; color: #647796; font-size: 10px; font-weight: 650; }
+.heroStamp { display: flex; align-items: center; gap: 7px; color: #647796; font-size: 12px; font-weight: 650; }
 .heroStamp svg { color: #9473e9; }
-.scrollCue { position: absolute; bottom: 23px; left: calc(50% - 18px); width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid #e7ebf4; border-radius: 50%; color: #8492a9 !important; background: white; }
 
 .featureSection {
   position: relative;
@@ -665,9 +664,9 @@
 .pricingSection { padding: 100px 0; }
 
 .sectionHeading { max-width: 620px; margin: 0 auto 48px; text-align: center; }
-.eyebrow { display: inline-flex; align-items: center; gap: 7px; color: var(--blue); font-size: 10px; font-weight: 800; letter-spacing: 1.4px; }
+.eyebrow { display: inline-flex; align-items: center; gap: 7px; color: var(--blue); font-size: 11.5px; font-weight: 800; letter-spacing: 1.4px; }
 .sectionHeading h2, .aiCopy h2, .faqIntro h2 { margin-top: 13px; font-size: clamp(32px, 4vw, 43px); line-height: 1.2; letter-spacing: -1.8px; font-weight: 800; }
-.sectionHeading > p { max-width: 510px; margin: 14px auto 0; color: var(--muted); font-size: 14px; }
+.sectionHeading > p { max-width: 540px; margin: 14px auto 0; color: var(--muted); font-size: 15.5px; line-height: 1.7; }
 
 .featureGrid {
   display: grid;
@@ -836,8 +835,8 @@
 
 .notchCardTitle {
   margin-top: 52px;
-  font-size: clamp(17.5px, 1.25vw, 18.5px);
-  font-weight: 750;
+  font-size: clamp(18px, 1.25vw, 19.5px);
+  font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.3px;
   line-height: 1.35;
@@ -845,8 +844,8 @@
 
 .notchCardDescription {
   margin-top: 12px;
-  font-size: clamp(14px, 1vw, 14.5px);
-  line-height: 1.65;
+  font-size: clamp(14.5px, 1vw, 15px);
+  line-height: 1.7;
   color: #475569;
   flex: 1 1 auto;
 }
@@ -864,7 +863,7 @@
   justify-content: center;
   gap: 6px;
   color: var(--blue);
-  font-size: clamp(12px, 0.9vw, 13px);
+  font-size: clamp(12.5px, 0.9vw, 13.5px);
   font-weight: 650;
   letter-spacing: 0.2px;
   margin-top: auto;
@@ -1106,9 +1105,9 @@
 .aiCopy > p {
   margin-top: 16px;
   color: var(--muted);
-  font-size: 14.5px;
+  font-size: 15.5px;
   line-height: 1.75;
-  max-width: 480px;
+  max-width: 500px;
 }
 
 .checkList {
@@ -1121,9 +1120,9 @@
 .checkList li {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   color: #3e506d;
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -1137,7 +1136,7 @@
   align-items: center;
   gap: 8px;
   color: var(--blue) !important;
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 700;
   transition: transform .2s ease, gap .2s ease;
 }
@@ -1171,18 +1170,18 @@
 }
 
 .chartHeader h3 {
-  font-size: 16.5px;
+  font-size: 17px;
   font-weight: 750;
   letter-spacing: -0.4px;
   color: var(--ink);
 }
 
 .chartPeriod {
-  padding: 5px 11px;
+  padding: 5px 12px;
   border: 1px solid #e2e8f0;
   border-radius: 99px;
   color: #64748b;
-  font-size: 9.5px;
+  font-size: 11.5px;
   font-weight: 600;
   background: #f8fafc;
 }
@@ -1222,7 +1221,7 @@
 
 .chartScoreText span {
   color: #94a3b8;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
 }
 
@@ -1236,7 +1235,7 @@
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
   color: #16a34a;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
 }
 
@@ -1260,7 +1259,7 @@
 .chartGrid span {
   position: relative;
   color: #a0aec0;
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-weight: 600;
   font-family: inherit;
 }
@@ -1333,7 +1332,7 @@
   justify-content: space-between;
   margin: 6px 2px 0 32px;
   color: #94a3b8;
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-weight: 600;
 }
 
@@ -1343,7 +1342,7 @@
   align-items: center;
   gap: 12px;
   margin-top: 18px;
-  padding: 12px 14px;
+  padding: 13px 15px;
   border-radius: 12px;
   background: #f8fafd;
   border: 1px solid #e8effe;
@@ -1363,8 +1362,8 @@
 }
 
 .insightIcon {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
@@ -1381,15 +1380,15 @@
 .insightContent strong {
   display: block;
   color: var(--ink);
-  font-size: 11.5px;
+  font-size: 13.5px;
   font-weight: 700;
   letter-spacing: -0.15px;
 }
 
 .insightContent p {
   color: var(--muted);
-  font-size: 10.5px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.5;
   margin-top: 2px;
 }
 
@@ -1449,9 +1448,9 @@
 
 .contactEyebrow {
   display: block;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 750;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   color: #2563eb;
   margin-bottom: 5px;
@@ -1459,7 +1458,7 @@
 
 .contactHeading {
   margin: 0;
-  font-size: 21px;
+  font-size: 22px;
   font-weight: 750;
   letter-spacing: -0.4px;
   line-height: 1.35;
@@ -1472,19 +1471,19 @@
 
 .contactDescription {
   margin: 5px 0 0;
-  font-size: 13px;
-  line-height: 1.55;
+  font-size: 14.5px;
+  line-height: 1.6;
   color: #64748b;
-  max-width: 520px;
+  max-width: 540px;
 }
 
 .contactWhatsappButton {
-  min-height: 46px;
-  padding: 0 22px;
-  border-radius: 10px;
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: 11px;
   background: #2563eb;
   color: #ffffff !important;
-  font-size: 13px;
+  font-size: 14.5px;
   font-weight: 700;
   letter-spacing: -0.1px;
   display: inline-flex;
@@ -1517,21 +1516,21 @@
   transform: translateX(3px);
 }
 
-.faqSection { padding: 88px 0; background: #f8faff; }
+.faqSection { padding: 90px 0; background: #f8faff; }
 .faqLayout { display: grid; grid-template-columns: .75fr 1.25fr; gap: 90px; align-items: start; }
-.faqIntro h2 { font-size: 35px; }
-.faqIntro > p { font-size: 12px; }
+.faqIntro h2 { font-size: clamp(32px, 3.8vw, 42px); line-height: 1.2; letter-spacing: -1.6px; }
+.faqIntro > p { font-size: 15px; line-height: 1.7; }
 .faqIntro .textLink { margin-top: 16px; }
 .faqList { border-top: 1px solid #e6ebf3; }
 .faqItem { border-bottom: 1px solid #e6ebf3; animation: fadeUp .55s both; }
 .faqItem:nth-child(2) { animation-delay: .08s; }
 .faqItem:nth-child(3) { animation-delay: .16s; }
 .faqItem:nth-child(4) { animation-delay: .24s; }
-.faqItem summary { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 19px 0; list-style: none; cursor: pointer; color: #293b5b; font-size: 13px; font-weight: 700; }
+.faqItem summary { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 20px 0; list-style: none; cursor: pointer; color: #293b5b; font-size: 15px; font-weight: 700; }
 .faqItem summary::-webkit-details-marker { display: none; }
 .faqItem summary svg { flex: 0 0 auto; color: #7d8ba2; transition: transform .2s; }
 .faqItem[open] summary svg { transform: rotate(180deg); }
-.faqItem > p { max-width: 650px; padding: 0 35px 20px 0; color: var(--muted); font-size: 12px; line-height: 1.8; }
+.faqItem > p { max-width: 650px; padding: 0 35px 22px 0; color: var(--muted); font-size: 14px; line-height: 1.75; }
 
 .trialSection { position: relative; overflow: hidden; padding: 90px 24px; color: white; text-align: center; background: linear-gradient(115deg, #183b91, #3478f6 56%, #6558d8); }
 .trialDecor { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
@@ -1540,12 +1539,12 @@
 .trialDecor span:nth-child(2) { right: -100px; bottom: -225px; width: 430px; height: 430px; }
 .trialDecor span:nth-child(3) { top: -270px; right: 14%; width: 390px; height: 390px; }
 .trialContent { position: relative; max-width: 590px; margin: 0 auto; }
-.trialPill { color: #eff4ff; border-color: rgb(255 255 255 / 19%); background: rgb(255 255 255 / 10%); font-size: 9px; }
-.trialContent h2 { margin-top: 18px; font-size: clamp(38px, 5vw, 53px); line-height: 1.14; letter-spacing: -2px; }
+.trialPill { color: #eff4ff; border-color: rgb(255 255 255 / 19%); background: rgb(255 255 255 / 10%); font-size: 11.5px; font-weight: 700; }
+.trialContent h2 { margin-top: 18px; font-size: clamp(36px, 4.8vw, 50px); line-height: 1.15; letter-spacing: -2px; }
 .trialContent h2 span { color: #b9f1dd; }
-.trialContent > p { max-width: 470px; margin: 15px auto 0; color: #d8e4ff; font-size: 13px; line-height: 1.8; }
-.trialButton { min-height: 48px; margin-top: 25px; padding: 0 19px; border-radius: 10px; color: #264a9e !important; background: white; }
-.trialFootnote { display: flex; justify-content: center; align-items: center; gap: 7px; margin-top: 15px; color: #d5e0ff; font-size: 10px; }
+.trialContent > p { max-width: 500px; margin: 15px auto 0; color: #d8e4ff; font-size: 15px; line-height: 1.75; }
+.trialButton { min-height: 50px; margin-top: 25px; padding: 0 24px; border-radius: 12px; color: #264a9e !important; background: white; font-size: 14.5px; font-weight: 750; }
+.trialFootnote { display: flex; justify-content: center; align-items: center; gap: 7px; margin-top: 15px; color: #d5e0ff; font-size: 12px; }
 .trialFootnote svg { color: #adf0d7; }
 
 .pricingSection {
@@ -1627,7 +1626,7 @@
 }
 
 .packageName {
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 750;
   letter-spacing: -0.4px;
   color: var(--ink);
@@ -1637,14 +1636,14 @@
 .popularBadge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
+  padding: 4px 11px;
   border-radius: 99px;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
   color: #1d4ed8;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.1px;
+  letter-spacing: 0.2px;
   white-space: nowrap;
   animation: badgePop .2s ease-out;
 }
@@ -1655,10 +1654,10 @@
 }
 
 .packageDescription {
-  min-height: 42px;
+  min-height: 44px;
   margin-top: 8px;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: 14px;
   line-height: 1.6;
 }
 
@@ -1667,7 +1666,7 @@
 }
 
 .packagePrice {
-  font-size: 21px;
+  font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.5px;
   color: var(--ink);
@@ -1678,17 +1677,17 @@
   display: block;
   margin-top: 4px;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .packageCard .primaryButton,
 .packageCard .packageButton {
   width: 100%;
-  min-height: 46px;
+  min-height: 48px;
   margin-top: 18px;
-  border-radius: 10px;
-  font-size: 12.5px;
+  border-radius: 11px;
+  font-size: 14px;
   font-weight: 700;
   display: inline-flex;
   justify-content: center;
@@ -1740,10 +1739,10 @@
 .packageIncludes {
   display: block;
   color: var(--muted);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.7px;
   margin-bottom: 12px;
 }
 
@@ -1760,26 +1759,27 @@
 .packageFeaturesList li {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
+  gap: 10px;
   color: #475569;
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 13.5px;
+  line-height: 1.55;
 }
 
 .packageFeaturesList li svg {
   flex: 0 0 auto;
-  margin-top: 1.5px;
+  margin-top: 2px;
   color: #10b981;
 }
-.footer { padding: 30px 0 19px; border-top: 1px solid #edf0f5; background: white; }
+.footer { padding: 40px 0 26px; border-top: 1px solid #edf0f5; background: white; }
 .footerInner { width: min(1120px, calc(100% - 64px)); display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 0 auto; }
-.footer .brand { font-size: 21px; }
-.footer .brand img { width: 30px; height: 30px; }
-.footerInner > p, .copyright { color: #8a96a9; font-size: 10px; }
+.footer .brand { font-size: 22px; }
+.footer .brand img { width: 32px; height: 32px; }
+.footerInner > p { color: #64748b; font-size: 13.5px; }
+.copyright { color: #8a96a9; font-size: 12.5px; }
 .footerInner > div { display: flex; gap: 21px; }
-.footerInner > div a { color: #687994; font-size: 10px; font-weight: 600; }
+.footerInner > div a { color: #687994; font-size: 13.5px; font-weight: 600; }
 .footerInner > div a:hover { color: var(--blue); }
-.copyright { display: block; width: min(1120px, calc(100% - 64px)); margin: 22px auto 0; padding-top: 15px; border-top: 1px solid #f0f2f6; }
+.copyright { display: block; width: min(1120px, calc(100% - 64px)); margin: 24px auto 0; padding-top: 18px; border-top: 1px solid #f0f2f6; }
 
 :global(html[data-theme="dark"]) .page { color: #e7efff; background: #0b1324; }
 :global(html[data-theme="dark"]) .header {
@@ -2176,6 +2176,12 @@
 }
 
 @media (max-width: 1023px) {
+  .sectionWrap,
+  .heroInner,
+  .navWrap,
+  .footerInner {
+    width: min(100% - 48px, 860px);
+  }
   .featureGrid,
   .steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2210,43 +2216,71 @@
     font-weight: 650;
     margin-top: auto;
   }
-  .aiLayout { grid-template-columns: 1fr; gap: 40px; }
-  .aiCopy { max-width: 620px; margin: 0 auto; text-align: left; }
-  .aiCopy h2 { font-size: clamp(30px, 4vw, 38px); }
-  .chartCard { width: min(100%, 540px); margin: 0 auto; }
-  .pricingSection { padding: 80px 0; }
+  .sectionHeading h2 {
+    font-size: clamp(30px, 4.2vw, 38px);
+    letter-spacing: -1.3px;
+  }
+  .sectionHeading > p {
+    font-size: 15px;
+    line-height: 1.68;
+  }
+  .aiLayout { grid-template-columns: 1fr; gap: 36px; }
+  .aiCopy { max-width: 640px; margin: 0 auto; text-align: left; }
+  .aiCopy h2 { font-size: clamp(30px, 4.2vw, 38px); letter-spacing: -1.3px; }
+  .aiCopy > p { font-size: 15px; line-height: 1.68; }
+  .checkList li { font-size: 14px; }
+  .textLink { font-size: 14px; }
+  .chartCard { width: min(100%, 560px); margin: 0 auto; }
+  .pricingSection { padding: 84px 0; }
   .packageGrid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    max-width: 700px;
+    gap: 22px;
+    max-width: 720px;
     margin: 0 auto;
   }
   .packageCard:nth-child(3) {
     grid-column: 1 / -1;
     width: 100%;
-    max-width: 340px;
+    max-width: 350px;
     justify-self: center;
   }
+  .packageCard {
+    padding: 28px 24px;
+  }
+  .packageName { font-size: 20px; }
+  .packageDescription { font-size: 13.5px; }
+  .packagePrice { font-size: 22px; }
+  .packageFeaturesList li { font-size: 13px; }
   .contactCard {
-    width: min(720px, calc(100% - 48px));
-    padding: 24px 28px;
+    width: min(740px, calc(100% - 48px));
+    padding: 26px 30px;
     display: grid;
-    grid-template-columns: 50px 1fr;
+    grid-template-columns: 52px 1fr;
     gap: 16px 20px;
     align-items: start;
   }
   .contactHeading {
-    font-size: 19px;
+    font-size: 21px;
   }
   .contactDescription {
-    font-size: 12.5px;
+    font-size: 14px;
+    line-height: 1.6;
   }
   .contactWhatsappButton {
     grid-column: 1 / -1;
     width: 100%;
     justify-content: center;
     margin-top: 4px;
+    font-size: 14px;
+    min-height: 48px;
   }
+  .faqIntro h2 { font-size: clamp(30px, 4.2vw, 36px); }
+  .faqIntro > p { font-size: 15px; }
+  .faqItem summary { font-size: 15px; padding: 18px 0; }
+  .faqItem > p { font-size: 14px; }
+  .footerInner > p { font-size: 12.5px; }
+  .footerInner > div a { font-size: 12.5px; }
+  .copyright { font-size: 12px; }
   .desktopNav { display: none; }
   .navActions { display: none; }
   .tabletActions { display: none; }
@@ -2258,15 +2292,16 @@
 
 @media (max-width: 900px) {
   .navWrap, .heroInner, .sectionWrap, .footerInner { width: min(100% - 48px, 720px); }
-  .heroInner { grid-template-columns: 1fr; gap: 36px; padding: 52px 0 62px; }
+  .heroInner { grid-template-columns: 1fr; gap: 36px; padding: 52px 0; }
   .heroCopy { max-width: 100%; text-align: center; }
   .heroEyebrowRow { justify-content: center; }
-  .heroDescription { margin: 0 auto; font-size: 15px; }
+  .heroDescription { margin: 0 auto; font-size: 15.5px; line-height: 1.7; max-width: 580px; }
   .heroActions { justify-content: center; }
-  .trustNote { justify-content: center; }
-  .hero h1 { font-size: 47px; }
+  .trustNote { justify-content: center; font-size: 12px; }
+  .hero h1 { font-size: clamp(36px, 5.5vw, 44px); line-height: 1.15; letter-spacing: -2px; }
   .heroVisual { min-height: auto; width: 100%; }
   .dashboardCard { width: min(100%, 480px); padding: 22px 20px; margin: 0 auto; }
+  .metricValue { font-size: 19px; }
   .dashBottomCards { grid-template-columns: 1fr 1fr; gap: 10px; }
   .faqLayout { gap: 45px; }
   .featureGrid,
@@ -2281,6 +2316,7 @@
   }
   .howSection::before { display: none; }
 }
+
 @media (max-width: 680px) {
   .page section[id] { scroll-margin-top: 76px; }
   .navWrap { width: calc(100% - 32px); min-height: 72px; gap: 12px; }
@@ -2296,47 +2332,56 @@
   .mobileBackdrop { top: 72px; padding: 10px 14px 20px; }
   .hero { min-height: auto; }
   .heroInner, .sectionWrap { width: calc(100% - 32px); }
-  .heroInner { grid-template-columns: 1fr; gap: 24px; padding: 42px 0 54px; }
+  .heroInner { grid-template-columns: 1fr; gap: 26px; padding: 42px 0; }
   .heroCopy { text-align: left; }
-  .heroEyebrowRow { justify-content: flex-start; }
-  .hero h1 { margin-top: 18px; font-size: clamp(34px, 9vw, 44px); letter-spacing: -2px; }
-  .heroDescription { font-size: 13.5px; line-height: 1.6; margin: 0; }
+  .heroEyebrowRow { justify-content: flex-start; gap: 8px 12px; }
+  .pill, .heroStamp { font-size: 11.5px; padding: 7px 11px; }
+  .hero h1 { margin-top: 18px; font-size: clamp(32px, 8.5vw, 40px); line-height: 1.18; letter-spacing: -1.6px; }
+  .heroDescription { font-size: 15px; line-height: 1.65; margin: 0; }
   .heroActions { gap: 12px; margin-top: 22px; justify-content: flex-start; }
-  .primaryButton { min-height: 45px; padding: 0 14px; font-size: 11px; }
+  .primaryButton { min-height: 48px; padding: 0 18px; font-size: 14px; font-weight: 700; border-radius: 11px; }
   .secondaryButton {
-    min-height: 45px;
-    padding: 0 16px;
+    min-height: 48px;
+    padding: 0 18px;
     border-radius: 11px;
-    font-size: 11.5px;
+    font-size: 13.5px;
+    font-weight: 700;
     gap: 8px;
   }
   .playIcon {
-    width: 22px;
-    height: 22px;
-    font-size: 11px;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
   }
-  .trustNote { margin-top: 20px; font-size: 10px; justify-content: flex-start; }
+  .trustNote { margin-top: 20px; font-size: 12px; justify-content: flex-start; }
   .heroVisual { min-height: auto; margin: 0; width: 100%; }
-  .dashboardCard { width: 100%; padding: 18px 15px; border-radius: 18px; transform: none; animation: none; }
+  .dashboardCard { width: 100%; padding: 20px 16px; border-radius: 18px; transform: none; animation: none; }
+  .dashHeaderLeft { gap: 10px; }
+  .dashTitle { font-size: 14px; }
+  .dashSubtitle { font-size: 11px; }
   .metricGrid { gap: 10px; margin-top: 14px; }
   .metric { padding: 12px 10px; }
-  .metricValue { font-size: 17px; margin-top: 8px; }
-  .metricTrend { font-size: 9px; }
+  .metricLabel { font-size: 11px; font-weight: 600; }
+  .metricValue { font-size: 18px; margin-top: 6px; }
+  .metricTrend { font-size: 10px; }
   .miniChart { margin-top: 16px; }
-  .chartWrapper { height: 90px; }
-  .miniChartLabels { margin-left: 28px; font-size: 9px; }
+  .miniChartTitle { font-size: 12.5px; }
+  .chartWrapper { height: 96px; }
+  .miniChartLabels { margin-left: 28px; font-size: 9.5px; }
   .dashBottomCards { grid-template-columns: 1fr; gap: 8px; margin-top: 14px; }
-  .bottomCardSales, .bottomCardStatus { padding: 11px 12px; gap: 10px; }
-  .scrollCue { display: none; }
-  .featureSection, .howSection, .pricingSection { padding: 70px 0; }
-  .sectionHeading { margin-bottom: 32px; }
-  .sectionHeading h2, .aiCopy h2, .faqIntro h2 { font-size: 34px; }
-  .sectionHeading > p { font-size: 12px; }
+  .bottomCardSales, .bottomCardStatus { padding: 12px 13px; gap: 10px; }
+  .bottomCardTitleRow strong { font-size: 13px; }
+  .bottomCardContent p { font-size: 11.5px; }
+  .featureSection, .howSection, .pricingSection { padding: 72px 0; }
+  .sectionHeading { margin-bottom: 34px; }
+  .eyebrow { font-size: 11px; letter-spacing: 1.2px; }
+  .sectionHeading h2, .aiCopy h2, .faqIntro h2 { font-size: clamp(26px, 7.5vw, 32px); line-height: 1.25; letter-spacing: -1px; }
+  .sectionHeading > p { font-size: 14.5px; line-height: 1.65; max-width: 95%; margin-top: 12px; }
   .featureGrid,
   .steps {
     display: grid !important;
     grid-template-columns: 1fr !important;
-    gap: 22px !important;
+    gap: 20px !important;
     width: 100% !important;
   }
   .mobilePairsList { display: none !important; }
@@ -2346,60 +2391,61 @@
     padding: 28px 22px 26px !important;
   }
   .notchCardNumber {
-    font-size: 18px !important;
+    font-size: 17px !important;
   }
   .notchCardTitle {
-    font-size: 21.5px !important;
+    font-size: 21px !important;
     font-weight: 800 !important;
     line-height: 1.35 !important;
-    margin-top: 56px !important;
+    margin-top: 54px !important;
     letter-spacing: -0.4px !important;
   }
   .notchCardDescription {
-    font-size: 17px !important;
-    line-height: 1.68 !important;
+    font-size: 16.5px !important;
+    line-height: 1.65 !important;
     margin-top: 14px !important;
   }
   .notchCardDivider {
-    margin: 22px 0 16px !important;
+    margin: 20px 0 16px !important;
   }
   .notchCardMeta {
-    font-size: 15px !important;
+    font-size: 14.5px !important;
     font-weight: 650 !important;
     margin-top: auto !important;
   }
-  .aiSection { padding: 64px 0; }
+  .aiSection { padding: 68px 0; }
   .aiLayout { grid-template-columns: 1fr; gap: 28px; }
   .aiCopy { max-width: 100%; margin: 0; }
-  .aiCopy h2 { font-size: clamp(26px, 7vw, 34px); letter-spacing: -1.2px; }
-  .aiCopy > p { font-size: 13px; line-height: 1.65; margin-top: 12px; }
-  .checkList { gap: 10px; margin: 18px 0 20px; }
-  .checkList li { font-size: 11.5px; }
+  .aiCopy h2 { font-size: clamp(26px, 7.5vw, 32px); letter-spacing: -1px; line-height: 1.25; }
+  .aiCopy > p { font-size: 14.5px; line-height: 1.65; margin-top: 12px; }
+  .checkList { gap: 12px; margin: 20px 0 22px; }
+  .checkList li { font-size: 13.5px; font-weight: 600; gap: 10px; }
+  .textLink { font-size: 13.5px; font-weight: 700; }
   .chartCard { width: 100%; max-width: 100%; padding: 20px 18px 16px; border-radius: 18px; margin: 0; }
-  .chartHeader h3 { font-size: 15px; }
-  .chartPeriod { font-size: 9px; padding: 4px 9px; }
-  .chartScoreBadge { width: 25px; height: 25px; }
+  .chartHeader h3 { font-size: 16px; font-weight: 750; }
+  .chartPeriod { font-size: 10.5px; padding: 4px 10px; }
+  .chartScoreBadge { width: 26px; height: 26px; }
   .chartScoreText strong { font-size: 28px; }
-  .chartScoreText span { font-size: 11.5px; }
-  .chartTrend { font-size: 9.5px; padding: 2px 7px; margin-left: 6px; }
+  .chartScoreText span { font-size: 12.5px; }
+  .chartTrend { font-size: 10.5px; padding: 2px 8px; margin-left: 6px; }
   .chart { height: 145px; margin-top: 14px; padding-left: 28px; }
-  .chartGrid span { font-size: 8.5px; }
+  .chartGrid span { font-size: 9.5px; }
   .chartGrid span::after { left: 24px; }
-  .chartMonths { font-size: 8.5px; margin-left: 28px; }
-  .insight { padding: 10px 12px; gap: 10px; margin-top: 14px; }
-  .insightIcon { width: 30px; height: 30px; border-radius: 8px; }
-  .insightContent strong { font-size: 11px; }
-  .insightContent p { font-size: 9.5px; }
-  .contactSection { padding: 12px 0 65px; }
+  .chartMonths { font-size: 9.5px; margin-left: 28px; }
+  .insight { padding: 12px 14px; gap: 12px; margin-top: 14px; }
+  .insightIcon { width: 32px; height: 32px; border-radius: 9px; }
+  .insightContent strong { font-size: 13px; font-weight: 750; }
+  .insightContent p { font-size: 11.5px; line-height: 1.45; }
+  .contactSection { padding: 16px 0 68px; }
   .contactCard {
-    width: calc(100% - 32px);
-    max-width: 440px;
+    width: 100%;
+    max-width: 100%;
     margin: 0 auto;
-    padding: 22px 18px;
+    padding: 24px 20px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 15px;
+    gap: 16px;
   }
   .contactIconBox {
     width: 44px;
@@ -2407,42 +2453,47 @@
     border-radius: 12px;
   }
   .contactEyebrow {
-    font-size: 10.5px;
+    font-size: 11px;
     margin-bottom: 4px;
   }
   .contactHeading {
-    font-size: 18px;
+    font-size: 19px;
     line-height: 1.35;
   }
   .contactDescription {
-    font-size: 12px;
-    line-height: 1.5;
+    font-size: 13.5px;
+    line-height: 1.55;
     margin-top: 4px;
   }
   .contactWhatsappButton {
     width: 100%;
     justify-content: center;
-    min-height: 44px;
-    font-size: 13px;
+    min-height: 48px;
+    font-size: 14px;
+    font-weight: 700;
     margin-top: 2px;
   }
   .faqSection { padding: 68px 0; }
-  .faqLayout { grid-template-columns: 1fr; gap: 30px; }
-  .faqIntro h2 { font-size: 32px; }
-  .faqItem summary { font-size: 12px; }
-  .trialSection { padding: 70px 20px; }
-  .trialContent h2 { font-size: 43px; }
-  .trialContent > p { font-size: 12px; }
-  .trialFootnote { font-size: 9px; }
-  .pricingSection { padding: 64px 0; }
+  .faqLayout { grid-template-columns: 1fr; gap: 28px; }
+  .faqIntro h2 { font-size: clamp(26px, 7.5vw, 32px); line-height: 1.25; }
+  .faqIntro > p { font-size: 14.5px; line-height: 1.65; }
+  .faqItem summary { font-size: 14.5px; font-weight: 700; padding: 18px 0; }
+  .faqItem > p { font-size: 13.5px; line-height: 1.7; padding: 0 10px 18px 0; }
+  .trialSection { padding: 72px 20px; }
+  .trialPill { font-size: 11px; }
+  .trialContent h2 { font-size: clamp(30px, 8vw, 40px); line-height: 1.2; }
+  .trialContent > p { font-size: 14px; line-height: 1.65; max-width: 420px; }
+  .trialButton { font-size: 14px; min-height: 48px; padding: 0 22px; }
+  .trialFootnote { font-size: 11.5px; }
+  .pricingSection { padding: 68px 0; }
   .pricingSection .sectionHeading { margin-bottom: 32px; }
-  .pricingSection .sectionHeading h2 { font-size: clamp(26px, 7vw, 34px); letter-spacing: -1.2px; }
-  .pricingSection .sectionHeading > p { font-size: 13px; line-height: 1.6; }
+  .pricingSection .sectionHeading h2 { font-size: clamp(26px, 7.5vw, 32px); letter-spacing: -1px; }
+  .pricingSection .sectionHeading > p { font-size: 14.5px; line-height: 1.65; }
   .packageGrid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 18px;
     width: 100%;
-    max-width: 420px;
+    max-width: 440px;
     margin: 0 auto;
   }
   .packageCard:nth-child(3) {
@@ -2452,34 +2503,52 @@
     justify-self: stretch;
   }
   .packageCard {
-    padding: 24px 20px;
-    border-radius: 16px;
+    padding: 26px 22px;
+    border-radius: 18px;
   }
-  .packageDescription { min-height: auto; font-size: 12px; }
-  .packageName { font-size: 18px; }
-  .packagePrice { font-size: 20px; }
-  .packagePriceSub { font-size: 10.5px; }
-  .footerInner { width: calc(100% - 40px); flex-wrap: wrap; }
-  .footerInner > p { order: 3; width: 100%; }
-  .footerInner > div { gap: 13px; }
-  .copyright { width: calc(100% - 40px); }
+  .packageDescription { min-height: auto; font-size: 13.5px; line-height: 1.55; }
+  .packageName { font-size: 19px; font-weight: 750; }
+  .popularBadge { font-size: 11px; }
+  .packagePrice { font-size: 22px; }
+  .packagePriceSub { font-size: 11.5px; }
+  .packageCard .packageButton,
+  .packageCard .primaryButton {
+    font-size: 13.5px;
+    min-height: 48px;
+  }
+  .packageIncludes { font-size: 11px; }
+  .packageFeaturesList li { font-size: 13px; line-height: 1.5; }
+  .footerInner { width: 100%; flex-wrap: wrap; gap: 16px; }
+  .footer .brand { font-size: 22px; }
+  .footerInner > p { order: 3; width: 100%; font-size: 12.5px; margin-top: 4px; }
+  .footerInner > div { gap: 16px; flex-wrap: wrap; }
+  .footerInner > div a { font-size: 13px; font-weight: 600; }
+  .copyright { width: 100%; font-size: 12px; margin-top: 18px; padding-top: 14px; }
 }
+
 @media (max-width: 400px) {
   .navWrap { width: calc(100% - 24px); min-height: 68px; }
   .mobileBackdrop { top: 68px; padding: 8px 10px; }
   .mobileMenuPanel { padding: 16px 14px; }
-  .heroInner, .sectionWrap { width: calc(100% - 32px); }
-  .hero h1 { font-size: 38px; letter-spacing: -2.2px; }
-  .heroActions { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .heroInner, .sectionWrap { width: calc(100% - 24px); }
+  .hero h1 { font-size: clamp(27px, 7.5vw, 32px); letter-spacing: -1.1px; }
+  .heroDescription { font-size: 14px; line-height: 1.6; }
+  .heroActions { align-items: stretch; flex-direction: column; gap: 10px; width: 100%; }
+  .primaryButton,
   .secondaryButton {
-    min-height: 42px;
-    padding: 0 14px;
-    font-size: 11px;
+    width: 100%;
+    min-height: 46px;
+    padding: 0 16px;
+    font-size: 13.5px;
+    justify-content: center;
   }
   .cardNotch { width: 136px; height: 58px; }
   .notchDish, .notchDishVivid { border-radius: 0 0 68px 68px / 0 0 58px 58px; }
   .notchCard {
     padding: 24px 18px 24px !important;
+  }
+  .notchCardNumber {
+    font-size: 16px !important;
   }
   .notchCardTitle {
     font-size: 19.5px !important;
@@ -2492,43 +2561,43 @@
   .notchCardMeta {
     font-size: 13.5px !important;
   }
-  .dashboardCard { padding: 14px 11px; }
+  .dashboardCard { padding: 16px 12px; }
   .metricGrid { gap: 8px; }
   .metric { padding: 10px 8px; }
-  .metricValue { font-size: 15px; }
-  .metricTrend { font-size: 8px; }
-  .mobilePairCol { padding: 11px 8px 10px; }
-  .mobileColNotch { width: 58px; height: 32px; }
-  .mobileNotchDish { border-radius: 0 0 29px 29px / 0 0 32px 32px; }
-  .mobileIconBadge { width: 22px; height: 22px; border-radius: 6px; }
-  .mobileColTitle { margin-top: 11px; font-size: 11px; }
-  .mobileColDescription { font-size: 9px; line-height: 1.4; }
-  .mobileColMeta { font-size: 8px; gap: 3px; margin-top: 8px; }
+  .metricLabel { font-size: 10.5px; }
+  .metricValue { font-size: 16px; }
+  .metricTrend { font-size: 9px; }
   .chartHeader { gap: 8px; }
   .chartPeriod { flex: 0 0 auto; }
-  .chartCard { padding: 16px 13px 13px; }
-  .chart { height: 130px; padding-left: 24px; }
+  .chartCard { padding: 16px 14px 14px; }
+  .chart { height: 135px; padding-left: 26px; }
   .chartGrid span::after { left: 20px; }
-  .chartMonths { margin-left: 24px; font-size: 8px; }
-  .packageCard { padding: 20px 16px; }
-  .packageName { font-size: 17px; }
+  .chartMonths, .chartGrid span { margin-left: 26px; font-size: 9px; }
+  .packageCard { padding: 22px 18px; }
+  .packageName { font-size: 18px; }
+  .packageDescription { font-size: 13px; }
+  .packagePrice { font-size: 20px; }
+  .packageFeaturesList li { font-size: 12.5px; }
   .contactCard {
-    width: calc(100% - 24px);
-    padding: 18px 14px;
-    gap: 12px;
+    width: 100%;
+    padding: 20px 16px;
+    gap: 14px;
   }
   .contactHeading {
-    font-size: 16.5px;
+    font-size: 18px;
   }
   .contactDescription {
-    font-size: 11.5px;
+    font-size: 13px;
   }
   .contactWhatsappButton {
-    min-height: 42px;
-    font-size: 12.5px;
-    padding: 0 14px;
+    min-height: 46px;
+    font-size: 13.5px;
+    padding: 0 16px;
   }
-  .copyright { width: calc(100% - 32px); }
+  .faqItem summary { font-size: 14px; }
+  .faqItem > p { font-size: 13px; }
+  .trialContent h2 { font-size: clamp(26px, 7vw, 32px); }
+  .copyright { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .page { scroll-behavior: auto; }

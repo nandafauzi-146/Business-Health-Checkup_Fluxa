@@ -1,199 +1,200 @@
 {
   "hero": {
-    "eyebrow": "Platform bisnis untuk UMKM modern",
-    "badge": "Data usaha, satu dashboard",
+    "eyebrow": "Aplikasi Bisnis UMKM",
+    "badge": "Catat penjualan & pantau stok",
     "title": "Bisnis lebih terarah.",
     "titleHighlight": "Tumbuh lebih percaya diri.",
-    "description": "Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan Fluxa — semua dalam satu platform.",
+    "description": "Kelola transaksi kasir, pantau persediaan barang, dan lihat laporan keuangan usaha Anda dalam satu aplikasi yang praktis.",
     "ctaText": "Coba gratis 7 hari",
-    "ctaSecondaryText": "Kenali cara kerjanya",
-    "trustNote": "Data pelanggan Anda aman dan selalu terlindungi"
+    "ctaSecondaryText": "Lihat cara kerja",
+    "trustNote": "Data usaha Anda tersimpan dengan aman"
   },
   "features": [
     {
       "number": "01",
       "icon": "ShoppingCart",
-      "label": "KASIR CEPAT",
+      "label": "KASIR",
       "title": "Kasir praktis",
-      "description": "Catat transaksi lebih cepat, kelola shift, dan pantau penjualan dalam satu tempat.",
+      "description": "Catat transaksi penjualan lebih cepat, kelola shift kerja, dan cetak struk untuk pelanggan.",
       "tone": "blue",
-      "detail": "Shift kasir · Multi-pembayaran · Struk instan"
+      "detail": "Transaksi · Kasir & Shift"
     },
     {
       "number": "02",
       "icon": "BarChart3",
-      "label": "REKAP OTOMATIS",
+      "label": "LAPORAN",
       "title": "Laporan otomatis",
-      "description": "Lihat ringkasan omzet, laba, arus kas, dan performa bisnis tanpa rekap manual.",
+      "description": "Lihat ringkasan omzet, laba kotor, dan arus kas harian tanpa perlu menghitung manual.",
       "tone": "purple",
-      "detail": "Omzet · Laba bersih · Arus kas real-time"
+      "detail": "Laporan · Omzet & Laba"
     },
     {
       "number": "03",
       "icon": "Bot",
-      "label": "INSIGHT CERDAS",
+      "label": "ANALISIS AI",
       "title": "Analisis dengan AI",
-      "description": "Dapatkan diagnosis kesehatan usaha dan insight untuk menentukan langkah berikutnya.",
+      "description": "Ketahui kondisi kesehatan usaha dan dapatkan saran praktis untuk menentukan prioritas penjualan.",
       "tone": "green",
-      "detail": "Skor kesehatan · Rekomendasi · Tren risiko"
+      "detail": "Analisis Bisnis · Skor AI"
     },
     {
       "number": "04",
       "icon": "Package",
-      "label": "MANAJEMEN GUDANG",
-      "title": "Kontrol stok",
-      "description": "Pantau persediaan, nilai stok, dan produk yang perlu segera diperhatikan.",
+      "label": "STOK",
+      "title": "Kontrol stok barang",
+      "description": "Pantau sisa stok barang secara langsung dan dapatkan pengingat saat persediaan mulai menipis.",
       "tone": "orange",
-      "detail": "Peringatan stok · Nilai aset · Mutasi barang"
+      "detail": "Inventaris · Stok & Mutasi"
     },
     {
       "number": "05",
       "icon": "Wallet",
-      "label": "KEUANGAN USAHA",
+      "label": "KEUANGAN",
       "title": "Kelola kas & piutang",
-      "description": "Pantau uang masuk, pengeluaran, kasbon, serta hutang-piutang bisnis.",
+      "description": "Catat pengeluaran operasional, kasbon karyawan, dan tagihan piutang agar arus kas tetap rapi.",
       "tone": "cyan",
-      "detail": "Buku kas · Catatan piutang · Jatuh tempo"
+      "detail": "Keuangan · Kas & Piutang"
     },
     {
       "number": "06",
       "icon": "Users",
-      "label": "KOLABORASI TIM",
-      "title": "Tim lebih teratur",
-      "description": "Atur akses owner, admin, dan kasir sesuai peran masing-masing.",
+      "label": "TIM",
+      "title": "Pengaturan peran tim",
+      "description": "Bagi hak akses untuk pemilik, admin, dan kasir sesuai tugas masing-masing agar data usaha tetap aman.",
       "tone": "pink",
-      "detail": "Hak akses · Multi-peran · Log aktivitas"
+      "detail": "Manajemen Tim · Hak Akses"
     }
   ],
   "aiInsight": {
-    "eyebrow": "PEMAHAMAN BISNIS",
+    "eyebrow": "ANALISIS USAHA",
     "title": "Bukan sekadar angka.",
-    "titleHighlight": "Pahami ceritanya.",
-    "description": "Fluxa membantu merangkum kondisi usaha dari data operasional Anda, mengidentifikasi tren, dan menyajikan rekomendasi yang lebih mudah ditindaklanjuti.",
+    "titleHighlight": "Pahami arah bisnis Anda.",
+    "description": "Fluxa membaca pola transaksi harian Anda, lalu merangkumnya menjadi informasi ringkas yang siap dijadikan panduan langkah berikutnya.",
     "checklist": [
-      "Diagnosis kesehatan bisnis",
-      "Tren penjualan dan arus kas",
-      "Rekomendasi berdasarkan data"
+      "Evaluasi kesehatan usaha secara berkala",
+      "Pantau tren penjualan dan arus kas",
+      "Saran praktis berdasarkan data usaha"
     ]
   },
   "steps": [
     {
       "number": "01",
       "icon": "Database",
-      "label": "SIAPKAN USAHA",
-      "title": "Mulai dari data bisnis Anda",
-      "description": "Masukkan profil usaha, produk, harga, dan stok awal. Atur akun owner, admin, serta kasir sesuai tanggung jawab tim.",
-      "detail": "Profil · Produk · Stok · Tim"
+      "label": "PERSIAPAN",
+      "title": "Masukkan data produk dan harga",
+      "description": "Mulai dengan mendaftarkan produk, harga jual, dan stok awal. Atur akun kasir sesuai kebutuhan tim Anda.",
+      "detail": "Persiapan · Profil & Produk"
     },
     {
       "number": "02",
       "icon": "ShoppingCart",
-      "label": "CATAT AKTIVITAS",
-      "title": "Jalankan transaksi harian",
-      "description": "Gunakan kasir untuk mencatat penjualan. Aktivitas transaksi membantu memperbarui ringkasan penjualan dan persediaan.",
-      "detail": "Transaksi · Shift · Persediaan"
+      "label": "OPERASIONAL",
+      "title": "Catat transaksi setiap hari",
+      "description": "Gunakan menu kasir untuk mencatat setiap penjualan. Data stok dan rekap harian langsung terhitung otomatis.",
+      "detail": "Operasional · Kasir & Shift"
     },
     {
       "number": "03",
       "icon": "BarChart3",
-      "label": "PAHAMI ANGKA",
-      "title": "Pantau laporan dan arus kas",
-      "description": "Tinjau performa penjualan, pemasukan, pengeluaran, stok, serta piutang dalam laporan yang lebih mudah dibaca.",
-      "detail": "Penjualan · Keuangan · Piutang"
+      "label": "PEMBUKUAN",
+      "title": "Pantau laporan keuangan",
+      "description": "Tinjau omzet, biaya belanja harian, dan sisa kas dalam laporan yang rapi serta mudah dipahami.",
+      "detail": "Pembukuan · Arus Kas & Laba"
     },
     {
       "number": "04",
       "icon": "Bot",
-      "label": "TENTUKAN LANGKAH",
-      "title": "Gunakan insight untuk bertumbuh",
-      "description": "Jalankan diagnosis kesehatan bisnis berbantuan AI, pahami area yang perlu perhatian, lalu tentukan prioritas berikutnya.",
-      "detail": "Diagnosis AI · Rekomendasi · Tindak lanjut"
+      "label": "EVALUASI",
+      "title": "Jalankan evaluasi usaha",
+      "description": "Cek skor kesehatan bisnis Anda, ketahui produk yang paling diminati, dan tentukan rencana berikutnya.",
+      "detail": "Keputusan · Diagnosis AI"
     }
   ],
   "contact": {
     "whatsappNumber": "628980148297",
-    "whatsappMessage": "Halo Admin FLUXA 👋\n\nSaya tertarik untuk menggunakan FLUXA sebagai sistem pengelolaan bisnis saya.\n\nSaya ingin mengetahui lebih lanjut mengenai fitur, cara pendaftaran, dan cara memulai trial gratis selama 7 hari.\n\nMohon informasi dan panduannya, ya. Terima kasih! 😊",
-    "eyebrow": "BUTUH BANTUAN?",
+    "whatsappMessage": "Halo tim Fluxa, saya ingin tahu lebih banyak tentang fitur kasir, laporan, dan cara mulai coba gratis selama 7 hari. Mohon informasinya ya, terima kasih.",
+    "eyebrow": "KONSULTASI",
     "heading": "Mari bicarakan kebutuhan bisnis Anda.",
-    "description": "Tim Fluxa siap membantu Anda memahami fitur, trial, dan pilihan paket yang sesuai.",
+    "description": "Tim Fluxa siap membantu menjawab pertanyaan seputar fitur, masa coba gratis, dan paket yang paling cocok untuk usaha Anda.",
     "buttonText": "Tanya via WhatsApp"
   },
   "trialBanner": {
     "pill": "MULAI BERSAMA FLUXA",
     "title": "Mulai bisnis Anda",
-    "titleHighlight": "dengan cara fleksibel.",
-    "description": "Daftar sekarang. Pilih langganan langsung untuk aktivasi instan tanpa antrean, atau ajukan free trial 7 hari gratis.",
+    "titleHighlight": "dengan cara yang fleksibel.",
+    "description": "Daftar sekarang untuk mencoba seluruh fitur selama 7 hari gratis, atau langsung pilih paket langganan sesuai kebutuhan.",
     "ctaText": "Mulai Sekarang",
-    "footnote": "Langganan instan via Midtrans atau Trial gratis 7 hari"
+    "footnote": "Langganan instan melalui Midtrans atau coba gratis selama 7 hari."
   },
   "pricing": {
-    "eyebrow": "PILIH SESUAI KEBUTUHAN",
+    "eyebrow": "PILIHAN PAKET",
     "title": "Paket yang tumbuh",
     "titleHighlight": "bersama bisnis Anda.",
-    "description": "Mulai dengan trial 7 hari, lalu pilih kategori paket yang paling sesuai dengan tahap bisnis Anda.",
+    "description": "Mulai dengan coba gratis 7 hari, lalu pilih paket yang paling sesuai dengan tahap perkembangan usaha Anda.",
     "buttonText": "Tanyakan paket",
     "packages": [
       {
         "name": "Starter",
-        "description": "Untuk usaha kecil yang ingin mulai lebih rapi.",
+        "description": "Cocok untuk usaha perorangan yang ingin pencatatan kasir dan laporan harian lebih rapi.",
         "priceLabel": "Hubungi kami",
-        "priceSublabel": "Hubungi tim kami untuk detail harga",
+        "priceSublabel": "Hubungi tim kami untuk detail paket",
         "featured": false,
         "badge": "",
         "features": [
-          "Kasir & pencatatan transaksi",
-          "Manajemen produk dan stok",
-          "Ringkasan laporan usaha"
+          "Kasir dan pencatatan transaksi cepat",
+          "Manajemen data produk, harga, dan stok",
+          "Ringkasan laporan penjualan harian"
         ]
       },
       {
         "name": "Growth",
-        "description": "Untuk bisnis yang ingin memahami performa lebih dalam.",
+        "description": "Tepat untuk usaha yang ingin memantau laba bersih dan evaluasi bisnis secara berkala.",
         "priceLabel": "Hubungi kami",
-        "priceSublabel": "Hubungi tim kami untuk detail harga",
+        "priceSublabel": "Hubungi tim kami untuk detail paket",
         "featured": true,
-        "badge": "Pilihan bisnis",
+        "badge": "Paling Populer",
         "features": [
-          "Semua fitur Starter",
-          "Diagnosis kesehatan bisnis berbasis AI",
-          "Analisis kas dan piutang"
+          "Semua fitur di paket Starter",
+          "Analisis kesehatan bisnis berbasis AI",
+          "Laporan laba kotor, kas, dan piutang",
+          "Pantauan tren penjualan produk"
         ]
       },
       {
         "name": "Multi-cabang",
-        "description": "Untuk tim dan operasional dengan kebutuhan lebih luas.",
+        "description": "Dirancang untuk bisnis dengan beberapa cabang dan tim operasional yang berkembang.",
         "priceLabel": "Hubungi kami",
-        "priceSublabel": "Hubungi tim kami untuk detail harga",
+        "priceSublabel": "Hubungi tim kami untuk detail paket",
         "featured": false,
         "badge": "",
         "features": [
-          "Semua fitur Growth",
-          "Pengelolaan tim dan peran",
-          "Diskusi kebutuhan penggunaan"
+          "Semua fitur di paket Growth",
+          "Pengaturan peran tim (Owner, Admin, Kasir)",
+          "Pendampingan dan bantuan implementasi"
         ]
       }
     ]
   },
   "faqs": [
     {
-      "question": "Fluxa cocok untuk bisnis apa?",
-      "answer": "Fluxa dirancang untuk membantu UMKM mengelola transaksi, stok, dan kesehatan bisnis. Anda dapat menyesuaikan penggunaan dengan kebutuhan operasional usaha."
+      "question": "Fluxa cocok untuk jenis usaha apa saja?",
+      "answer": "Fluxa cocok untuk beragam jenis usaha, seperti toko ritel, kedai kopi dan kuliner, toko pakaian, salon, jasa perbaikan, hingga toko kelontong. Selama usaha Anda membutuhkan pencatatan kasir, kontrol stok barang, dan laporan keuangan, Fluxa bisa langsung digunakan."
     },
     {
-      "question": "Bagaimana AI Fluxa membantu bisnis saya?",
-      "answer": "AI membantu membaca data bisnis yang tersedia dan menyajikan diagnosis serta insight. Hasilnya menjadi bahan pertimbangan, bukan pengganti keputusan pemilik bisnis."
+      "question": "Bagaimana AI Fluxa membantu usaha saya?",
+      "answer": "AI Fluxa membaca data penjualan dan pengeluaran harian Anda, lalu menyajikannya dalam ringkasan yang mudah dipahami. Anda akan mendapatkan saran praktis, seperti produk yang perputarannya lambat atau waktu penjualan yang sedang ramai."
     },
     {
       "question": "Apakah saya bisa mencoba Fluxa sebelum berlangganan?",
-      "answer": "Tersedia periode trial 7 hari. Hubungi tim Fluxa untuk informasi aktivasi dan ketentuan trial."
+      "answer": "Bisa. Anda mendapatkan masa coba gratis selama 7 hari dengan akses fitur lengkap. Tidak ada pemotongan biaya di awal sehingga Anda bisa mencoba seluruh fitur dengan leluasa."
     },
     {
-      "question": "Apakah harga paket sudah ditampilkan?",
-      "answer": "Harga belum dicantumkan di halaman ini. Hubungi tim Fluxa untuk mendapatkan informasi paket dan biaya sesuai kebutuhan bisnis Anda."
+      "question": "Bagaimana cara berlangganan dan mulai menggunakan Fluxa?",
+      "answer": "Anda bisa langsung mendaftar untuk memulai masa coba gratis, atau memilih pembayaran instan via Midtrans. Jika butuh bantuan pengaturan awal, tim kami siap memandu melalui WhatsApp."
     }
   ],
   "footer": {
-    "tagline": "Kelola hari ini. Tumbuh untuk esok.",
+    "tagline": "Pencatatan rapi, usaha makin berkembang.",
     "copyright": "Semua hak dilindungi."
   }
 }
