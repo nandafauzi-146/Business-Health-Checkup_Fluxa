@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, AlertTriangle, CheckCircle, XCircle, Eye, RefreshCw, X, ShieldAlert, Receipt, Calendar, User, CreditCard } from 'lucide-react'
+import { Search, AlertTriangle, CheckCircle, XCircle, Eye, RefreshCw, X, ShieldAlert, Receipt, Calendar, User, CreditCard, Loader2 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
 import { createClient } from '@/lib/supabase/client'
 import { getUserFacingError } from '@/lib/user-facing-error'
 import PendingRefundRequests from '@/components/admin/PendingRefundRequests'
+import MonthNavigator, { getCurrentYearMonth, formatMonthIndo } from '@/components/ui/MonthNavigator'
 
 interface SaleItem {
   id: string
@@ -42,6 +43,8 @@ const paymentLabels: Record<string, { label: string; color: string; bg: string }
 
 export default function AdminTransactionsClient({ initialSales }: { initialSales: Sale[] }) {
   const [sales, setSales] = useState<Sale[]>(initialSales)
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => getCurrentYearMonth())
+  const [loadingMonth, setLoadingMonth] = useState(false)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'voided'>('all')
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null)
@@ -51,6 +54,85 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
   const [notification, setNotification] = useState<{ type: 'ok' | 'bad'; text: string } | null>(null)
 
   const supabase = createClient()
+
+  // Muat transaksi sesuai periode bulan yang dipilih
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchMonthSales = async () => {
+      try {
+        setLoadingMonth(true)
+        const [year, month] = selectedMonth.split('-').map(Number)
+        const startISO = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0)).toISOString()
+        const endISO = new Date(Date.UTC(year, month, 1, 0, 0, 0)).toISOString()
+
+        const { data, error } = await supabase
+          .from('sales')
+          .select(`
+            id,
+            invoice_number,
+            created_at,
+            payment_method,
+            total_amount,
+            discount,
+            final_amount,
+            status,
+            void_reason,
+            voided_at,
+            profiles:cashier_id (full_name),
+            sale_items (
+              id,
+              quantity,
+              unit_price,
+              subtotal,
+              products (name)
+            )
+          `)
+          .gte('created_at', startISO)
+          .lt('created_at', endISO)
+          .order('created_at', { ascending: false })
+
+        if (error) {
+          console.error('Error fetching sales for month:', error)
+          return
+        }
+
+        if (isMounted && data) {
+          const formatted = data.map((s: any) => ({
+            id: s.id,
+            invoice_number: s.invoice_number,
+            created_at: s.created_at,
+            payment_method: s.payment_method,
+            subtotal: s.total_amount,
+            discount: s.discount,
+            final_amount: s.final_amount,
+            status: s.status,
+            void_reason: s.void_reason,
+            voided_at: s.voided_at,
+            cashier_name: s.profiles?.full_name || null,
+            items: (s.sale_items || []).map((item: any) => ({
+              id: item.id,
+              product_name: item.products?.name || 'Produk',
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              subtotal: item.subtotal,
+            }))
+          }))
+          setSales(formatted)
+        }
+      } catch (err) {
+        console.error('Error loading month sales:', err)
+      } finally {
+        if (isMounted) setLoadingMonth(false)
+      }
+    }
+
+    fetchMonthSales()
+
+    return () => {
+      isMounted = false
+    }
+  }, [selectedMonth])
 
   useEffect(() => {
     if (!selectedSale && !voidDialogOpen) return
@@ -76,11 +158,14 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
   }, [selectedSale, voidDialogOpen])
 
   const filteredSales = sales.filter(s => {
+    const inMonth = s.created_at ? s.created_at.slice(0, 7) === selectedMonth : true
     const matchesSearch = s.invoice_number?.toLowerCase().includes(search.toLowerCase()) ||
-      s.payment_method?.toLowerCase().includes(search.toLowerCase())
+      s.payment_method?.toLowerCase().includes(search.toLowerCase()) ||
+      (s.customer_name && s.customer_name.toLowerCase().includes(search.toLowerCase())) ||
+      (s.cashier_name && s.cashier_name.toLowerCase().includes(search.toLowerCase()))
 
     const matchesStatus = statusFilter === 'all' ? true : s.status === statusFilter
-    return matchesSearch && matchesStatus
+    return inMonth && matchesSearch && matchesStatus
   })
 
   const showNotification = (text: string, type: 'ok' | 'bad' = 'ok') => {
@@ -144,6 +229,57 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
         </div>
       )}
 
+      {/* Toolbar Pemilih Periode Bulanan */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 12,
+        marginBottom: 16,
+        padding: '12px 16px',
+        background: 'var(--panel)',
+        borderRadius: 14,
+        border: '1px solid var(--line)',
+        boxShadow: 'var(--shadow-soft)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 200 }}>
+          <div style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            background: 'var(--accs)',
+            color: 'var(--acc)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <Calendar size={18} />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
+              Periode Transaksi
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--mute)' }}>
+              {loadingMonth ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Loader2 size={11} className="spin" /> Memuat data {formatMonthIndo(selectedMonth)}...
+                </span>
+              ) : (
+                `Menampilkan riwayat bulan ${formatMonthIndo(selectedMonth)}`
+              )}
+            </div>
+          </div>
+        </div>
+
+        <MonthNavigator
+          selectedMonth={selectedMonth}
+          onChange={setSelectedMonth}
+          label="Pilih Periode"
+        />
+      </div>
+
       {/* KPI Ringkasan Transaksi & Laporan Refund */}
       <div className="responsive-kpi">
         <div className="card" style={{ padding: '14px 16px', borderLeft: '4px solid var(--ok)' }}>
@@ -151,6 +287,7 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
           <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink)', marginTop: 4 }}>
             {sales.filter(s => s.status === 'completed').length} <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--mute)' }}>Transaksi</span>
           </div>
+          <div style={{ fontSize: 11, color: 'var(--mute)', marginTop: 2 }}>Periode {formatMonthIndo(selectedMonth)}</div>
         </div>
 
         <div className="card" style={{ padding: '14px 16px', borderLeft: '4px solid var(--acc)' }}>
@@ -158,6 +295,7 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
           <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--acc)', marginTop: 4 }}>
             <FormatRupiah amount={sales.filter(s => s.status === 'completed').reduce((sum, s) => sum + s.final_amount, 0)} />
           </div>
+          <div style={{ fontSize: 11, color: 'var(--mute)', marginTop: 2 }}>Periode {formatMonthIndo(selectedMonth)}</div>
         </div>
 
         <div className="card" style={{
@@ -178,7 +316,16 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
       </div>
 
       {/* Tabel Transaksi Full Width */}
-      <SectionCard title={`Semua Transaksi (${filteredSales.length})`}>
+      <SectionCard
+        title={`Riwayat Transaksi — ${formatMonthIndo(selectedMonth)} (${filteredSales.length})`}
+        action={
+          loadingMonth ? (
+            <span style={{ fontSize: 12, color: 'var(--mute)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Loader2 size={13} className="spin" /> Memperbarui...
+            </span>
+          ) : undefined
+        }
+      >
         {/* Filters */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
           <div className="search-bar" style={{ flex: 1, minWidth: 'min(260px, 100%)' }}>
@@ -619,3 +766,5 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
     </div>
   )
 }
+
+export { AdminTransactionsClient as TransactionsClient }

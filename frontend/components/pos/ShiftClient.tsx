@@ -12,6 +12,7 @@ import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag, KpiCard } from '@/components/ui/Cards'
 import { BukaShiftModal, TutupShiftModal } from '@/components/pos/KasMasukModal'
 import { cleanUUID, fetchShiftExpenses, ShiftExpenseItem } from '@/lib/cash-reconciliation'
+import MonthNavigator, { getCurrentYearMonth, formatMonthIndo } from '@/components/ui/MonthNavigator'
 
 export interface ShiftSaleItem {
   id: string
@@ -116,10 +117,87 @@ export default function ShiftClient({
   const [selectedDetail, setSelectedDetail] = useState<ShiftItem | null>(null)
   const [searchCashier, setSearchCashier] = useState('')
   const [filterTab, setFilterTab] = useState<'all' | 'active' | 'closed' | 'discrepancy'>('all')
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => getCurrentYearMonth())
+  const [loadingMonth, setLoadingMonth] = useState(false)
 
   const [shiftSales, setShiftSales] = useState<ShiftSaleItem[]>([])
   const [shiftExpenses, setShiftExpenses] = useState<ShiftExpenseItem[]>([])
   const [loadingSales, setLoadingSales] = useState(false)
+
+  // Kunci scroll halaman saat modal detail rekonsiliasi aktif
+  useEffect(() => {
+    if (!selectedDetail) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedDetail(null)
+    }
+    const origOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = origOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [selectedDetail])
+
+  // Muat riwayat shift sesuai periode bulan yang dipilih
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchMonthShifts = async () => {
+      try {
+        setLoadingMonth(true)
+        const [year, month] = selectedMonth.split('-').map(Number)
+        const startISO = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0)).toISOString()
+        const endISO = new Date(Date.UTC(year, month, 1, 0, 0, 0)).toISOString()
+
+        const [shiftsRes, profilesRes] = await Promise.all([
+          supabase
+            .from('shifts')
+            .select('*')
+            .gte('opened_at', startISO)
+            .lt('opened_at', endISO)
+            .order('opened_at', { ascending: false }),
+          supabase
+            .from('profiles')
+            .select('id, full_name, role')
+        ])
+
+        if (shiftsRes.error) {
+          console.error('Error fetching month shifts:', shiftsRes.error)
+          return
+        }
+
+        const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p.full_name]))
+        const loaded: ShiftItem[] = (shiftsRes.data || []).map((s: any) => ({
+          id: s.id,
+          cashier_id: s.cashier_id,
+          cashier_name: profileMap.get(s.cashier_id) || 'Kasir',
+          opened_at: s.opened_at,
+          closed_at: s.closed_at,
+          initial_cash: s.initial_cash || 0,
+          expected_cash: s.expected_cash || 0,
+          final_cash: s.final_cash || 0,
+          difference: s.difference || 0,
+          note: s.note,
+          status: s.status,
+        }))
+
+        if (isMounted) {
+          setRecentShifts(loaded.filter(s => s.status === 'closed'))
+        }
+      } catch (err) {
+        console.error('Error loading shifts for month:', err)
+      } finally {
+        if (isMounted) setLoadingMonth(false)
+      }
+    }
+
+    fetchMonthShifts()
+
+    return () => {
+      isMounted = false
+    }
+  }, [selectedMonth, supabase])
 
   useEffect(() => {
     if (!selectedDetail?.id) {
@@ -273,9 +351,12 @@ export default function ShiftClient({
     }
   }, [allActive, recentShifts])
 
-  // Filter daftar riwayat shift
+  // Filter daftar riwayat shift berdasarkan periode bulan, tab, dan pencarian
   const filteredShifts = useMemo(() => {
     return recentShifts.filter(s => {
+      // Filter periode bulan
+      if (s.opened_at && s.opened_at.slice(0, 7) !== selectedMonth) return false
+
       // Tab filter
       if (filterTab === 'closed' && s.status !== 'closed') return false
       if (filterTab === 'discrepancy' && (s.difference || 0) === 0) return false
@@ -290,7 +371,7 @@ export default function ShiftClient({
       }
       return true
     })
-  }, [recentShifts, filterTab, searchCashier])
+  }, [recentShifts, selectedMonth, filterTab, searchCashier])
 
   return (
     <div>
@@ -635,9 +716,55 @@ export default function ShiftClient({
         )}
       </div>
 
+      {/* Riwayat Shift — Toolbar Periode Bulanan */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 12,
+        marginBottom: 16,
+        padding: '12px 16px',
+        background: 'var(--panel)',
+        borderRadius: 14,
+        border: '1px solid var(--line)',
+        boxShadow: 'var(--shadow-soft)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: 'var(--accs)', color: 'var(--acc)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <Calendar size={18} />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
+              Periode Riwayat Shift
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--mute)' }}>
+              {loadingMonth ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <RefreshCw size={11} className="spin" /> Memuat shift {formatMonthIndo(selectedMonth)}...
+                </span>
+              ) : (
+                `Menampilkan sesi shift bulan ${formatMonthIndo(selectedMonth)}`
+              )}
+            </div>
+          </div>
+        </div>
+
+        <MonthNavigator
+          selectedMonth={selectedMonth}
+          onChange={setSelectedMonth}
+          label="Pilih Periode"
+        />
+      </div>
+
       {/* SECTION: Riwayat Shift & Audit Rekonsiliasi Kas */}
       <SectionCard
-        title="Riwayat Sesi Shift & Rekonsiliasi Kas"
+        title={`Riwayat Sesi Shift — ${formatMonthIndo(selectedMonth)} (${filteredShifts.length})`}
         action={
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             {/* Filter Tabs */}
@@ -850,14 +977,19 @@ export default function ShiftClient({
 
       {/* Modal Detail Rekonsiliasi Struk Kasir */}
       {selectedDetail && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(15, 18, 24, 0.72)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: 20, animation: 'fadeIn 0.2s ease'
-        }}>
+        <div
+          onClick={e => e.target === e.currentTarget && setSelectedDetail(null)}
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(15, 18, 24, 0.72)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 20, animation: 'fadeIn 0.2s ease'
+          }}
+        >
           <div style={{
             background: 'var(--panel)',
             border: '1px solid var(--line)',
