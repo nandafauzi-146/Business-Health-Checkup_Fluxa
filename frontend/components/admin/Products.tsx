@@ -750,18 +750,19 @@ export default function ProductsClient({
 
       {/* Products table */}
       <SectionCard title={`Daftar Produk (${filtered.length})`}>
+        {/* Table View dengan Horizontal Swipe pada Layar Kecil */}
         <div className="table-container">
-          <table className="data-table">
+          <table className="data-table" style={{ minWidth: 840 }}>
             <thead>
               <tr>
                 <th>Produk & Resep</th>
-                <th className="hide-sm">SKU</th>
-                <th className="hide-sm">Kategori</th>
-                <th className="hide-md">Harga Modal</th>
+                <th>SKU</th>
+                <th>Kategori</th>
+                <th>Harga Modal</th>
                 <th>Harga Jual</th>
-                <th className="hide-sm">Margin</th>
+                <th>Margin</th>
                 <th>Stok</th>
-                <th className="hide-sm">Status</th>
+                <th>Status</th>
                 <th style={{ textAlign: 'right' }}>Aksi</th>
               </tr>
             </thead>
@@ -855,11 +856,11 @@ export default function ProductsClient({
                         </div>
                       </td>
 
-                      <td className="hide-sm" style={{ fontSize: 12, color: 'var(--mute)', fontFamily: 'monospace' }}>
+                      <td style={{ fontSize: 12, color: 'var(--mute)', fontFamily: 'monospace' }}>
                         {p.sku || '—'}
                       </td>
 
-                      <td className="hide-sm">
+                      <td>
                         <span style={{
                           padding: '3px 8px',
                           borderRadius: 6,
@@ -872,7 +873,7 @@ export default function ProductsClient({
                         </span>
                       </td>
 
-                      <td className="hide-md" style={{ fontSize: 13, color: 'var(--mute)' }}>
+                      <td style={{ fontSize: 13, color: 'var(--mute)' }}>
                         {formatRp(p.buy_price)}
                       </td>
 
@@ -880,7 +881,7 @@ export default function ProductsClient({
                         {formatRp(p.sell_price)}
                       </td>
 
-                      <td className="hide-sm">
+                      <td>
                         <span style={{
                           padding: '2px 8px',
                           borderRadius: 6,
@@ -901,7 +902,7 @@ export default function ProductsClient({
                         </div>
                       </td>
 
-                      <td className="hide-sm">
+                      <td>
                         <StatusTag status={p.is_active ? 'ok' : 'void'} label={p.is_active ? 'Aktif' : 'Nonaktif'} />
                       </td>
 
@@ -948,12 +949,21 @@ export default function ProductsClient({
             </tbody>
           </table>
         </div>
+
       </SectionCard>
 
       {/* Add / Edit Product Modal */}
       {showDialog && (
         <div className="dialog-overlay" onClick={e => e.target === e.currentTarget && setShowDialog(false)}>
-          <div className="dialog" style={{ maxWidth: 680, maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="dialog" style={{
+            maxWidth: 680,
+            width: '100%',
+            maxHeight: 'calc(100dvh - 32px)',
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 700 }}>
@@ -1044,7 +1054,8 @@ export default function ProductsClient({
                     padding: 12,
                     background: 'var(--bg)',
                     borderRadius: 12,
-                    border: '1px solid var(--line)'
+                    border: '1px solid var(--line)',
+                    flexWrap: 'wrap'
                   }}>
                     <div style={{
                       width: 60,
@@ -1072,7 +1083,7 @@ export default function ProductsClient({
                       )}
                     </div>
 
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ flex: '1 1 200px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <input
                           type="file"
@@ -1123,15 +1134,15 @@ export default function ProductsClient({
                   border: '1px solid var(--line)',
                   borderRadius: 14
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 200, flex: '1 0 auto' }}>
                       <Boxes size={18} color="var(--acc)" />
                       <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>
                         Bahan Baku & Resep Produk
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                       <button
                         type="button"
                         className="btn btn-secondary btn-sm"
@@ -1449,7 +1460,7 @@ export default function ProductsClient({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 22, justifyContent: 'flex-end' }}>
+              <div className="modal-footer-sticky">
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -1474,7 +1485,7 @@ export default function ProductsClient({
       {/* Quick Create Raw Material Modal */}
       {showQuickMaterialModal && (
         <div className="dialog-overlay" onClick={e => e.target === e.currentTarget && setShowQuickMaterialModal(false)}>
-          <div className="dialog" style={{ maxWidth: 440 }}>
+          <div className="dialog" style={{ maxWidth: 440, maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div>
                 <h3 style={{ fontSize: 16, fontWeight: 700 }}>Tambah Bahan Baku Baru Cepat</h3>
@@ -1575,7 +1586,7 @@ export default function ProductsClient({
       {/* View Recipe Detail Popover / Modal */}
       {viewRecipeProduct && (
         <div className="dialog-overlay" onClick={e => e.target === e.currentTarget && setViewRecipeProduct(null)}>
-          <div className="dialog" style={{ maxWidth: 540 }}>
+          <div className="dialog" style={{ maxWidth: 540, maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

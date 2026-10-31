@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import StockManagementClient from '@/components/admin/StockManagement'
 
-export const metadata = { title: 'Kelola Stok & Mutasi — Fluxa Admin' }
+export const metadata = { title: 'Fluxa | Inventaris' }
 
 export default async function AdminStokPage() {
   const supabase = await createClient()

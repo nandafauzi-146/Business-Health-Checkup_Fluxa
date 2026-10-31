@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import ExpensesClient, { Expense } from '@/components/admin/Expenses'
 
-export const metadata = { title: 'Biaya Operasional — Fluxa Admin' }
+export const metadata = { title: 'Fluxa | Biaya Operasional' }
 
 export default async function AdminBiayaPage() {
   const supabase = await createClient()

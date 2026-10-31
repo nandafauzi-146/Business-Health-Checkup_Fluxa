@@ -586,7 +586,7 @@ export default function DebtReceivablesClient({
 
         {/* Data Table */}
         <div className="table-container">
-          <table className="data-table">
+          <table className="data-table" style={{ minWidth: 840 }}>
             <thead>
               <tr>
                 <th style={{ width: 100 }}>Jenis</th>
@@ -749,6 +749,9 @@ export default function DebtReceivablesClient({
             width: '100%',
             maxWidth: 520,
             boxShadow: '0 16px 40px rgba(0,0,0,0.25)',
+            maxHeight: 'calc(100dvh - 32px)',
+            display: 'flex',
+            flexDirection: 'column',
             overflow: 'hidden'
           }}>
             {/* Modal Header */}
@@ -757,7 +760,8 @@ export default function DebtReceivablesClient({
               borderBottom: '1px solid var(--line)',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              flexShrink: 0
             }}>
               <div style={{ fontWeight: 700, fontSize: 16 }}>
                 Catat Transaksi Hutang / Piutang Baru
@@ -772,7 +776,7 @@ export default function DebtReceivablesClient({
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleAdd} style={{ padding: '20px' }}>
+            <form onSubmit={handleAdd} style={{ padding: '20px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
               {/* Jenis: Hutang vs Piutang Selector */}
               <div style={{ marginBottom: 16 }}>
                 <label className="label" style={{ fontWeight: 700, marginBottom: 8, display: 'block' }}>
@@ -932,7 +936,18 @@ export default function DebtReceivablesClient({
               </div>
 
               {/* Modal Footer */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: 10,
+                position: 'sticky',
+                bottom: -20,
+                background: 'var(--panel)',
+                paddingTop: 12,
+                paddingBottom: 4,
+                borderTop: '1px solid var(--line)',
+                marginTop: 16
+              }}>
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -973,6 +988,9 @@ export default function DebtReceivablesClient({
             width: '100%',
             maxWidth: 480,
             boxShadow: '0 16px 40px rgba(0,0,0,0.25)',
+            maxHeight: 'calc(100dvh - 32px)',
+            display: 'flex',
+            flexDirection: 'column',
             overflow: 'hidden'
           }}>
             {/* Header */}
@@ -981,7 +999,8 @@ export default function DebtReceivablesClient({
               borderBottom: '1px solid var(--line)',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              flexShrink: 0
             }}>
               <div style={{ fontWeight: 700, fontSize: 16 }}>
                 {selected.type === 'payable' ? 'Catat Pembayaran Hutang Toko' : 'Catat Penerimaan Pembayaran Piutang'}
@@ -996,7 +1015,7 @@ export default function DebtReceivablesClient({
             </div>
 
             {/* Form */}
-            <form onSubmit={handleRecordPayment} style={{ padding: '20px' }}>
+            <form onSubmit={handleRecordPayment} style={{ padding: '20px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
               {/* Info Ringkas */}
               <div style={{
                 background: 'var(--bg)',
@@ -1102,7 +1121,18 @@ export default function DebtReceivablesClient({
               </div>
 
               {/* Modal Footer */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: 10,
+                position: 'sticky',
+                bottom: -20,
+                background: 'var(--panel)',
+                paddingTop: 12,
+                paddingBottom: 4,
+                borderTop: '1px solid var(--line)',
+                marginTop: 16
+              }}>
                 <button
                   type="button"
                   className="btn btn-secondary"

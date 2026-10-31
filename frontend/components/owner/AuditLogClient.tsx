@@ -835,7 +835,7 @@ export default function AuditLogClient({
 
         {/* Data Table */}
         <div className="table-container">
-          <table className="data-table">
+          <table className="data-table" style={{ minWidth: 620 }}>
             <thead>
               <tr>
                 <th style={{ width: 140 }}>Waktu & Tanggal</th>
@@ -927,7 +927,8 @@ export default function AuditLogClient({
             maxWidth: 720,
             boxShadow: '0 16px 40px rgba(0,0,0,0.25)',
             overflow: 'hidden',
-            maxHeight: '90vh',
+            maxHeight: 'calc(100dvh - 32px)',
+            WebkitOverflowScrolling: 'touch',
             display: 'flex',
             flexDirection: 'column'
           }}>
