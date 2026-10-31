@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
 import {
-  ArrowDown,
   ArrowRight,
   BarChart3,
   Bot,
@@ -82,9 +81,22 @@ function resolveIcon(name: string, fallback = Sparkles) {
 }
 
 const defaultPackages = [
-  { name: 'Starter', description: 'Untuk usaha kecil yang ingin mulai lebih rapi.', features: ['Kasir & pencatatan transaksi', 'Manajemen produk dan stok', 'Ringkasan laporan usaha'] },
-  { name: 'Growth', description: 'Untuk bisnis yang ingin memahami performa lebih dalam.', features: ['Semua fitur Starter', 'Diagnosis kesehatan bisnis berbasis AI', 'Analisis kas dan piutang'], featured: true },
-  { name: 'Multi-cabang', description: 'Untuk tim dan operasional dengan kebutuhan lebih luas.', features: ['Semua fitur Growth', 'Pengelolaan tim dan peran', 'Diskusi kebutuhan penggunaan'] },
+  {
+    name: 'Starter',
+    description: 'Cocok untuk usaha perorangan yang ingin pencatatan kasir dan laporan harian lebih rapi.',
+    features: ['Kasir dan pencatatan transaksi cepat', 'Manajemen data produk, harga, dan stok', 'Ringkasan laporan penjualan harian'],
+  },
+  {
+    name: 'Growth',
+    description: 'Tepat untuk usaha yang ingin memantau laba bersih dan evaluasi bisnis secara berkala.',
+    features: ['Semua fitur di paket Starter', 'Analisis kesehatan bisnis berbasis AI', 'Laporan laba kotor, kas, dan piutang', 'Pantauan tren penjualan produk'],
+    featured: true,
+  },
+  {
+    name: 'Multi-cabang',
+    description: 'Dirancang untuk bisnis dengan beberapa cabang dan tim operasional yang berkembang.',
+    features: ['Semua fitur di paket Growth', 'Pengaturan peran tim (Owner, Admin, Kasir)', 'Pendampingan dan bantuan implementasi'],
+  },
 ]
 
 function ExampleChart() {
@@ -251,12 +263,12 @@ function getConciseDetail(item: MobileCardItem, fallbackIndex: number): string {
     return item.detail
   }
   const featureShort: Record<string, string> = {
-    '01': 'Kasir · Shift · Struk',
-    '02': 'Omzet · Laba · Arus kas',
-    '03': 'Skor AI · Rekomendasi',
-    '04': 'Stok · Aset · Mutasi',
-    '05': 'Buku kas · Piutang',
-    '06': 'Akses · Multi-peran',
+    '01': 'Transaksi · Kasir & Shift',
+    '02': 'Laporan · Omzet & Laba',
+    '03': 'Analisis Bisnis · Skor AI',
+    '04': 'Inventaris · Stok & Mutasi',
+    '05': 'Keuangan · Kas & Piutang',
+    '06': 'Manajemen Tim · Hak Akses',
   }
   return featureShort[item.number || `0${fallbackIndex + 1}`] || item.label || 'Operasional'
 }
@@ -401,7 +413,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
 
   const getPlanWhatsappUrl = (planName: string) => {
     const phone = (cms.contact?.whatsappNumber || '628980148297').replace(/\D/g, '')
-    const msg = `Halo Admin FLUXA 👋\n\nSaya tertarik dengan paket ${planName} di FLUXA.\n\nMohon informasi lebih lanjut mengenai detail harga, cara pendaftaran, dan cara aktivasi. Terima kasih!`
+    const msg = `Halo tim Fluxa, saya tertarik dengan paket ${planName}. Mohon informasi lebih lanjut mengenai detail harga dan cara aktivasinya. Terima kasih.`
     return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
   }
 
@@ -494,7 +506,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
             <a href="#fitur">Fitur</a>
             <a href="#cara-kerja">Cara kerja</a>
             <a href="#kontak">Kontak</a>
-            <a href="#paket">Subscribe</a>
+            <a href="#paket">Paket</a>
           </nav>
 
           <div className={styles.navActions}>
@@ -579,7 +591,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
                   <ChevronRight size={15} />
                 </a>
                 <a href="#paket" onClick={() => setMobileMenuOpen(false)}>
-                  <span>Subscribe</span>
+                  <span>Paket</span>
                   <ChevronRight size={15} />
                 </a>
               </nav>
@@ -605,16 +617,16 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
         <div className={styles.heroInner}>
           <div className={styles.heroCopy}>
             <div className={styles.heroEyebrowRow}>
-              <div className={styles.pill}><span /> {cms.hero?.eyebrow || 'Platform bisnis untuk UMKM modern'}</div>
-              <div className={styles.heroStamp}><CircleDollarSign size={18} /> {cms.hero?.badge || 'Data usaha, satu dashboard'}</div>
+              <div className={styles.pill}><span /> {cms.hero?.eyebrow || 'Aplikasi Bisnis UMKM'}</div>
+              <div className={styles.heroStamp}><CircleDollarSign size={18} /> {cms.hero?.badge || 'Catat penjualan & pantau stok'}</div>
             </div>
             <h1>{cms.hero?.title || 'Bisnis lebih terarah.'}<br /><span>{cms.hero?.titleHighlight || 'Tumbuh lebih percaya diri.'}</span></h1>
-            <p className={styles.heroDescription}>{cms.hero?.description || 'Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan Fluxa — semua dalam satu platform.'}</p>
+            <p className={styles.heroDescription}>{cms.hero?.description || 'Kelola transaksi kasir, pantau persediaan barang, dan lihat laporan keuangan usaha Anda dalam satu aplikasi yang praktis.'}</p>
             <div className={styles.heroActions}>
               <Link className={styles.primaryButton} href="/register">{cms.hero?.ctaText || 'Coba gratis 7 hari'} <ArrowRight size={17} /></Link>
-              <a className={styles.secondaryButton} href="#cara-kerja">{cms.hero?.ctaSecondaryText || 'Kenali cara kerjanya'}</a>
+              <a className={styles.secondaryButton} href="#cara-kerja">{cms.hero?.ctaSecondaryText || 'Lihat cara kerja'}</a>
             </div>
-            <div className={styles.trustNote}><ShieldCheck size={17} /> {cms.hero?.trustNote || 'Data pelanggan Anda aman dan selalu terlindungi'}</div>
+            <div className={styles.trustNote}><ShieldCheck size={17} /> {cms.hero?.trustNote || 'Data usaha Anda tersimpan dengan aman'}</div>
           </div>
           <div className={styles.heroVisual}>
             <div className={styles.visualOrb} aria-hidden="true" />
@@ -751,16 +763,25 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
             </div>
           </div>
         </div>
-        <a className={styles.scrollCue} href="#fitur" aria-label="Lihat fitur"><ArrowDown size={16} /></a>
       </section>
 
       <section className={styles.featureSection} id="fitur"><div className={styles.sectionWrap}>
-        <div className={styles.sectionHeading}><span className={styles.eyebrow}>SEMUA YANG DIBUTUHKAN</span><h2>Operasional rapi,<br /><span>keputusan makin berarti.</span></h2><p>Fluxa menyatukan aktivitas harian dan insight bisnis agar Anda bisa fokus mengembangkan usaha.</p></div>
+        <div className={styles.sectionHeading}><span className={styles.eyebrow}>FITUR UTAMA</span><h2>Operasional lebih rapi,<br /><span>langkah bisnis lebih pasti.</span></h2><p>Mulai dari pencatatan kasir hingga laporan keuangan, semua tersusun rapi agar Anda bisa fokus mengembangkan usaha.</p></div>
         <div className={styles.featureGrid}>
           {featuresList.map((item, idx) => {
             const IconComponent = resolveIcon(item.icon)
             const itemNumber = item.number || `0${idx + 1}`
-            const itemDetail = item.detail || 'Operasional · Bisnis · Insight'
+            const defaultFeatureDetails: Record<string, string> = {
+              '01': 'Transaksi · Kasir & Shift',
+              '02': 'Laporan · Omzet & Laba',
+              '03': 'Analisis Bisnis · Skor AI',
+              '04': 'Inventaris · Stok & Mutasi',
+              '05': 'Keuangan · Kas & Piutang',
+              '06': 'Manajemen Tim · Hak Akses',
+            }
+            const itemDetail = (item.detail && item.detail !== 'Operasional · Bisnis · Insight')
+              ? item.detail
+              : defaultFeatureDetails[itemNumber] || 'Transaksi'
             return (
               <article className={`${styles.notchCard} ${styles.notchCardVivid}`} key={idx}>
                 <div className={styles.notchCardHeader}>
@@ -783,19 +804,19 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
 
       <section className={styles.aiSection}><div className={`${styles.sectionWrap} ${styles.aiLayout}`}>
         <div className={styles.aiCopy}>
-          <span className={styles.eyebrow}><TrendingUp size={14} /> {cms.aiInsight?.eyebrow || 'PEMAHAMAN BISNIS'}</span>
-          <h2>{cms.aiInsight?.title || 'Bukan sekadar angka.'}<br /><span>{cms.aiInsight?.titleHighlight || 'Pahami ceritanya.'}</span></h2>
-          <p>{cms.aiInsight?.description || 'Fluxa membantu merangkum kondisi usaha dari data operasional Anda, mengidentifikasi tren, dan menyajikan rekomendasi yang lebih mudah ditindaklanjuti.'}</p>
+          <span className={styles.eyebrow}><TrendingUp size={14} /> {cms.aiInsight?.eyebrow || 'ANALISIS USAHA'}</span>
+          <h2>{cms.aiInsight?.title || 'Bukan sekadar angka.'}<br /><span>{cms.aiInsight?.titleHighlight || 'Pahami arah bisnis Anda.'}</span></h2>
+          <p>{cms.aiInsight?.description || 'Fluxa membaca pola transaksi harian Anda, lalu merangkumnya menjadi informasi ringkas yang siap dijadikan panduan langkah berikutnya.'}</p>
           <ul className={styles.checkList}>
             {(cms.aiInsight?.checklist || [
-              'Diagnosis kesehatan bisnis',
-              'Tren penjualan dan arus kas',
-              'Rekomendasi berdasarkan data',
+              'Evaluasi kesehatan usaha secara berkala',
+              'Pantau tren penjualan dan arus kas',
+              'Saran praktis berdasarkan data usaha',
             ]).map((checkItem, idx) => (
               <li key={idx}><Check size={16} /> {checkItem}</li>
             ))}
           </ul>
-          <a href="#cara-kerja" className={styles.textLink}>Pelajari cara kerja Fluxa! <ArrowRight size={16} /></a>
+          <a href="#cara-kerja" className={styles.textLink}>Lihat cara kerja Fluxa <ArrowRight size={16} /></a>
         </div>
         <ExampleChart />
       </div></section>
@@ -832,7 +853,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
             <WhatsAppIcon size={24} />
           </div>
           <div className={styles.contactTextContent}>
-            <span className={styles.contactEyebrow}>{cms.contact?.eyebrow || 'BUTUH BANTUAN?'}</span>
+            <span className={styles.contactEyebrow}>{cms.contact?.eyebrow || 'KONSULTASI'}</span>
             <h2 className={styles.contactHeading}>
               {cms.contact?.heading ? (
                 cms.contact.heading.includes('bisnis Anda') ? (
@@ -848,7 +869,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
               )}
             </h2>
             <p className={styles.contactDescription}>
-              {cms.contact?.description || 'Tim Fluxa siap membantu Anda memahami fitur, trial, dan pilihan paket yang sesuai.'}
+              {cms.contact?.description || 'Tim Fluxa siap membantu menjawab pertanyaan seputar fitur, masa coba gratis, dan paket yang paling cocok untuk usaha Anda.'}
             </p>
           </div>
           <a
@@ -869,22 +890,31 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
         <div className={styles.trialDecor} aria-hidden="true"><span /><span /><span /></div>
         <div className={styles.trialContent}>
           <span className={styles.trialPill}><Sparkles size={14} /> {cms.trialBanner?.pill || 'MULAI BERSAMA FLUXA'}</span>
-          <h2>{cms.trialBanner?.title || 'Mulai bisnis Anda'}<br />dengan <span>{cms.trialBanner?.titleHighlight || 'cara fleksibel.'}</span></h2>
-          <p>{cms.trialBanner?.description || 'Daftar sekarang. Pilih langganan langsung untuk aktivasi instan tanpa antrean, atau ajukan free trial 7 hari gratis.'}</p>
+          <h2>
+            {cms.trialBanner?.title || 'Mulai bisnis Anda'}<br />
+            <span>
+              {cms.trialBanner?.titleHighlight
+                ? (cms.trialBanner.titleHighlight.trim().startsWith('dengan ')
+                    ? cms.trialBanner.titleHighlight.trim()
+                    : `dengan ${cms.trialBanner.titleHighlight.trim()}`)
+                : 'dengan cara yang fleksibel.'}
+            </span>
+          </h2>
+          <p>{cms.trialBanner?.description || 'Daftar sekarang untuk mencoba seluruh fitur selama 7 hari gratis, atau langsung pilih paket langganan sesuai kebutuhan.'}</p>
           <Link className={styles.trialButton} href="/register">{cms.trialBanner?.ctaText || 'Mulai Sekarang'} <ArrowRight size={17} /></Link>
-          <span className={styles.trialFootnote}><ShieldCheck size={15} /> {cms.trialBanner?.footnote || 'Langganan instan via Midtrans atau Trial gratis 7 hari'}</span>
+          <span className={styles.trialFootnote}><ShieldCheck size={15} /> {cms.trialBanner?.footnote || 'Langganan instan melalui Midtrans atau coba gratis selama 7 hari.'}</span>
         </div>
       </section>
 
       <section className={styles.pricingSection} id="paket">
         <div className={styles.sectionWrap}>
           <div className={styles.sectionHeading}>
-            <span className={styles.eyebrow}>{cms.pricing?.eyebrow || 'PILIH SESUAI KEBUTUHAN'}</span>
+            <span className={styles.eyebrow}>{cms.pricing?.eyebrow || 'PILIHAN PAKET'}</span>
             <h2>
               {cms.pricing?.title || 'Paket yang tumbuh'}<br />
               <span>{cms.pricing?.titleHighlight || 'bersama bisnis Anda.'}</span>
             </h2>
-            <p>{cms.pricing?.description || 'Mulai dengan trial 7 hari, lalu pilih kategori paket yang paling sesuai dengan tahap bisnis Anda.'}</p>
+            <p>{cms.pricing?.description || 'Mulai dengan coba gratis 7 hari, lalu pilih paket yang paling sesuai dengan tahap perkembangan usaha Anda.'}</p>
           </div>
           <div className={styles.packageGrid}>
             {(cms.pricing?.packages || defaultPackages).map((plan, idx) => {
@@ -954,7 +984,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
         </div>
       </div></section>
 
-      <footer className={styles.footer}><div className={styles.footerInner}><Link className={styles.brand} href="/"><Image src="/Fluxa-Logo.webp" alt="" width={34} height={34} /><span>fluxa<span className={styles.brandDot}>.</span></span></Link><p>{cms.footer?.tagline || 'Kelola hari ini. Tumbuh untuk esok.'}</p><div><a href="#fitur">Fitur</a><a href="#kontak">Kontak</a><Link href="/login">Login</Link></div></div><span className={styles.copyright}>© {new Date().getFullYear()} Fluxa. {cms.footer?.copyright || 'Semua hak dilindungi.'}</span></footer>
+      <footer className={styles.footer}><div className={styles.footerInner}><Link className={styles.brand} href="/"><Image src="/Fluxa-Logo.webp" alt="" width={34} height={34} /><span>fluxa<span className={styles.brandDot}>.</span></span></Link><p>{cms.footer?.tagline || 'Pencatatan rapi, usaha makin berkembang.'}</p><div><a href="#fitur">Fitur</a><a href="#paket">Paket</a><a href="#kontak">Kontak</a><Link href="/login">Masuk</Link></div></div><span className={styles.copyright}>© {new Date().getFullYear()} Fluxa. {cms.footer?.copyright || 'Semua hak dilindungi.'}</span></footer>
     </main>
   )
 }
