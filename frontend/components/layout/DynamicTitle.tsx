@@ -36,6 +36,7 @@ export const ROUTE_TITLE_MAP: Record<string, string> = {
 
   // Owner
   '/owner': 'Dashboard',
+  '/owner/transaksi': 'Transaksi',
   '/owner/rapor': 'AI Insight',
   '/owner/cashflow': 'Cashflow',
   '/owner/laporan': 'Laporan',
