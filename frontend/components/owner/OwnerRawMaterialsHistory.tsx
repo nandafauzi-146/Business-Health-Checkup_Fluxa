@@ -21,6 +21,7 @@ import {
   DollarSign
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
+import { calculateRecipeRatios } from '@/lib/unit-conversion'
 
 export interface RawMaterialSubItem {
   id: string
@@ -787,18 +788,36 @@ export default function OwnerRawMaterialsHistoryClient({
               {(!recipeModalMaterial.sub_ingredients || recipeModalMaterial.sub_ingredients.length === 0) ? (
                 <div style={{ color: 'var(--mute)', fontSize: 12 }}>Belum ada komposisi rempah yang didaftarkan.</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {recipeModalMaterial.sub_ingredients.map((sub, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12.5, borderBottom: '1px dashed var(--line)', paddingBottom: 6 }}>
-                      <span style={{ fontWeight: 600, color: 'var(--ink)' }}>
-                        {sub.sub_material?.name || 'Rempah'}
-                      </span>
-                      <span style={{ color: 'var(--mute)', fontVariantNumeric: 'tabular-nums' }}>
-                        {sub.quantity} {sub.unit}
-                      </span>
+                (() => {
+                  const modalRatios = calculateRecipeRatios(
+                    (recipeModalMaterial.sub_ingredients || []).map(s => ({
+                      sub_material_id: s.sub_material_id,
+                      sub_material_name: s.sub_material?.name || 'Rempah',
+                      quantity: s.quantity,
+                      unit: s.unit
+                    }))
+                  )
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {recipeModalMaterial.sub_ingredients.map((sub, idx) => (
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12.5, borderBottom: '1px dashed var(--line)', paddingBottom: 6 }}>
+                          <span style={{ fontWeight: 600, color: 'var(--ink)' }}>
+                            {sub.sub_material?.name || 'Rempah'}
+                          </span>
+                          <span style={{ color: 'var(--mute)', fontVariantNumeric: 'tabular-nums' }}>
+                            {sub.quantity} {sub.unit}{' '}
+                            <span style={{ color: '#9333ea', fontWeight: 700, marginLeft: 6 }}>
+                              ({modalRatios.items[idx]?.percentage || 0}%)
+                            </span>
+                          </span>
+                        </div>
+                      ))}
+                      <div style={{ fontSize: 11, color: 'var(--mute)', marginTop: 4 }}>
+                        *Total komposisi ({modalRatios.totalCompositionBase.toFixed(1)} g setara) menjadi acuan rasio proporsi saat restock tanpa input susut masak.
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  )
+                })()
               )}
             </div>
 

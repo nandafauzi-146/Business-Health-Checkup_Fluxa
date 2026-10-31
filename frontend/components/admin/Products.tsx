@@ -12,6 +12,7 @@ import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
 import { PageHeader } from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import { getUserFacingError } from '@/lib/user-facing-error'
+import { convertUnit } from '@/lib/unit-conversion'
 
 function formatRp(n: number) {
   return 'Rp' + new Intl.NumberFormat('id-ID').format(Math.round(n))
@@ -46,6 +47,7 @@ export interface RawMaterial {
   min_stock: number
   unit: string
   cost_per_unit: number
+  density?: number | null
 }
 
 export interface ProductIngredient {
@@ -208,7 +210,7 @@ export default function ProductsClient({
     return ingredients.filter(i => i.product_id === productId)
   }
 
-  // Calculate maximum portions from raw materials stock
+  // Calculate maximum portions from raw materials stock with unit conversion (PRD Section 3 & 4)
   const calculatePortionsPossible = (ings: FormIngredient[]) => {
     if (!ings.length) return null
     let minPortions = Infinity
@@ -218,14 +220,17 @@ export default function ProductsClient({
       const mat = rawMaterials.find(m => m.id === item.raw_material_id)
       const qty = Number(item.quantity)
       if (mat && qty > 0) {
-        const portions = Math.floor(mat.stock / qty)
-        if (portions < minPortions) {
-          minPortions = portions
-          bottleneck = {
-            name: mat.name,
-            available: mat.stock,
-            needed: qty,
-            unit: item.unit || mat.unit
+        const neededInMatUnit = convertUnit(qty, item.unit || mat.unit, mat.unit, mat.density || 1.0)
+        if (neededInMatUnit > 0) {
+          const portions = Math.floor(mat.stock / neededInMatUnit)
+          if (portions < minPortions) {
+            minPortions = portions
+            bottleneck = {
+              name: mat.name,
+              available: mat.stock,
+              needed: Math.round(neededInMatUnit * 100) / 100,
+              unit: mat.unit
+            }
           }
         }
       }
@@ -238,13 +243,15 @@ export default function ProductsClient({
     }
   }
 
-  // Calculate estimated HPP from ingredients
+  // Calculate estimated HPP from ingredients with unit conversion (PRD Section 3 & 4)
   const calculateRecipeCost = (ings: FormIngredient[]) => {
     return ings.reduce((total, item) => {
       const mat = rawMaterials.find(m => m.id === item.raw_material_id)
       const qty = Number(item.quantity) || 0
-      const costPerUnit = mat?.cost_per_unit || 0
-      return total + (qty * costPerUnit)
+      if (!mat || qty <= 0) return total
+      const neededInMatUnit = convertUnit(qty, item.unit || mat.unit, mat.unit, mat.density || 1.0)
+      const costPerUnit = mat.cost_per_unit || 0
+      return total + (neededInMatUnit * costPerUnit)
     }, 0)
   }
 
@@ -1319,22 +1326,24 @@ export default function ProductsClient({
                             </div>
 
                             {/* Satuan */}
-                            <div style={{ width: 65 }}>
+                            <div style={{ width: 85 }}>
                               <label style={{ fontSize: 11, color: 'var(--mute)', display: 'block', marginBottom: 2 }}>
                                 Satuan
                               </label>
-                              <div style={{
-                                padding: '6px 4px',
-                                background: 'var(--bg)',
-                                border: '1px solid var(--line)',
-                                borderRadius: 6,
-                                fontSize: 11,
-                                textAlign: 'center',
-                                fontWeight: 600,
-                                color: 'var(--ink)'
-                              }}>
-                                {ing.unit || mat?.unit || 'unit'}
-                              </div>
+                              <select
+                                className="input"
+                                value={ing.unit || mat?.unit || 'gram'}
+                                onChange={e => handleUpdateIngredient(idx, 'unit', e.target.value)}
+                                style={{ fontSize: 11, padding: '5px 4px', cursor: 'pointer' }}
+                              >
+                                <option value="gram">gram (g)</option>
+                                <option value="kg">kg</option>
+                                <option value="ml">ml</option>
+                                <option value="liter">liter (l)</option>
+                                <option value="pcs">pcs</option>
+                                <option value="butir">butir</option>
+                                <option value="porsi">porsi</option>
+                              </select>
                             </div>
 
                             {/* Cost Info */}

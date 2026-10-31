@@ -12,6 +12,7 @@ import { SectionCard, StatusTag } from '@/components/ui/Cards'
 import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
 import { createClient } from '@/lib/supabase/client'
 import { getUserFacingError } from '@/lib/user-facing-error'
+import { convertUnit, calculateRecipeRatios, type SubIngredientRatioItem } from '@/lib/unit-conversion'
 
 function formatRp(n: number) {
   return 'Rp' + new Intl.NumberFormat('id-ID').format(Math.round(n))
@@ -41,6 +42,7 @@ export interface RawMaterialItem {
   unit: string
   cost_per_unit: number
   batch_yield: number | null
+  density?: number | null
   updated_at: string
   products?: { id: string; name: string }[]
   sub_ingredients?: SubIngredientItem[]
@@ -124,7 +126,8 @@ export default function RawMaterialsClient({
     min_stock: '100',
     unit: 'gram',
     cost_per_unit: '0',
-    batch_yield: '1000'
+    batch_yield: '1000',
+    density: '1.0'
   })
 
   // Sub-ingredients in Form (untuk Bumbu Olahan)
@@ -184,7 +187,8 @@ export default function RawMaterialsClient({
       min_stock: '100',
       unit: 'gram',
       cost_per_unit: '0',
-      batch_yield: '1000'
+      batch_yield: '1000',
+      density: '1.0'
     })
     setFormSubIngredients([])
     setShowAddEditDialog(true)
@@ -200,7 +204,8 @@ export default function RawMaterialsClient({
       min_stock: String(m.min_stock),
       unit: m.unit,
       cost_per_unit: String(m.cost_per_unit),
-      batch_yield: String(m.batch_yield || 1000)
+      batch_yield: String(m.batch_yield || 1000),
+      density: String(m.density || 1.0)
     })
 
     const existingSubs = (m.sub_ingredients || []).map(s => ({
@@ -257,6 +262,7 @@ export default function RawMaterialsClient({
     const unit = form.unit.trim() || 'gram'
     const sku = form.sku.trim() || null
     const batchYield = Number(form.batch_yield) || 1000
+    const densityVal = Number(form.density) > 0 ? Number(form.density) : 1.0
 
     if (!name) {
       showToast('Nama bahan baku wajib diisi.', 'bad')
@@ -287,6 +293,7 @@ export default function RawMaterialsClient({
             unit,
             cost_per_unit: costPerUnit,
             batch_yield: form.material_type === 'semi_finished' ? batchYield : null,
+            density: densityVal,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingMaterial.id)
@@ -328,7 +335,8 @@ export default function RawMaterialsClient({
             min_stock: minStock,
             unit,
             cost_per_unit: costPerUnit,
-            batch_yield: isSemi ? batchYield : null
+            batch_yield: isSemi ? batchYield : null,
+            density: densityVal
           })
           .select('*')
           .single()
@@ -608,6 +616,20 @@ export default function RawMaterialsClient({
   const subRecipeCalculations = calculateSubRecipeCost(
     formSubIngredients,
     Number(form.batch_yield) || 1000
+  )
+
+  // PRD Section 2: Recipe Ratio calculation without shrinkage input
+  const recipeRatios = calculateRecipeRatios(
+    formSubIngredients.map(s => {
+      const mat = materials.find(m => m.id === s.sub_material_id)
+      return {
+        sub_material_id: s.sub_material_id,
+        sub_material_name: mat?.name || 'Rempah',
+        quantity: Number(s.quantity) || 0,
+        unit: s.unit || mat?.unit || 'g',
+        density: mat?.density || 1.0
+      }
+    })
   )
 
   return (
@@ -1188,6 +1210,25 @@ export default function RawMaterialsClient({
                       <option value="porsi">porsi</option>
                     </select>
                   </div>
+
+                  <div>
+                    <label className="label" htmlFor="mat-density">
+                      Densitas / Massa Jenis (g/ml)
+                    </label>
+                    <input
+                      id="mat-density"
+                      className="input"
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      placeholder="1.0"
+                      value={form.density}
+                      onChange={e => setForm(f => ({ ...f, density: e.target.value }))}
+                    />
+                    <span style={{ fontSize: 10.5, color: 'var(--mute)', display: 'block', marginTop: 2 }}>
+                      Untuk konversi berat & volume (Air = 1.0, Minyak = 0.92, Madu = 1.42, Telur = 1.03)
+                    </span>
+                  </div>
                 </div>
 
                 {/* ======================================================== */}
@@ -1295,9 +1336,21 @@ export default function RawMaterialsClient({
                                 />
                               </div>
 
-                              <span style={{ fontSize: 11, color: 'var(--mute)', width: 45 }}>
-                                {sub.unit}
-                              </span>
+                              <div style={{ width: 85 }}>
+                                <select
+                                  className="input"
+                                  value={sub.unit}
+                                  onChange={e => handleUpdateSubRow(idx, 'unit', e.target.value)}
+                                  style={{ fontSize: 11, padding: '5px 4px', cursor: 'pointer' }}
+                                >
+                                  <option value="gram">gram (g)</option>
+                                  <option value="kg">kg</option>
+                                  <option value="ml">ml</option>
+                                  <option value="liter">liter</option>
+                                  <option value="pcs">pcs</option>
+                                  <option value="butir">butir</option>
+                                </select>
+                              </div>
 
                               <div style={{ width: 90, fontSize: 12, fontWeight: 700, textAlign: 'right', color: 'var(--ink)' }}>
                                 {formatRp(subCost)}
@@ -1333,6 +1386,46 @@ export default function RawMaterialsClient({
                             {formatRp(subRecipeCalculations.totalCost)} &rarr; HPP: {formatRp(subRecipeCalculations.costPerUnit)} / {form.unit}
                           </span>
                         </div>
+
+                        {/* PRD Section 2: Recipe Ratio Breakdown Card */}
+                        {recipeRatios.items.length > 0 && (
+                          <div style={{
+                            marginTop: 8,
+                            padding: '10px 14px',
+                            background: 'var(--panel)',
+                            borderRadius: 10,
+                            border: '1px solid rgba(168, 85, 247, 0.3)'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: '#9333ea' }}>
+                                Rasio Komposisi Resep (Acuan Restock Otomatis)
+                              </span>
+                              <span style={{ fontSize: 11, color: 'var(--mute)' }}>
+                                Total Basis: {recipeRatios.totalCompositionBase.toFixed(1)} g setara
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                              {recipeRatios.items.map((item, i) => (
+                                <span
+                                  key={i}
+                                  style={{
+                                    fontSize: 11,
+                                    padding: '3px 8px',
+                                    borderRadius: 6,
+                                    background: 'var(--bg)',
+                                    border: '1px solid var(--line)',
+                                    color: 'var(--ink)'
+                                  }}
+                                >
+                                  <strong>{item.sub_material_name}</strong>: {item.quantity} {item.unit} &rarr; <strong>{item.percentage}%</strong>
+                                </span>
+                              ))}
+                            </div>
+                            <span style={{ fontSize: 10.5, color: 'var(--mute)', display: 'block', marginTop: 4 }}>
+                              *Total komposisi bahan digunakan sebagai acuan rasio proporsi tanpa memerlukan input susut masak.
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1459,7 +1552,9 @@ export default function RawMaterialsClient({
                       const mat = materials.find(m => m.id === sub.sub_material_id)
                       const batchYield = produceMaterial.batch_yield || 1000
                       const ratio = (Number(produceQty) || 0) / batchYield
-                      const needed = Math.round(sub.quantity * ratio * 100) / 100
+                      const neededRaw = sub.quantity * ratio
+                      const neededConverted = mat ? convertUnit(neededRaw, sub.unit, mat.unit, mat.density || 1.0) : neededRaw
+                      const needed = Math.round(neededConverted * 100) / 100
                       const isShort = mat ? mat.stock < needed : false
 
                       return (
@@ -1480,12 +1575,12 @@ export default function RawMaterialsClient({
                               {mat?.name || 'Rempah'}
                             </span>
                             <span style={{ fontSize: 11, color: isShort ? 'var(--bad)' : 'var(--mute)', marginLeft: 8 }}>
-                              (Sisa stok: {mat ? mat.stock : 0} {sub.unit})
+                              (Sisa stok: {mat ? mat.stock : 0} {mat?.unit || sub.unit})
                             </span>
                           </div>
 
                           <div style={{ fontWeight: 700, fontSize: 13, color: isShort ? 'var(--bad)' : 'var(--ink)' }}>
-                            -{needed} {sub.unit} {isShort && '⚠️ Kurang'}
+                            -{needed} {mat?.unit || sub.unit} {isShort && '⚠️ Kurang'}
                           </div>
                         </div>
                       )
