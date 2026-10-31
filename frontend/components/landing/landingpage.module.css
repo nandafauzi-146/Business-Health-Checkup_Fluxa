@@ -691,8 +691,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 290px;
-  padding: 22px 20px 22px;
+  min-height: 335px;
+  padding: 24px 22px 22px;
   border-radius: 22px;
   background: #ffffff;
   border: 1px solid #e2eaf5;
@@ -716,6 +716,11 @@
   box-shadow: 0 18px 42px rgba(37, 99, 235, 0.1), 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
+.notchCardVivid:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 20px 46px rgba(37, 99, 235, 0.15), 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
 .notchCardHeader {
   display: flex;
   align-items: center;
@@ -726,7 +731,7 @@
 }
 
 .notchCardNumber {
-  font-size: 13px;
+  font-size: clamp(14px, 1.1vw, 15px);
   font-weight: 800;
   color: var(--blue);
   letter-spacing: 0.6px;
@@ -766,6 +771,39 @@
   box-shadow: inset 0 -3px 12px rgba(56, 120, 246, 0.15), 0 6px 16px rgba(37, 99, 235, 0.1);
 }
 
+/* Vivid electric blue oval notch directly holding the icon (Card 02 & 04) */
+.notchDishVivid {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0 0 72px 72px / 0 0 64px 64px;
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 60%, #1e40af 100%);
+  border: 1px solid #60a5fa;
+  border-top: none;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35), inset 0 1.5px 2px rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.15);
+  transition: border-color 0.28s ease, box-shadow 0.28s ease, transform 0.28s ease;
+}
+
+.notchCard:hover .notchDishVivid {
+  border-color: #93c5fd;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.45), inset 0 1.5px 2px rgba(255, 255, 255, 0.65);
+  transform: scale(1.02);
+}
+
+.notchVividIcon {
+  color: #ffffff !important;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.28));
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  display: block;
+}
+
+.notchCard:hover .notchVividIcon {
+  transform: scale(1.1);
+}
+
 .notchGlow {
   position: absolute;
   top: 8px;
@@ -797,27 +835,27 @@
 }
 
 .notchCardTitle {
-  margin-top: 48px;
-  font-size: 15.5px;
+  margin-top: 52px;
+  font-size: clamp(17.5px, 1.25vw, 18.5px);
   font-weight: 750;
   color: var(--ink);
   letter-spacing: -0.3px;
-  line-height: 1.45;
+  line-height: 1.35;
 }
 
 .notchCardDescription {
-  margin-top: 9px;
-  font-size: 12px;
-  line-height: 1.75;
-  color: var(--muted);
-  flex: 1;
+  margin-top: 12px;
+  font-size: clamp(14px, 1vw, 14.5px);
+  line-height: 1.65;
+  color: #475569;
+  flex: 1 1 auto;
 }
 
 .notchCardDivider {
   width: 100%;
   height: 1px;
   background: #edf2f7;
-  margin: 18px 0 13px;
+  margin: 20px 0 14px;
 }
 
 .notchCardMeta {
@@ -826,9 +864,10 @@
   justify-content: center;
   gap: 6px;
   color: var(--blue);
-  font-size: 10.5px;
+  font-size: clamp(12px, 0.9vw, 13px);
   font-weight: 650;
   letter-spacing: 0.2px;
+  margin-top: auto;
 }
 
 .featureCard, .step {
@@ -1902,9 +1941,18 @@
 :global(html[data-theme="dark"]) .notchCard:hover { border-color: rgba(96, 165, 250, 0.45); box-shadow: 0 22px 50px rgba(0, 0, 0, 0.45), 0 0 26px rgba(56, 120, 246, 0.16); }
 :global(html[data-theme="dark"]) .notchDish { background: radial-gradient(ellipse at 50% 12%, rgba(45, 95, 215, 0.32) 0%, rgba(10, 22, 45, 0.99) 70%); border-color: rgba(85, 155, 255, 0.35); box-shadow: inset 0 -3px 14px rgba(56, 120, 246, 0.14), 0 6px 18px rgba(0, 0, 0, 0.3); }
 :global(html[data-theme="dark"]) .notchCard:hover .notchDish { border-color: rgba(120, 185, 255, 0.55); box-shadow: inset 0 -3px 18px rgba(56, 120, 246, 0.24), 0 8px 24px rgba(0, 0, 0, 0.4); }
+:global(html[data-theme="dark"]) .notchDishVivid {
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 55%, #1e3a8a 100%);
+  border-color: rgba(147, 197, 253, 0.5);
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.48), inset 0 1.5px 2px rgba(255, 255, 255, 0.45), inset 0 -3px 6px rgba(0, 0, 0, 0.3);
+}
+:global(html[data-theme="dark"]) .notchCard:hover .notchDishVivid {
+  border-color: rgba(191, 219, 254, 0.7);
+  box-shadow: 0 14px 36px rgba(37, 99, 235, 0.6), inset 0 1.5px 2px rgba(255, 255, 255, 0.65);
+}
 :global(html[data-theme="dark"]) .notchGlow { background: radial-gradient(circle, rgba(56, 120, 246, 0.35) 0%, rgba(56, 120, 246, 0) 70%); }
 :global(html[data-theme="dark"]) .notchCardTitle, :global(html[data-theme="dark"]) .contactCard h2 { color: #ffffff; }
-:global(html[data-theme="dark"]) .notchCardDescription { color: #94a3b8; }
+:global(html[data-theme="dark"]) .notchCardDescription { color: #cbd5e1; }
 :global(html[data-theme="dark"]) .notchCardNumber { color: #60a5fa; }
 :global(html[data-theme="dark"]) .notchCardMeta { color: #93c5fd; }
 :global(html[data-theme="dark"]) .notchCardDivider { background: rgba(100, 150, 255, 0.12); }
@@ -2128,6 +2176,40 @@
 }
 
 @media (max-width: 1023px) {
+  .featureGrid,
+  .steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    align-items: stretch;
+  }
+  .notchCard {
+    min-height: auto;
+    height: 100%;
+    padding: 30px 24px 26px;
+  }
+  .notchCardNumber {
+    font-size: 18px;
+  }
+  .notchCardTitle {
+    font-size: 21px;
+    font-weight: 800;
+    line-height: 1.35;
+    margin-top: 56px;
+    letter-spacing: -0.4px;
+  }
+  .notchCardDescription {
+    font-size: 17px;
+    line-height: 1.68;
+    margin-top: 14px;
+  }
+  .notchCardDivider {
+    margin: 22px 0 16px;
+  }
+  .notchCardMeta {
+    font-size: 15px;
+    font-weight: 650;
+    margin-top: auto;
+  }
   .aiLayout { grid-template-columns: 1fr; gap: 40px; }
   .aiCopy { max-width: 620px; margin: 0 auto; text-align: left; }
   .aiCopy h2 { font-size: clamp(30px, 4vw, 38px); }
@@ -2187,12 +2269,16 @@
   .dashboardCard { width: min(100%, 480px); padding: 22px 20px; margin: 0 auto; }
   .dashBottomCards { grid-template-columns: 1fr 1fr; gap: 10px; }
   .faqLayout { gap: 45px; }
-  .featureGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-  .notchCard { min-height: 275px; padding: 22px 18px 20px; }
-  .notchCardTitle { font-size: 14.5px; }
-  .notchCardDescription { font-size: 11.5px; }
-  .notchCardMeta { font-size: 10px; }
+  .featureGrid,
+  .steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+  }
+  .notchCard {
+    min-height: auto;
+    height: 100%;
+    padding: 28px 22px 26px;
+  }
   .howSection::before { display: none; }
 }
 @media (max-width: 680px) {
@@ -2246,13 +2332,42 @@
   .sectionHeading { margin-bottom: 32px; }
   .sectionHeading h2, .aiCopy h2, .faqIntro h2 { font-size: 34px; }
   .sectionHeading > p { font-size: 12px; }
-  .featureGrid { display: none !important; }
-  .steps { display: none !important; }
-  .mobilePairsList { display: flex !important; flex-direction: column; gap: 14px; width: 100%; }
-  .notchCard { min-height: 0; padding: 22px 18px 20px; }
-  .notchCardTitle { font-size: 14.5px; margin-top: 46px; }
-  .notchCardDescription { font-size: 11.5px; }
-  .notchCardMeta { font-size: 10px; }
+  .featureGrid,
+  .steps {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 22px !important;
+    width: 100% !important;
+  }
+  .mobilePairsList { display: none !important; }
+  .notchCard {
+    min-height: auto !important;
+    height: auto !important;
+    padding: 28px 22px 26px !important;
+  }
+  .notchCardNumber {
+    font-size: 18px !important;
+  }
+  .notchCardTitle {
+    font-size: 21.5px !important;
+    font-weight: 800 !important;
+    line-height: 1.35 !important;
+    margin-top: 56px !important;
+    letter-spacing: -0.4px !important;
+  }
+  .notchCardDescription {
+    font-size: 17px !important;
+    line-height: 1.68 !important;
+    margin-top: 14px !important;
+  }
+  .notchCardDivider {
+    margin: 22px 0 16px !important;
+  }
+  .notchCardMeta {
+    font-size: 15px !important;
+    font-weight: 650 !important;
+    margin-top: auto !important;
+  }
   .aiSection { padding: 64px 0; }
   .aiLayout { grid-template-columns: 1fr; gap: 28px; }
   .aiCopy { max-width: 100%; margin: 0; }
@@ -2362,7 +2477,21 @@
     font-size: 11px;
   }
   .cardNotch { width: 136px; height: 58px; }
-  .notchDish { border-radius: 0 0 68px 68px / 0 0 58px 58px; }
+  .notchDish, .notchDishVivid { border-radius: 0 0 68px 68px / 0 0 58px 58px; }
+  .notchCard {
+    padding: 24px 18px 24px !important;
+  }
+  .notchCardTitle {
+    font-size: 19.5px !important;
+    margin-top: 50px !important;
+  }
+  .notchCardDescription {
+    font-size: 15.5px !important;
+    line-height: 1.6 !important;
+  }
+  .notchCardMeta {
+    font-size: 13.5px !important;
+  }
   .dashboardCard { padding: 14px 11px; }
   .metricGrid { gap: 8px; }
   .metric { padding: 10px 8px; }
