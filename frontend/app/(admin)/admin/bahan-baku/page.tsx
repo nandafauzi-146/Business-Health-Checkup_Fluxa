@@ -63,7 +63,7 @@ export default async function BahanBakuPage() {
         sub_material_id,
         quantity,
         unit,
-        sub_materials:sub_material_id (id, name, unit, stock, cost_per_unit)
+        sub_materials:sub_material_id (id, name, unit, stock, cost_per_unit, density)
       `)
   ])
 

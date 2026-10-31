@@ -74,7 +74,7 @@ export default async function OwnerBahanBakuPage() {
         sub_material_id,
         quantity,
         unit,
-        sub_materials:sub_material_id (id, name, unit, cost_per_unit)
+        sub_materials:sub_material_id (id, name, unit, cost_per_unit, density)
       `)
       .eq('business_id', businessId)
   ])
