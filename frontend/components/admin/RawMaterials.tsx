@@ -298,17 +298,37 @@ export default function RawMaterialsClient({
 
         setMaterials(prev => prev.map(item => item.id === editingMaterial.id ? { ...item, ...data } : item))
       } else {
+        const initialStock = Number(form.stock) || 0
+        const isSemi = form.material_type === 'semi_finished'
+        const validSubs = formSubIngredients.filter(s => s.sub_material_id && Number(s.quantity) > 0)
+        const hasSubs = isSemi && validSubs.length > 0
+
+        // Jika bumbu olahan dengan stok awal > 0 dan memiliki rempah penyusun:
+        // Validasi ketersediaan stok seluruh bahan mentah penyusun sebelum simpan
+        if (isSemi && hasSubs && initialStock > 0) {
+          const ratio = initialStock / batchYield
+          for (const s of validSubs) {
+            const mat = materials.find(m => m.id === s.sub_material_id)
+            const needed = Number(s.quantity) * ratio
+            if (mat && mat.stock < needed) {
+              showToast(`Stok bahan mentah "${mat.name}" tidak mencukupi untuk membuat stok awal ${initialStock} ${unit} bumbu (sisa: ${mat.stock} ${mat.unit}, butuh: ${needed} ${mat.unit}).`, 'bad')
+              setSaving(false)
+              return
+            }
+          }
+        }
+
         const { data, error } = await supabase
           .from('raw_materials')
           .insert({
             name,
             sku,
             material_type: form.material_type,
-            stock,
+            stock: (isSemi && hasSubs && initialStock > 0) ? 0 : initialStock,
             min_stock: minStock,
             unit,
             cost_per_unit: costPerUnit,
-            batch_yield: form.material_type === 'semi_finished' ? batchYield : null
+            batch_yield: isSemi ? batchYield : null
           })
           .select('*')
           .single()
@@ -316,11 +336,67 @@ export default function RawMaterialsClient({
         if (error) throw error
         savedId = data.id
 
+        // Simpan sub-ingredients untuk bumbu olahan
+        if (savedId && isSemi && validSubs.length > 0) {
+          const subRows = validSubs.map(s => ({
+            parent_material_id: savedId,
+            sub_material_id: s.sub_material_id,
+            quantity: Number(s.quantity),
+            unit: s.unit || 'gram'
+          }))
+
+          await supabase.from('raw_material_sub_ingredients').insert(subRows)
+
+          // Jika stok awal > 0, jalankan RPC produce_semi_finished_material agar rempah di database otomatis terpotong
+          if (initialStock > 0) {
+            const { data: producedStock, error: prodErr } = await supabase.rpc('produce_semi_finished_material', {
+              p_material_id: savedId,
+              p_produced_quantity: initialStock,
+              p_note: 'Stok awal bumbu olahan saat pendaftaran'
+            })
+            if (prodErr) {
+              console.error('Error auto-producing initial bumbu stock:', prodErr)
+            } else if (producedStock !== null) {
+              data.stock = Number(producedStock)
+            }
+
+            // Kurangi stok bahan mentah penyusun di state lokal
+            const ratio = initialStock / batchYield
+            setMaterials(prev => prev.map(m => {
+              const sub = validSubs.find(s => s.sub_material_id === m.id)
+              if (sub) {
+                const used = Number(sub.quantity) * ratio
+                return { ...m, stock: Math.max(0, m.stock - used) }
+              }
+              return m
+            }))
+          }
+
+          // Format sub ingredients untuk state lokal
+          const formattedSubs: SubIngredientItem[] = validSubs.map(s => {
+            const mat = materials.find(m => m.id === s.sub_material_id)
+            return {
+              sub_material_id: s.sub_material_id,
+              quantity: Number(s.quantity),
+              unit: s.unit,
+              sub_material: mat ? {
+                id: mat.id,
+                name: mat.name,
+                unit: mat.unit,
+                stock: mat.stock,
+                cost_per_unit: mat.cost_per_unit
+              } : null
+            }
+          })
+
+          data.sub_ingredients = formattedSubs
+        }
+
         setMaterials(prev => [data, ...prev])
       }
 
-      // Save sub-ingredients for semi_finished materials
-      if (savedId && form.material_type === 'semi_finished') {
+      // Update sub-ingredients saat edit bumbu olahan yang sudah ada
+      if (editingMaterial && savedId && form.material_type === 'semi_finished') {
         await supabase
           .from('raw_material_sub_ingredients')
           .delete()
@@ -337,7 +413,6 @@ export default function RawMaterialsClient({
 
           await supabase.from('raw_material_sub_ingredients').insert(subRows)
 
-          // Update local state
           const formattedSubs: SubIngredientItem[] = validSubs.map(s => {
             const mat = materials.find(m => m.id === s.sub_material_id)
             return {
@@ -402,7 +477,26 @@ export default function RawMaterialsClient({
       if (error) throw error
 
       const finalStock = Number(newStock)
-      setMaterials(prev => prev.map(m => m.id === selectedMaterial.id ? { ...m, stock: finalStock } : m))
+      const isSemi = selectedMaterial.material_type === 'semi_finished'
+      const addedQty = adjustType === 'in' ? qty : adjustType === 'adjustment' ? qty - selectedMaterial.stock : 0
+
+      if (isSemi && addedQty > 0 && selectedMaterial.sub_ingredients && selectedMaterial.sub_ingredients.length > 0) {
+        const batchYield = selectedMaterial.batch_yield || 1000
+        const ratio = addedQty / batchYield
+        setMaterials(prev => prev.map(m => {
+          if (m.id === selectedMaterial.id) {
+            return { ...m, stock: finalStock }
+          }
+          const sub = selectedMaterial.sub_ingredients?.find(s => s.sub_material_id === m.id)
+          if (sub) {
+            const used = sub.quantity * ratio
+            return { ...m, stock: Math.max(0, m.stock - used) }
+          }
+          return m
+        }))
+      } else {
+        setMaterials(prev => prev.map(m => m.id === selectedMaterial.id ? { ...m, stock: finalStock } : m))
+      }
 
       const newMov: RawMaterialMovement = {
         id: Math.random().toString(),
@@ -906,22 +1000,31 @@ export default function RawMaterialsClient({
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                           {isSemi ? (
-                            <button
-                              className="btn btn-sm"
-                              onClick={() => handleOpenProduce(m)}
-                              title="Olah / Masak Bumbu Basah dari Rempah"
-                              style={{
-                                background: '#9333ea',
-                                color: '#fff',
-                                fontWeight: 600,
-                                fontSize: 11,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 4
-                              }}
-                            >
-                              <ChefHat size={12} /> Olah Bumbu
-                            </button>
+                            <>
+                              <button
+                                className="btn btn-sm"
+                                onClick={() => handleOpenProduce(m)}
+                                title="Olah / Restock Bumbu Basah dari Bahan Mentah"
+                                style={{
+                                  background: '#9333ea',
+                                  color: '#fff',
+                                  fontWeight: 600,
+                                  fontSize: 11,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 4
+                                }}
+                              >
+                                <ChefHat size={12} /> Restock / Olah Bumbu
+                              </button>
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => handleOpenAdjust(m)}
+                                title="Koreksi / Sesuaikan Stok Bumbu"
+                              >
+                                <RefreshCw size={12} />
+                              </button>
+                            </>
                           ) : (
                             <button
                               className="btn btn-sm"
