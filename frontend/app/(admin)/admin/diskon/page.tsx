@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import AdminDiscountsClient, { Promotion } from '@/components/admin/Discounts'
 
-export const metadata = { title: 'Kelola Diskon & Promo — Fluxa Admin' }
+export const metadata = { title: 'Fluxa | Diskon & Promo' }
 
 export default async function AdminDiskonPage() {
   const supabase = await createClient()

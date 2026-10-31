@@ -412,7 +412,10 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                 padding: 4,
                 borderRadius: 10,
                 border: '1px solid var(--line)',
-                gap: 4
+                gap: 4,
+                maxWidth: '100%',
+                overflowX: 'auto',
+                WebkitOverflowScrolling: 'touch'
               }}>
                 <button
                   type="button"
@@ -491,7 +494,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
               </div>
 
               {/* Search Bar */}
-              <div className="search-bar" style={{ minWidth: 260, flex: '1 1 260px', maxWidth: 420 }}>
+              <div className="search-bar" style={{ minWidth: 'min(220px, 100%)', flex: '1 1 220px', maxWidth: 420 }}>
                 <Search size={15} color="var(--mute)" />
                 <input
                   type="text"
@@ -513,14 +516,14 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
             </div>
 
             <div className="table-container">
-              <table className="data-table">
+              <table className="data-table" style={{ minWidth: 720 }}>
                 <thead>
                   <tr>
                     <th>Invoice</th>
-                    <th className="hide-sm">Waktu</th>
-                    <th className="hide-md">Kasir</th>
-                    <th className="hide-sm">Pelanggan</th>
-                    <th className="hide-sm">Metode</th>
+                    <th>Waktu</th>
+                    <th>Kasir</th>
+                    <th>Pelanggan</th>
+                    <th>Metode</th>
                     <th>Total</th>
                     <th>Status</th>
                     <th style={{ textAlign: 'right' }}>Aksi</th>
@@ -542,12 +545,12 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
                       return (
                         <tr key={sale.id} style={{ background: selectedSale?.id === sale.id ? 'var(--accs)' : undefined }}>
                           <td style={{ fontWeight: 600, fontFamily: 'monospace' }}>{sale.invoice_number}</td>
-                          <td className="hide-sm" style={{ fontSize: 13, color: 'var(--mute)' }}>
+                          <td style={{ fontSize: 13, color: 'var(--mute)' }}>
                             {new Date(sale.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
                           </td>
-                          <td className="hide-md" style={{ fontSize: 13, color: 'var(--body)' }}>{sale.cashier_name || 'Kasir'}</td>
-                          <td className="hide-sm">{sale.customer_name || 'Umum'}</td>
-                          <td className="hide-sm">
+                          <td style={{ fontSize: 13, color: 'var(--body)' }}>{sale.cashier_name || 'Kasir'}</td>
+                          <td>{sale.customer_name || 'Umum'}</td>
+                          <td>
                             <span style={{
                               display: 'inline-block',
                               padding: '2px 8px',
@@ -861,6 +864,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
             maxWidth: 500,
             maxHeight: 'calc(100dvh - 32px)',
             overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
             boxShadow: '0 24px 64px rgba(0,0,0,0.25)',
             position: 'relative'
           }}>

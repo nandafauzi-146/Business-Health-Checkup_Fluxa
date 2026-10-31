@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-export const metadata = { title: 'Shift — Fluxa' }
+export const metadata = { title: 'Fluxa | Shift' }
 
 export default async function ShiftRedirectPage() {
   const supabase = await createClient()

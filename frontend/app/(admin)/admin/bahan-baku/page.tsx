@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import RawMaterialsClient, { type RawMaterialItem, type RawMaterialMovement } from '@/components/admin/RawMaterials'
 
-export const metadata = { title: 'Bahan Baku & Resep Bumbu — Fluxa Admin' }
+export const metadata = { title: 'Fluxa | Bahan Baku' }
 
 export default async function BahanBakuPage() {
   const supabase = await createClient()

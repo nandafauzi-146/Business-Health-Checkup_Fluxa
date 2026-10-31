@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import POSClient from '@/components/pos/POSClient'
 
-export const metadata = { title: 'Kasir / POS — Fluxa' }
+export const metadata = { title: 'Fluxa | Kasir' }
 
 export default async function KasirPage() {
   const supabase = await createClient()

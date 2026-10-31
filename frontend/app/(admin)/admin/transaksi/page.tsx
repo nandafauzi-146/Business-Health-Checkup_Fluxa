@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import AdminTransactionsClient from '@/components/admin/Transactions'
 
-export const metadata = { title: 'Kelola Transaksi — Fluxa Admin' }
+export const metadata = { title: 'Fluxa | Transaksi' }
 
 export default async function AdminTransaksiPage() {
   const supabase = await createClient()

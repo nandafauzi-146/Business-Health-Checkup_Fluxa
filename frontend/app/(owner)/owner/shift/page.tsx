@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import ShiftClient, { ShiftItem } from '@/components/pos/ShiftClient'
 
-export const metadata = { title: 'Monitoring Shift & Rekonsiliasi Kas — Fluxa Owner' }
+export const metadata = { title: 'Fluxa | Shift' }
 
 export default async function OwnerShiftPage() {
   const supabase = await createClient()
