@@ -5,7 +5,7 @@ import OwnerRawMaterialsHistoryClient, {
   type OwnerRawMaterialMovement
 } from '@/components/owner/OwnerRawMaterialsHistory'
 
-export const metadata = { title: 'Monitoring & Riwayat Bahan Baku — Fluxa Owner' }
+export const metadata = { title: 'Fluxa | Bahan Baku' }
 
 export default async function OwnerBahanBakuPage() {
   const supabase = await createClient()

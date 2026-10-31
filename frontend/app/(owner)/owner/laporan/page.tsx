@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import FinancialReportClient from '@/components/owner/FinancialReport'
 
-export const metadata = { title: 'Laporan Laba Rugi — Fluxa Owner' }
+export const metadata = { title: 'Fluxa | Laporan' }
 
 export default async function OwnerLaporanPage() {
   const supabase = await createClient()

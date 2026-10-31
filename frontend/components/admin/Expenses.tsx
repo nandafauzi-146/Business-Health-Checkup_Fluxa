@@ -449,14 +449,14 @@ export default function ExpensesClient({
 
         {/* Table Pengeluaran */}
         <div className="table-container">
-          <table className="data-table">
+          <table className="data-table" style={{ minWidth: 800 }}>
             <thead>
               <tr>
                 <th>Waktu Input</th>
                 <th>Deskripsi Pengeluaran</th>
                 <th>Nama Penginput</th>
                 <th>Sumber</th>
-                <th className="hide-sm">Kategori</th>
+                <th>Kategori</th>
                 <th>Status</th>
                 <th>Nominal</th>
                 <th style={{ textAlign: 'right' }}>Aksi</th>
@@ -512,7 +512,7 @@ export default function ExpensesClient({
                           {isFromCashier ? 'Kasir Toko' : 'Admin'}
                         </span>
                       </td>
-                      <td className="hide-sm">
+                      <td>
                         <span style={{
                           padding: '3px 9px',
                           borderRadius: 6,
@@ -648,7 +648,7 @@ export default function ExpensesClient({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
+              <div className="modal-footer-sticky">
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -747,7 +747,7 @@ export default function ExpensesClient({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
+              <div className="modal-footer-sticky">
                 <button
                   type="button"
                   className="btn btn-secondary"

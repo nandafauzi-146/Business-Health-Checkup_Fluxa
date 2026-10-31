@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import CategoriesClient from '@/components/admin/Categories'
 
-export const metadata = { title: 'Kelola Kategori — Fluxa Admin' }
+export const metadata = { title: 'Fluxa | Kategori Produk' }
 
 export default async function AdminKategoriPage() {
   const supabase = await createClient()

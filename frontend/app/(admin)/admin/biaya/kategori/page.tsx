@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import ExpenseCategoriesClient, { ExpenseCategory } from '@/components/admin/ExpenseCategories'
 import { PageHeader } from '@/components/layout/Topbar'
 
-export const metadata = { title: 'Kategori Biaya Operasional — Fluxa Admin' }
+export const metadata = { title: 'Fluxa | Kategori Biaya' }
 
 export default async function AdminBiayaKategoriPage() {
   const supabase = await createClient()

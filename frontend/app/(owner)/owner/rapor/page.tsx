@@ -3,7 +3,7 @@ import BusinessHealthClient from '@/components/owner/BusinessHealth'
 import { FinancialHealthInput, evaluateBusinessHealth } from '@intelligence/index'
 
 export const metadata = {
-  title: 'Business Health Checkup — Fluxa',
+  title: 'Fluxa | AI Insight',
 }
 
 export default async function RaporPage() {

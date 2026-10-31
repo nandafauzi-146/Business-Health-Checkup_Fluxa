@@ -108,7 +108,7 @@ export default function CashflowClient({
       {/* Rincian Riwayat Mutasi Kas */}
       <SectionCard title="Aktivitas Kas Terbaru">
         <div className="table-container">
-          <table className="data-table">
+          <table className="data-table" style={{ minWidth: 540 }}>
             <thead>
               <tr>
                 <th>Waktu</th>

@@ -191,7 +191,7 @@ export default function DebtCategoriesClient() {
         </div>
 
         <div className="table-container">
-          <table className="data-table">
+          <table className="data-table" style={{ minWidth: 540 }}>
             <thead>
               <tr>
                 <th>Nama Kategori</th>
@@ -384,7 +384,7 @@ export default function DebtCategoriesClient() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 22 }}>
+              <div className="modal-footer-sticky">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}

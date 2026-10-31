@@ -377,7 +377,7 @@ export default function BusinessHealthClient({
                 Hutang Operasional, Sewa & Supplier ({input.receivable_details?.length || 0})
               </div>
               <div className="table-container">
-                <table className="data-table" style={{ fontSize: 12 }}>
+                <table className="data-table" style={{ fontSize: 12, minWidth: 420 }}>
                   <thead>
                     <tr>
                       <th>Pihak / Mitra</th>
@@ -418,7 +418,7 @@ export default function BusinessHealthClient({
                 Beban Operasional di Database ({input.expense_details?.length || 0})
               </div>
               <div className="table-container">
-                <table className="data-table" style={{ fontSize: 12 }}>
+                <table className="data-table" style={{ fontSize: 12, minWidth: 420 }}>
                   <thead>
                     <tr>
                       <th>Tanggal</th>

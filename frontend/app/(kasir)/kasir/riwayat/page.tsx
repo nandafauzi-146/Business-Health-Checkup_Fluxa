@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import SalesHistoryClient from '@/components/pos/SalesHistory'
 
-export const metadata = { title: 'Riwayat Transaksi — Fluxa POS' }
+export const metadata = { title: 'Fluxa | Riwayat Transaksi' }
 
 export default async function SalesHistoryPage() {
   const supabase = await createClient()

@@ -163,7 +163,7 @@ export default function StockManagementClient({
 
       {/* Tab Switcher & Search Bar */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div className="filter-tabs">
+        <div className="filter-tabs" style={{ maxWidth: '100%' }}>
           <button
             onClick={() => setActiveTab('stock')}
             className={`filter-tab ${activeTab === 'stock' ? 'active' : ''}`}
@@ -188,12 +188,12 @@ export default function StockManagementClient({
             className={`filter-tab ${activeTab === 'movements' ? 'active' : ''}`}
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
-            <History size={14} /> Kartu Mutasi Stok ({movements.length})
+            <History size={14} /> Kartu Mutasi ({movements.length})
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="search-bar" style={{ minWidth: 'min(260px, 100%)' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', flex: '1 1 auto', justifyContent: 'flex-end' }}>
+          <div className="search-bar" style={{ minWidth: 'min(240px, 100%)', flex: '1 1 240px' }}>
             <Search size={15} color="var(--mute)" />
             <input
               type="text"
@@ -224,7 +224,8 @@ export default function StockManagementClient({
               background: onlyLowStock ? 'var(--bads)' : 'var(--bg)',
               color: onlyLowStock ? 'var(--bad)' : 'var(--ink)',
               border: '1px solid var(--line)',
-              transition: 'all 0.15s'
+              transition: 'all 0.15s',
+              whiteSpace: 'nowrap'
             }}>
               <input
                 type="checkbox"
@@ -240,15 +241,16 @@ export default function StockManagementClient({
 
       {activeTab === 'stock' && (
         <SectionCard title={`Inventaris Produk (${filteredProducts.length})`}>
+          {/* Table View dengan Horizontal Swipe pada Layar Kecil */}
           <div className="table-container">
-            <table className="data-table">
+            <table className="data-table" style={{ minWidth: 760 }}>
               <thead>
                 <tr>
                   <th>Nama Produk</th>
-                  <th className="hide-sm">SKU</th>
-                  <th className="hide-sm">Kategori</th>
+                  <th>SKU</th>
+                  <th>Kategori</th>
                   <th>Sisa Stok</th>
-                  <th className="hide-md">Batas Minimum</th>
+                  <th>Batas Minimum</th>
                   <th>Status Persediaan</th>
                   <th style={{ textAlign: 'right' }}>Aksi</th>
                 </tr>
@@ -291,10 +293,10 @@ export default function StockManagementClient({
                             </div>
                           </div>
                         </td>
-                        <td className="hide-sm" style={{ color: 'var(--mute)', fontFamily: 'monospace', fontSize: 12 }}>
+                        <td style={{ color: 'var(--mute)', fontFamily: 'monospace', fontSize: 12 }}>
                           {p.sku || '—'}
                         </td>
-                        <td className="hide-sm">
+                        <td>
                           <span style={{
                             padding: '3px 8px',
                             borderRadius: 6,
@@ -328,7 +330,7 @@ export default function StockManagementClient({
                             </div>
                           </div>
                         </td>
-                        <td className="hide-md" style={{ fontSize: 13, color: 'var(--mute)' }}>
+                        <td style={{ fontSize: 13, color: 'var(--mute)' }}>
                           {p.min_stock} {p.unit}
                         </td>
                         <td>
@@ -356,22 +358,24 @@ export default function StockManagementClient({
               </tbody>
             </table>
           </div>
-        </SectionCard>
+
+</SectionCard>
       )}
 
       {activeTab === 'movements' && (
         <SectionCard title={`Riwayat Perubahan Persediaan (${filteredMovements.length})`}>
+          {/* Table View dengan Horizontal Swipe pada Layar Kecil */}
           <div className="table-container">
-            <table className="data-table">
+            <table className="data-table" style={{ minWidth: 720 }}>
               <thead>
                 <tr>
                   <th>Waktu</th>
                   <th>Nama Produk</th>
                   <th>Tipe Mutasi</th>
                   <th>Perubahan Qty</th>
-                  <th className="hide-sm">Stok Sebelum</th>
-                  <th className="hide-md">Stok Sesudah</th>
-                  <th className="hide-sm">Catatan / Keterangan</th>
+                  <th>Stok Sebelum</th>
+                  <th>Stok Sesudah</th>
+                  <th>Catatan / Keterangan</th>
                 </tr>
               </thead>
               <tbody>
@@ -413,9 +417,9 @@ export default function StockManagementClient({
                             {isIn ? `+${Math.abs(m.quantity)}` : isOut ? `-${Math.abs(m.quantity)}` : m.quantity}
                           </span>
                         </td>
-                        <td className="hide-sm" style={{ color: 'var(--mute)', fontSize: 13 }}>{m.previous_stock}</td>
-                        <td className="hide-md" style={{ fontWeight: 700, fontSize: 13 }}>{m.current_stock}</td>
-                        <td className="hide-sm" style={{ fontSize: 12.5, color: 'var(--mute)' }}>{m.note || '—'}</td>
+                        <td style={{ color: 'var(--mute)', fontSize: 13 }}>{m.previous_stock}</td>
+                        <td style={{ fontWeight: 700, fontSize: 13 }}>{m.current_stock}</td>
+                        <td style={{ fontSize: 12.5, color: 'var(--mute)' }}>{m.note || '—'}</td>
                       </tr>
                     )
                   })
@@ -423,7 +427,8 @@ export default function StockManagementClient({
               </tbody>
             </table>
           </div>
-        </SectionCard>
+
+</SectionCard>
       )}
 
       {/* Modal Dialog Penyesuaian Stok */}
@@ -463,7 +468,7 @@ export default function StockManagementClient({
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
                   <label className="label">Jenis Penyesuaian *</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(115px, 100%), 1fr))', gap: 8 }}>
                     <button
                       type="button"
                       onClick={() => setAdjustType('in')}
@@ -564,7 +569,7 @@ export default function StockManagementClient({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 22 }}>
+              <div className="modal-footer-sticky">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
