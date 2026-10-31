@@ -166,6 +166,13 @@ export default function ProductsClient({
   })
   const [quickMaterialSaving, setQuickMaterialSaving] = useState(false)
 
+  // Quick Stock Adjustment Modal State
+  const [quickStockProduct, setQuickStockProduct] = useState<Product | null>(null)
+  const [quickStockType, setQuickStockType] = useState<'in' | 'out' | 'adjustment'>('in')
+  const [quickStockQty, setQuickStockQty] = useState<string>('10')
+  const [quickStockNote, setQuickStockNote] = useState('')
+  const [quickStockSaving, setQuickStockSaving] = useState(false)
+
   // Product Form
   const [form, setForm] = useState({
     name: '',
@@ -324,6 +331,50 @@ export default function ProductsClient({
     setFormIngredients(prev => prev.filter((_, i) => i !== index))
   }
 
+  const handleOpenQuickStock = (p: Product) => {
+    setQuickStockProduct(p)
+    setQuickStockType('in')
+    setQuickStockQty('10')
+    setQuickStockNote('')
+  }
+
+  const handleQuickStockSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!quickStockProduct) return
+    const qty = Number(quickStockQty)
+    if (isNaN(qty) || qty <= 0) {
+      showToast('Jumlah perubahan stok harus lebih besar dari 0.', 'bad')
+      return
+    }
+
+    setQuickStockSaving(true)
+    try {
+      let delta = qty
+      if (quickStockType === 'out') delta = -qty
+      else if (quickStockType === 'adjustment') delta = qty - quickStockProduct.stock
+
+      const { data: newStock, error } = await supabase.rpc('adjust_stock', {
+        p_product_id: quickStockProduct.id,
+        p_type: quickStockType === 'adjustment' ? 'adjustment' : quickStockType,
+        p_quantity: quickStockType === 'adjustment' ? delta : qty,
+        p_note: quickStockNote.trim() || (quickStockType === 'in' ? 'Restock produk jadi masuk' : quickStockType === 'out' ? 'Produk keluar / rusak' : 'Koreksi stok opname siap jual')
+      })
+
+      if (error) throw error
+
+      const finalStock = Number(newStock)
+      setProducts(prev => prev.map(p => p.id === quickStockProduct.id ? { ...p, stock: finalStock } : p))
+      notifyProductsUpdated()
+      showToast(`Stok "${quickStockProduct.name}" berhasil diperbarui menjadi ${finalStock} ${quickStockProduct.unit}!`, 'ok')
+      setQuickStockProduct(null)
+    } catch (err: unknown) {
+      console.error('Error adjusting product stock:', err)
+      showToast(getUserFacingError(err, 'Gagal menyesuaikan stok produk.'), 'bad')
+    } finally {
+      setQuickStockSaving(false)
+    }
+  }
+
   const handleApplyRecipeCostToBuyPrice = () => {
     const totalCost = calculateRecipeCost(formIngredients)
     if (totalCost > 0) {
@@ -454,6 +505,7 @@ export default function ProductsClient({
         sku: form.sku.trim() || null,
         buy_price: buyPrice,
         sell_price: sellPrice,
+        stock: stock,
         min_stock: minStock,
         unit: form.unit.trim() || 'porsi',
         category_id: form.category_id || null,
@@ -486,6 +538,21 @@ export default function ProductsClient({
         if (result.error) throw result.error
         savedProductId = result.data.id
 
+        // Catat riwayat pergerakan stok jika terjadi perubahan stok saat edit
+        if (stock !== editingProduct.stock) {
+          const delta = stock - editingProduct.stock
+          try {
+            await supabase.rpc('adjust_stock', {
+              p_product_id: editingProduct.id,
+              p_type: 'adjustment',
+              p_quantity: delta,
+              p_note: 'Penyesuaian stok produk siap jual di Kelola Produk'
+            })
+          } catch (stkErr) {
+            console.warn('Could not record stock movement on product edit:', stkErr)
+          }
+        }
+
         const categoryName = categories.find(category => category.id === result.data.category_id)?.name
         const updatedProduct: Product = {
           ...result.data,
@@ -494,7 +561,7 @@ export default function ProductsClient({
 
         setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p))
       } else {
-        const insertPayload = { ...payload, stock }
+        const insertPayload = payload
         let result = await supabase
           .from('products')
           .insert(insertPayload)
@@ -895,8 +962,14 @@ export default function ProductsClient({
                       </td>
 
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontWeight: 700, fontSize: 13 }}>{p.stock}</span>
+                        <div
+                          onClick={() => handleOpenQuickStock(p)}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+                          title="Klik untuk ubah stok siap jual"
+                        >
+                          <span style={{ fontWeight: 800, fontSize: 14, color: p.stock <= p.min_stock ? 'var(--bad)' : 'var(--ink)', textDecoration: 'underline dotted' }}>
+                            {p.stock}
+                          </span>
                           <span style={{ fontSize: 11, color: 'var(--mute)' }}>{p.unit}</span>
                           <StatusTag status={stockStatus} />
                         </div>
@@ -908,6 +981,14 @@ export default function ProductsClient({
 
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => handleOpenQuickStock(p)}
+                            title="Sesuaikan Stok Siap Jual"
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11 }}
+                          >
+                            <Boxes size={12} /> Stok
+                          </button>
                           <button
                             className="btn btn-secondary btn-sm"
                             onClick={() => handleOpenEdit(p)}
@@ -1382,19 +1463,27 @@ export default function ProductsClient({
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
-                  {!editingProduct && (
-                    <div>
-                      <label className="label" htmlFor="prod-stock">Stok Jadi Siap Jual</label>
-                      <input
-                        id="prod-stock"
-                        className="input"
-                        type="number"
-                        placeholder="0"
-                        value={form.stock}
-                        onChange={e => setForm(f => ({ ...f, stock: e.target.value }))}
-                      />
-                    </div>
-                  )}
+                  <div>
+                    <label className="label" htmlFor="prod-stock">
+                      Stok Jadi Siap Jual ({form.unit || 'porsi'}) *
+                    </label>
+                    <input
+                      id="prod-stock"
+                      required
+                      className="input"
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                      value={form.stock}
+                      onChange={e => setForm(f => ({ ...f, stock: e.target.value }))}
+                    />
+                    {editingProduct && (
+                      <span style={{ fontSize: 11, color: 'var(--mute)', display: 'block', marginTop: 2 }}>
+                        Stok tercatat: {editingProduct.stock} {editingProduct.unit}
+                      </span>
+                    )}
+                  </div>
                   <div>
                     <label className="label" htmlFor="prod-min">Stok Minimum Alert</label>
                     <input
@@ -1680,6 +1769,168 @@ export default function ProductsClient({
                 Edit Resep Ini
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Stock Adjustment Dialog */}
+      {quickStockProduct && (
+        <div className="dialog-overlay" onClick={e => e.target === e.currentTarget && setQuickStockProduct(null)}>
+          <div className="dialog" style={{ maxWidth: 460, width: '100%', maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div>
+                <h2 style={{ fontSize: 18, fontWeight: 700 }}>
+                  Ubah Stok Produk Jadi
+                </h2>
+                <p style={{ fontSize: 12, color: 'var(--mute)', marginTop: 2 }}>
+                  Produk: <strong>{quickStockProduct.name}</strong> (Stok saat ini: {quickStockProduct.stock} {quickStockProduct.unit})
+                </p>
+              </div>
+              <button className="icon-btn" onClick={() => setQuickStockProduct(null)} aria-label="Tutup">
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleQuickStockSubmit}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label className="label">Pilih Aksi Perubahan Stok</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setQuickStockType('in')}
+                      style={{
+                        padding: '10px 6px',
+                        borderRadius: 10,
+                        border: `1.5px solid ${quickStockType === 'in' ? 'var(--ok)' : 'var(--line)'}`,
+                        background: quickStockType === 'in' ? 'var(--oks)' : 'var(--bg)',
+                        color: quickStockType === 'in' ? 'var(--ok)' : 'var(--ink)',
+                        fontWeight: 600,
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 4
+                      }}
+                    >
+                      <Plus size={16} />
+                      Tambah (+)
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setQuickStockType('out')}
+                      style={{
+                        padding: '10px 6px',
+                        borderRadius: 10,
+                        border: `1.5px solid ${quickStockType === 'out' ? 'var(--bad)' : 'var(--line)'}`,
+                        background: quickStockType === 'out' ? 'var(--bads)' : 'var(--bg)',
+                        color: quickStockType === 'out' ? 'var(--bad)' : 'var(--ink)',
+                        fontWeight: 600,
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 4
+                      }}
+                    >
+                      <Trash2 size={16} />
+                      Kurang (-)
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setQuickStockType('adjustment')}
+                      style={{
+                        padding: '10px 6px',
+                        borderRadius: 10,
+                        border: `1.5px solid ${quickStockType === 'adjustment' ? 'var(--acc)' : 'var(--line)'}`,
+                        background: quickStockType === 'adjustment' ? 'var(--accs)' : 'var(--bg)',
+                        color: quickStockType === 'adjustment' ? 'var(--acc)' : 'var(--ink)',
+                        fontWeight: 600,
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 4
+                      }}
+                    >
+                      <Boxes size={16} />
+                      Atur Total (=)
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="label" htmlFor="qs-qty">
+                    {quickStockType === 'adjustment' ? 'Total Stok Baru Fisik' : 'Jumlah Takaran'} ({quickStockProduct.unit}) *
+                  </label>
+                  <input
+                    id="qs-qty"
+                    required
+                    className="input"
+                    type="number"
+                    min={quickStockType === 'adjustment' ? 0 : 1}
+                    step="1"
+                    value={quickStockQty}
+                    onChange={e => setQuickStockQty(e.target.value)}
+                  />
+                </div>
+
+                <div style={{
+                  padding: '10px 14px',
+                  background: 'var(--bg)',
+                  borderRadius: 10,
+                  border: '1px solid var(--line)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ fontSize: 12, color: 'var(--mute)' }}>Hasil Akhir Stok:</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--acc)' }}>
+                    {quickStockType === 'in'
+                      ? (quickStockProduct.stock + (Number(quickStockQty) || 0))
+                      : quickStockType === 'out'
+                      ? Math.max(0, quickStockProduct.stock - (Number(quickStockQty) || 0))
+                      : (Number(quickStockQty) || 0)
+                    } {quickStockProduct.unit}
+                  </span>
+                </div>
+
+                <div>
+                  <label className="label" htmlFor="qs-note">Catatan Penyesuaian (Opsional)</label>
+                  <input
+                    id="qs-note"
+                    className="input"
+                    placeholder="Contoh: Sisa display harian, rusak, atau masak batch baru"
+                    value={quickStockNote}
+                    onChange={e => setQuickStockNote(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 22 }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setQuickStockProduct(null)}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={quickStockSaving}
+                  className="btn btn-primary"
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  {quickStockSaving ? <RefreshCw size={14} className="spin" /> : <Check size={14} />}
+                  Simpan Perubahan Stok
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
