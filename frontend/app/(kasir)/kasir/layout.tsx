@@ -36,7 +36,7 @@ export default async function KasirLayout({ children }: { children: React.ReactN
       />
       <div className="main-area">
         <Topbar title="" role="kasir" />
-        <div className="content-area" style={{ padding: 0 }}>
+        <div className="content-area">
           {children}
         </div>
       </div>

@@ -32,7 +32,30 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
   const mobileTriggerRef = useRef<HTMLButtonElement>(null)
   const hoverCloseTimer = useRef<number | null>(null)
   const keyboardNavigationRef = useRef(false)
-  const isExpanded = pinnedOpen || hoverOpen
+  const isExpanded = pinnedOpen || hoverOpen || mobileOpen
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('fluxa_sidebar_pinned')
+      if (saved !== null) {
+        setPinnedOpen(saved === 'true')
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  const togglePinned = () => {
+    setPinnedOpen((pinned) => {
+      const next = !pinned
+      try {
+        localStorage.setItem('fluxa_sidebar_pinned', String(next))
+      } catch {
+        // ignore
+      }
+      return next
+    })
+  }
 
   useEffect(() => {
     if (role !== 'admin') return
@@ -224,6 +247,7 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
   const roleColor = 'var(--acc)'
   const closeMobileSidebar = () => {
     setMobileOpen(false)
+    setHoverOpen(false)
     if (window.matchMedia('(max-width: 860px)').matches) {
       mobileTriggerRef.current?.focus()
     }
@@ -284,14 +308,16 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
         onMouseEnter={() => {
           if (hoverCloseTimer.current !== null) window.clearTimeout(hoverCloseTimer.current)
           hoverCloseTimer.current = null
-          setHoverOpen(true)
+          if (!mobileOpen) setHoverOpen(true)
         }}
         onMouseLeave={() => {
           if (hoverCloseTimer.current !== null) window.clearTimeout(hoverCloseTimer.current)
-          hoverCloseTimer.current = window.setTimeout(() => {
-            setHoverOpen(false)
-            hoverCloseTimer.current = null
-          }, 120)
+          if (!mobileOpen) {
+            hoverCloseTimer.current = window.setTimeout(() => {
+              setHoverOpen(false)
+              hoverCloseTimer.current = null
+            }, 120)
+          }
         }}
         onFocusCapture={() => {
           if (keyboardNavigationRef.current) setHoverOpen(true)
@@ -314,7 +340,7 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
               className="sidebar-expand-toggle"
               aria-label={pinnedOpen ? 'Ciutkan sidebar' : 'Perluas dan sematkan sidebar'}
               aria-expanded={isExpanded}
-              onClick={() => setPinnedOpen((pinned) => !pinned)}
+              onClick={togglePinned}
             >
               {pinnedOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
             </button>

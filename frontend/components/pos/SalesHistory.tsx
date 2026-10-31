@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Search, FileText, CheckCircle, XCircle, Printer, Eye,
   Calendar, ArrowLeft, RefreshCw, RotateCcw, AlertTriangle,
-  Receipt, Check, X, ShieldAlert, ArrowDownLeft
+  Receipt, Check, X, ShieldAlert, ArrowDownLeft,
+  ShoppingCart, CreditCard, TrendingUp, Wallet
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
@@ -63,6 +64,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
   const router = useRouter()
   const [sales, setSales] = useState<Sale[]>(initialSales)
   const [search, setSearch] = useState('')
+  const [filterTab, setFilterTab] = useState<'all' | 'cash' | 'non_cash' | 'refund'>('all')
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -152,10 +154,43 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
       : current)
   }
 
-  const filteredSales = sales.filter(s =>
-    s.invoice_number?.toLowerCase().includes(search.toLowerCase()) ||
-    s.payment_method?.toLowerCase().includes(search.toLowerCase())
-  )
+  const stats = useMemo(() => {
+    const totalCount = sales.length
+    const completed = sales.filter(s => s.status === 'completed')
+    const totalRevenue = completed.reduce((sum, s) => sum + (s.final_amount || 0), 0)
+    const cashCount = completed.filter(s => s.payment_method === 'cash').length
+    const nonCashCount = completed.filter(s => s.payment_method !== 'cash' && s.payment_method !== 'credit').length
+    const refundPendingCount = sales.filter(s => s.refund_status === 'pending').length
+    const voidedCount = sales.filter(s => s.status === 'voided').length
+    return {
+      totalCount,
+      completedCount: completed.length,
+      totalRevenue,
+      cashCount,
+      nonCashCount,
+      refundPendingCount,
+      voidedCount,
+      totalRefundAction: refundPendingCount + voidedCount
+    }
+  }, [sales])
+
+  const filteredSales = useMemo(() => {
+    return sales.filter(s => {
+      const q = search.trim().toLowerCase()
+      const matchesSearch = !q ||
+        s.invoice_number?.toLowerCase().includes(q) ||
+        s.payment_method?.toLowerCase().includes(q) ||
+        (s.cashier_name && s.cashier_name.toLowerCase().includes(q)) ||
+        (s.customer_name && s.customer_name.toLowerCase().includes(q))
+
+      if (!matchesSearch) return false
+
+      if (filterTab === 'cash') return s.payment_method === 'cash' && s.status === 'completed'
+      if (filterTab === 'non_cash') return s.payment_method !== 'cash' && s.payment_method !== 'credit' && s.status === 'completed'
+      if (filterTab === 'refund') return s.refund_status === 'pending' || s.status === 'voided'
+      return true
+    })
+  }, [sales, search, filterTab])
 
   const printReceipt = () => {
     window.print()
@@ -202,11 +237,132 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
   }
 
   return (
-    <div>
+    <div className="sales-history-page">
       <PageHeader
         title="Riwayat Transaksi Kasir"
         subtitle="Daftar transaksi penjualan POS, cetak ulang struk, dan ajukan refund untuk ditinjau Admin"
+        actions={
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="btn btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 10 }}
+              title="Segarkan data transaksi"
+            >
+              <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+              <span>Segarkan</span>
+            </button>
+            <button
+              onClick={() => router.push('/kasir')}
+              className="btn btn-primary"
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10 }}
+              title="Kembali ke layar kasir POS"
+            >
+              <ShoppingCart size={15} />
+              <span>Buka Kasir POS</span>
+            </button>
+          </div>
+        }
       />
+
+      {/* KPI Summary Cards */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))',
+        gap: 14,
+        marginBottom: 20
+      }}>
+        {/* Total Transaksi */}
+        <div className="card" style={{ padding: '14px 18px', borderLeft: '4px solid var(--acc)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12.5, color: 'var(--mute)', fontWeight: 600 }}>Total Transaksi</span>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--accs)', color: 'var(--acc)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FileText size={15} />
+            </div>
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink)', marginTop: 6 }}>
+            {stats.totalCount} <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--mute)' }}>struk</span>
+          </div>
+          <span style={{ fontSize: 11.5, color: 'var(--mute)', marginTop: 4, display: 'block' }}>
+            {stats.completedCount} transaksi sukses tercatat
+          </span>
+        </div>
+
+        {/* Total Omzet Penjualan */}
+        <div className="card" style={{ padding: '14px 18px', borderLeft: '4px solid var(--ok)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12.5, color: 'var(--mute)', fontWeight: 600 }}>Total Penjualan POS</span>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--oks)', color: 'var(--ok)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <TrendingUp size={15} />
+            </div>
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--ok)', marginTop: 6 }}>
+            <FormatRupiah amount={stats.totalRevenue} />
+          </div>
+          <span style={{ fontSize: 11.5, color: 'var(--mute)', marginTop: 4, display: 'block' }}>
+            Akumulasi omzet kasir
+          </span>
+        </div>
+
+        {/* Metode Pembayaran */}
+        <div className="card" style={{ padding: '14px 18px', borderLeft: '4px solid #3b82f6' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12.5, color: 'var(--mute)', fontWeight: 600 }}>Metode Transaksi</span>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(59, 130, 246, 0.12)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CreditCard size={15} />
+            </div>
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span><strong style={{ color: 'var(--ok)' }}>{stats.cashCount}</strong> Tunai</span>
+            <span style={{ color: 'var(--mute)' }}>•</span>
+            <span><strong style={{ color: 'var(--acc)' }}>{stats.nonCashCount}</strong> Non-Tunai</span>
+          </div>
+          <span style={{ fontSize: 11.5, color: 'var(--mute)', marginTop: 4, display: 'block' }}>
+            Rasio pembayaran pelanggan
+          </span>
+        </div>
+
+        {/* Status Refund */}
+        <div className="card" style={{
+          padding: '14px 18px',
+          borderLeft: `4px solid ${stats.totalRefundAction > 0 ? 'var(--bad)' : 'var(--line)'}`,
+          background: stats.refundPendingCount > 0 ? 'var(--bads)' : 'var(--panel)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{
+              fontSize: 12.5,
+              fontWeight: 600,
+              color: stats.totalRefundAction > 0 ? 'var(--bad)' : 'var(--mute)'
+            }}>
+              Pengajuan Retur / Void
+            </span>
+            <div style={{
+              width: 28, height: 28, borderRadius: 8,
+              background: stats.totalRefundAction > 0 ? 'var(--bads)' : 'var(--bg)',
+              color: stats.totalRefundAction > 0 ? 'var(--bad)' : 'var(--mute)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <RotateCcw size={15} />
+            </div>
+          </div>
+          <div style={{
+            fontSize: 16,
+            fontWeight: 800,
+            color: stats.totalRefundAction > 0 ? 'var(--bad)' : 'var(--ink)',
+            marginTop: 6
+          }}>
+            {stats.refundPendingCount > 0
+              ? `${stats.refundPendingCount} Menunggu Admin`
+              : stats.voidedCount > 0
+              ? `${stats.voidedCount} Dibatalkan`
+              : 'Tidak Ada Retur'}
+          </div>
+          <span style={{ fontSize: 11.5, color: 'var(--mute)', marginTop: 4, display: 'block' }}>
+            {stats.refundPendingCount > 0 ? 'Segera tinjau persetujuan Admin' : 'Riwayat retur aman'}
+          </span>
+        </div>
+      </div>
 
       {/* Toast Alert */}
       {toast && (
@@ -240,27 +396,120 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
       <div className={`detail-grid${selectedSale ? ' has-aside' : ''}`}>
         <div>
           <SectionCard>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-              <div className="search-bar" style={{ flex: 1 }}>
+            {/* Filter Tabs & Search Row */}
+            <div style={{
+              display: 'flex',
+              gap: 12,
+              marginBottom: 18,
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              {/* Segmented Filter Tabs */}
+              <div style={{
+                display: 'inline-flex',
+                background: 'var(--bg)',
+                padding: 4,
+                borderRadius: 10,
+                border: '1px solid var(--line)',
+                gap: 4
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setFilterTab('all')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 7,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: 'none',
+                    background: filterTab === 'all' ? 'var(--panel)' : 'transparent',
+                    color: filterTab === 'all' ? 'var(--ink)' : 'var(--mute)',
+                    boxShadow: filterTab === 'all' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  Semua ({stats.totalCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterTab('cash')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 7,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: 'none',
+                    background: filterTab === 'cash' ? 'var(--panel)' : 'transparent',
+                    color: filterTab === 'cash' ? 'var(--ok)' : 'var(--mute)',
+                    boxShadow: filterTab === 'cash' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  Tunai ({stats.cashCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterTab('non_cash')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 7,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: 'none',
+                    background: filterTab === 'non_cash' ? 'var(--panel)' : 'transparent',
+                    color: filterTab === 'non_cash' ? 'var(--acc)' : 'var(--mute)',
+                    boxShadow: filterTab === 'non_cash' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  Non-Tunai ({stats.nonCashCount})
+                </button>
+                {stats.totalRefundAction > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setFilterTab('refund')}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: 7,
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      border: 'none',
+                      background: filterTab === 'refund' ? 'var(--panel)' : 'transparent',
+                      color: filterTab === 'refund' ? 'var(--bad)' : 'var(--mute)',
+                      boxShadow: filterTab === 'refund' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    Retur / Void ({stats.totalRefundAction})
+                  </button>
+                )}
+              </div>
+
+              {/* Search Bar */}
+              <div className="search-bar" style={{ minWidth: 260, flex: '1 1 260px', maxWidth: 420 }}>
                 <Search size={15} color="var(--mute)" />
                 <input
                   type="text"
-                  placeholder="Cari nomor transaksi atau metode bayar..."
+                  placeholder="Cari nomor invoice, metode, atau pelanggan..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent' }}
                 />
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--mute)', padding: '0 4px', fontSize: 13 }}
+                    title="Hapus pencarian"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="btn btn-secondary"
-                style={{ padding: '0 14px', gap: 6, display: 'flex', alignItems: 'center' }}
-                title="Muat ulang transaksi"
-              >
-                <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
-                <span>Segarkan</span>
-              </button>
             </div>
 
             <div className="table-container">
