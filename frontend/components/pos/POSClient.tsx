@@ -7,6 +7,7 @@ import { BukaShiftModal } from '@/components/pos/KasMasukModal'
 import { fetchShiftExpenses } from '@/lib/cash-reconciliation'
 import { getUserFacingError } from '@/lib/user-facing-error'
 import { fetchActivePromotions } from '@/lib/active-promotions'
+import { convertUnit, calculateCartSharedIngredients, type CartProductRequirement } from '@/lib/unit-conversion'
 
 function formatRp(n: number) {
   return 'Rp' + new Intl.NumberFormat('id-ID').format(n)
@@ -85,12 +86,24 @@ interface Props {
   activeShift: any
   userId: string
   cashierName: string
+  initialIngredients?: any[]
+  initialRawMaterials?: any[]
 }
 
-export default function POSClient({ products: initialProducts, productsError: initialProductsError, activeShift: initialShift, userId, cashierName }: Props) {
+export default function POSClient({
+  products: initialProducts,
+  productsError: initialProductsError,
+  activeShift: initialShift,
+  userId,
+  cashierName,
+  initialIngredients = [],
+  initialRawMaterials = []
+}: Props) {
   const supabase = createClient()
   const [products, setProducts] = useState<any[]>(initialProducts)
   const [productsError, setProductsError] = useState<string | null>(initialProductsError)
+  const [ingredients, setIngredients] = useState<any[]>(initialIngredients)
+  const [rawMaterials, setRawMaterials] = useState<any[]>(initialRawMaterials)
 
   // Shift state — dikelola di sini agar BukaShiftModal bisa update tanpa reload
   const [activeShift, setActiveShift] = useState<any>(initialShift)
@@ -333,6 +346,58 @@ export default function POSClient({ products: initialProducts, productsError: in
     setPromoCode('')
   }
 
+  // PRD Section 5 & 6: Real-time Shared Ingredient Requirement & Availability Calculation
+  const sharedIngredientState = useMemo(() => {
+    return calculateCartSharedIngredients(
+      cart.map(c => ({ product_id: c.product_id, quantity: c.quantity })),
+      products,
+      ingredients,
+      rawMaterials
+    )
+  }, [cart, products, ingredients, rawMaterials])
+
+  const getProductAvailability = (product: any) => {
+    const inCart = cart.find(c => c.product_id === product.id)?.quantity || 0
+    const remainingReadyStock = Math.max(0, product.stock - inCart)
+
+    const prodIngredients = ingredients.filter(i => i.product_id === product.id)
+    if (!prodIngredients.length) {
+      return {
+        hasRecipe: false,
+        remainingReadyStock,
+        rawLimit: null,
+        bottleneck: null
+      }
+    }
+
+    let minRemainingFromRaw = Infinity
+    let bottleneckName = ''
+
+    for (const ing of prodIngredients) {
+      const mat = rawMaterials.find(m => m.id === ing.raw_material_id)
+      if (!mat) continue
+
+      const neededPerPortion = convertUnit(Number(ing.quantity) || 0, ing.unit, mat.unit, mat.density || 1.0)
+      if (neededPerPortion <= 0) continue
+
+      const currentCartUsage = sharedIngredientState.requirements.find(r => r.materialId === mat.id)?.totalRequired || 0
+      const remainingStock = Math.max(0, mat.stock - currentCartUsage)
+      const portionsPossible = Math.floor(remainingStock / neededPerPortion)
+
+      if (portionsPossible < minRemainingFromRaw) {
+        minRemainingFromRaw = portionsPossible
+        bottleneckName = mat.name
+      }
+    }
+
+    return {
+      hasRecipe: true,
+      remainingReadyStock,
+      rawLimit: minRemainingFromRaw === Infinity ? null : minRemainingFromRaw,
+      bottleneck: bottleneckName
+    }
+  }
+
   const categories = useMemo(() => {
     const cats = ['Semua', ...Array.from(new Set(products.map((p: any) => p.categories?.name || 'Lainnya')))]
     return cats
@@ -416,6 +481,16 @@ export default function POSClient({ products: initialProducts, productsError: in
   const handleCheckout = async () => {
     if (cart.length === 0) { showToast('Keranjang kosong!'); return }
     if (!activeShift) { showToast('Buka shift terlebih dahulu!'); return }
+
+    if (sharedIngredientState.hasShortage) {
+      const shortageDetails = sharedIngredientState.shortages
+        .map(s => `• ${s.materialName}: Butuh ${s.totalRequired} ${s.unit}, tersisa ${s.availableStock} ${s.unit} (Kurang ${s.shortageAmount} ${s.unit})`)
+        .join('\n')
+      const confirmed = window.confirm(
+        `⚠️ PERINGATAN KETERSEDIAAN BAHAN BAKU\n\nStok bahan baku di gudang tidak mencukupi untuk pesanan ini:\n${shortageDetails}\n\nTetap lanjutkan transaksi penjualan?`
+      )
+      if (!confirmed) return
+    }
 
     if (payMethod === 'cash') {
       const val = cashInput ? parseInt(cashInput, 10) : 0
@@ -777,9 +852,26 @@ export default function POSClient({ products: initialProducts, productsError: in
                   )}
                   <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 2, lineHeight: 1.3 }}>{p.name}</div>
                   <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--acc)' }}>{formatRp(p.sell_price)}</div>
-                  <div style={{ fontSize: 10, color: p.stock < p.min_stock ? 'var(--warn)' : 'var(--mute)', marginTop: 2 }}>
-                    Stok: {p.stock} {p.unit}
-                  </div>
+                  {(() => {
+                    const avail = getProductAvailability(p)
+                    return (
+                      <div style={{ marginTop: 2 }}>
+                        <div style={{ fontSize: 10, color: p.stock < p.min_stock ? 'var(--warn)' : 'var(--mute)' }}>
+                          Stok Jadi: {p.stock} {p.unit}
+                        </div>
+                        {avail.hasRecipe && avail.rawLimit !== null && (
+                          <div style={{
+                            fontSize: 9.5,
+                            fontWeight: 600,
+                            color: avail.rawLimit <= 0 ? 'var(--bad)' : avail.rawLimit <= 3 ? 'var(--warn)' : 'var(--ok)',
+                            marginTop: 1
+                          }}>
+                            {avail.rawLimit <= 0 ? '⚠️ Bahan baku habis' : `• Bahan: sisa ${avail.rawLimit} porsi`}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
               )
               })}
@@ -810,6 +902,33 @@ export default function POSClient({ products: initialProducts, productsError: in
             </button>
           </div>
         </div>
+
+        {/* Shared Ingredient Shortage Alert Banner (PRD Section 6.3) */}
+        {sharedIngredientState.hasShortage && (
+          <div style={{
+            padding: '10px 14px',
+            margin: '12px 14px 0',
+            background: 'var(--bads)',
+            border: '1px solid var(--bad)',
+            borderRadius: 10,
+            fontSize: 12,
+            color: 'var(--bad)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, marginBottom: 4 }}>
+              <AlertCircle size={15} /> Peringatan Bahan Baku (Stok Kurang)
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--ink)', marginBottom: 6 }}>
+              Kombinasi pesanan di keranjang melebihi stok bahan baku bersama di gudang:
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {sharedIngredientState.shortages.map(s => (
+                <div key={s.materialId} style={{ fontWeight: 600, fontSize: 11 }}>
+                  • {s.materialName}: Butuh {s.totalRequired} {s.unit}, sisa {s.availableStock} {s.unit} (Kurang {s.shortageAmount} {s.unit})
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Cart items */}
         <div className="pos-cart-items">

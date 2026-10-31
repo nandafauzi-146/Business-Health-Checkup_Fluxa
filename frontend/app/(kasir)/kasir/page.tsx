@@ -6,11 +6,23 @@ export const metadata = { title: 'Fluxa | Kasir' }
 export default async function KasirPage() {
   const supabase = await createClient()
 
-  const { data: products, error: productsError } = await supabase
-    .from('products')
-    .select('*, categories(name)')
-    .eq('is_active', true)
-    .order('name')
+  const [
+    { data: products, error: productsError },
+    { data: productIngredients },
+    { data: rawMaterials }
+  ] = await Promise.all([
+    supabase
+      .from('products')
+      .select('*, categories(name)')
+      .eq('is_active', true)
+      .order('name'),
+    supabase
+      .from('product_ingredients')
+      .select('id, product_id, raw_material_id, quantity, unit'),
+    supabase
+      .from('raw_materials')
+      .select('id, name, material_type, stock, min_stock, unit, density')
+  ])
 
   // Check active shift
   const { data: { user } } = await supabase.auth.getUser()
@@ -42,6 +54,8 @@ export default async function KasirPage() {
       activeShift={activeShift}
       userId={user?.id || ''}
       cashierName={cashierName}
+      initialIngredients={productIngredients || []}
+      initialRawMaterials={rawMaterials || []}
     />
   )
 }
