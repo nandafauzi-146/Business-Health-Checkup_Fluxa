@@ -40,6 +40,8 @@ import {
 import { useTheme } from '@/components/layout/ThemeProvider'
 import type { LandingCMSContent } from '@/lib/cms'
 import defaultContent from '@/content/landing-default.json'
+import CustomerServiceWidget from './CustomerServiceWidget'
+import TermsModal from '@/components/legal/TermsModal'
 import styles from './landingpage.module.css'
 
 function WhatsAppIcon({ size = 18, className }: { size?: number; className?: string }) {
@@ -391,6 +393,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
   const [introActive, setIntroActive] = useState(true)
   const [isLeaving, setIsLeaving] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [showTermsModal, setShowTermsModal] = useState(false)
 
   const cms = content || (defaultContent as unknown as LandingCMSContent)
   const [selectedPlan, setSelectedPlan] = useState<string>(() => {
@@ -962,7 +965,11 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
         </div>
       </div></section>
 
-      <footer className={styles.footer}><div className={styles.footerInner}><Link className={styles.brand} href="/"><Image src="/Fluxa-Logo.webp" alt="" width={34} height={34} /><span>fluxa<span className={styles.brandDot}>.</span></span></Link><p>{cms.footer?.tagline || 'Kelola hari ini. Tumbuh untuk esok.'}</p><div><a href="#fitur">Fitur</a><a href="#kontak">Kontak</a><Link href="/login">Login</Link></div></div><span className={styles.copyright}>© {new Date().getFullYear()} Fluxa. {cms.footer?.copyright || 'Semua hak dilindungi.'}</span></footer>
+      <footer className={styles.footer}><div className={styles.footerInner}><Link className={styles.brand} href="/"><Image src="/Fluxa-Logo.webp" alt="" width={34} height={34} /><span>fluxa<span className={styles.brandDot}>.</span></span></Link><p>{cms.footer?.tagline || 'Kelola hari ini. Tumbuh untuk esok.'}</p><div><a href="#fitur">Fitur</a><a href="#paket">Paket</a><a href="#faq">FAQ</a><button type="button" onClick={() => setShowTermsModal(true)} style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', color: 'inherit', font: 'inherit', textDecoration: 'underline', textUnderlineOffset: '3px' }}>Syarat &amp; Ketentuan</button><Link href="/login">Login</Link></div></div><span className={styles.copyright}>© {new Date().getFullYear()} Fluxa. {cms.footer?.copyright || 'Semua hak dilindungi.'}</span></footer>
+
+      <TermsModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
+
+      <CustomerServiceWidget />
     </main>
   )
 }
