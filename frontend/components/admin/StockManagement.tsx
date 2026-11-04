@@ -294,7 +294,7 @@ export default function StockManagementClient({
                           </div>
                         </td>
                         <td style={{ color: 'var(--mute)', fontFamily: 'monospace', fontSize: 12 }}>
-                          {p.sku || '—'}
+                          {p.sku || 'Tidak dicantumkan'}
                         </td>
                         <td>
                           <span style={{
@@ -419,7 +419,7 @@ export default function StockManagementClient({
                         </td>
                         <td style={{ color: 'var(--mute)', fontSize: 13 }}>{m.previous_stock}</td>
                         <td style={{ fontWeight: 700, fontSize: 13 }}>{m.current_stock}</td>
-                        <td style={{ fontSize: 12.5, color: 'var(--mute)' }}>{m.note || '—'}</td>
+                        <td style={{ fontSize: 12.5, color: 'var(--mute)' }}>{m.note || 'Tidak ada catatan'}</td>
                       </tr>
                     )
                   })
@@ -459,7 +459,7 @@ export default function StockManagementClient({
             }}>
               <div style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--ink)' }}>{selectedProduct.name}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 12.5, color: 'var(--mute)' }}>
-                <span>SKU: {selectedProduct.sku || '—'}</span>
+                <span>SKU: {selectedProduct.sku || 'Tidak dicantumkan'}</span>
                 <span>Stok Sekarang: <strong style={{ color: 'var(--ink)' }}>{selectedProduct.stock} {selectedProduct.unit}</strong></span>
               </div>
             </div>

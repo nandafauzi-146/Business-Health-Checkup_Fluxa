@@ -227,7 +227,7 @@ export default function RegistrationApprovals() {
               <Clock3 size={18} />
             </span>
             <div>
-              <strong>{loading ? '—' : pendingCount}</strong>
+              <strong>{loading ? 'Memuat...' : pendingCount}</strong>
               <span>Menunggu Peninjauan</span>
             </div>
           </div>
@@ -236,7 +236,7 @@ export default function RegistrationApprovals() {
               <Rocket size={18} />
             </span>
             <div>
-              <strong>{loading ? '—' : subscribeCount}</strong>
+              <strong>{loading ? 'Memuat...' : subscribeCount}</strong>
               <span>Jalur Langganan Langsung</span>
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function RegistrationApprovals() {
               <CheckCircle2 size={18} />
             </span>
             <div>
-              <strong>{loading ? '—' : approvedCount}</strong>
+              <strong>{loading ? 'Memuat...' : approvedCount}</strong>
               <span>Total Disetujui / Aktif</span>
             </div>
           </div>

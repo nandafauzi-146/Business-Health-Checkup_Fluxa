@@ -558,16 +558,6 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
             <div className={styles.mobileMenuPanel} onClick={e => e.stopPropagation()}>
               <div className={styles.mobileMenuTop}>
                 <button
-                  className={styles.themeToggle}
-                  type="button"
-                  onClick={() => setPreference(isDark ? 'light' : 'dark')}
-                  aria-label={`Aktifkan mode ${isDark ? 'terang' : 'gelap'}`}
-                  title={`Mode ${isDark ? 'terang' : 'gelap'}`}
-                >
-                  {isDark ? <Sun size={15} /> : <Moon size={15} />}
-                  <span>{isDark ? 'Terang' : 'Gelap'}</span>
-                </button>
-                <button
                   className={styles.mobileCloseBtn}
                   type="button"
                   onClick={() => setMobileMenuOpen(false)}

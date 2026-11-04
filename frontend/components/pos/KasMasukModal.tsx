@@ -738,7 +738,7 @@ export function TutupShiftModal({ activeShift, userId, onSuccess, onCancel }: Tu
 
   const openedAt = activeShift?.opened_at
     ? new Date(activeShift.opened_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
-    : '—'
+    : 'Waktu tidak tersedia'
 
   const handleKasAkhirChange = (raw: string) => {
     const cleaned = raw.replace(/[^\d]/g, '')
@@ -968,13 +968,13 @@ export function TutupShiftModal({ activeShift, userId, onSuccess, onCancel }: Tu
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 11px', borderBottom: '1px solid var(--line)' }}>
                 <span style={{ fontSize: 11.5, color: 'var(--mute)' }}>Tunai</span>
                 <strong style={{ fontSize: 12, color: cashSales > 0 ? 'var(--ok)' : 'var(--mute)' }}>
-                  {cashSales > 0 ? formatRp(cashSales) : '—'}
+                  {formatRp(cashSales)}
                 </strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 11px' }}>
                 <span style={{ fontSize: 11.5, color: 'var(--mute)' }}>Non-Tunai </span>
                 <strong style={{ fontSize: 12, color: nonCashSales > 0 ? 'var(--acc)' : 'var(--mute)' }}>
-                  {nonCashSales > 0 ? formatRp(nonCashSales) : '—'}
+                  {formatRp(nonCashSales)}
                 </strong>
               </div>
             </div>
@@ -1239,7 +1239,7 @@ export function TutupShiftModal({ activeShift, userId, onSuccess, onCancel }: Tu
                   borderRadius: 6,
                   border: '1px solid var(--line)',
                 }}>
-                  Shift #{activeShift?.id ? String(activeShift.id).slice(0, 8) : '—'}
+                  Shift #{activeShift?.id ? String(activeShift.id).slice(0, 8) : 'Tidak tersedia'}
                 </span>
               </div>
 

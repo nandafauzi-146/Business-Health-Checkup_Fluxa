@@ -317,7 +317,7 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
 
       {/* Tabel Transaksi Full Width */}
       <SectionCard
-        title={`Riwayat Transaksi — ${formatMonthIndo(selectedMonth)} (${filteredSales.length})`}
+        title={`Riwayat Transaksi: ${formatMonthIndo(selectedMonth)} (${filteredSales.length})`}
         action={
           loadingMonth ? (
             <span style={{ fontSize: 12, color: 'var(--mute)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>

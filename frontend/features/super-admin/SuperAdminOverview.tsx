@@ -145,10 +145,10 @@ export default function SuperAdminOverview() {
 
       {/* 3. Keuangan Platform (FR-01 & FR-03 & FR-04) */}
       <div className={styles.statsGrid}>
-        <Stat icon={<DollarSign size={18} />} label="Pendapatan subscription" value={loading ? '—' : money.format(finance?.grossRevenue ?? 0)} tone="success" loading={loading} />
+        <Stat icon={<DollarSign size={18} />} label="Pendapatan subscription" value={loading ? 'Memuat...' : money.format(finance?.grossRevenue ?? 0)} tone="success" loading={loading} />
         <Stat icon={<CheckCircle2 size={18} />} label="Pembayaran berhasil" value={number.format(finance?.successCount ?? 0)} tone="success" loading={loading} />
         <Stat icon={<Clock3 size={18} />} label="Transaksi pending" value={`${number.format(finance?.pendingCount ?? 0)} trx`} tone="warning" loading={loading} />
-        <Stat icon={<ArrowDownToLine size={18} />} label="Total withdraw internal" value={loading ? '—' : money.format(finance?.totalWithdrawn ?? 0)} tone="default" loading={loading} />
+        <Stat icon={<ArrowDownToLine size={18} />} label="Total withdraw internal" value={loading ? 'Memuat...' : money.format(finance?.totalWithdrawn ?? 0)} tone="default" loading={loading} />
       </div>
 
       <div className={styles.dashboardGrid}>
@@ -216,7 +216,7 @@ function Stat({ icon, label, value, loading, tone = 'default' }: { icon: React.R
     <article className={`${styles.statCard} ${styles[`tone_${tone}`]}`}>
       <span className={styles.statIcon}>{icon}</span>
       <div>
-        <strong>{loading ? '—' : (value ?? '0')}</strong>
+        <strong>{loading ? 'Memuat...' : (value ?? '0')}</strong>
         <span>{label}</span>
       </div>
     </article>

@@ -252,7 +252,7 @@ function describePromotion(promotion: ActivePromotion) {
   const minimum = promotion.min_purchase > 0
     ? `, min. belanja Rp${new Intl.NumberFormat('id-ID').format(promotion.min_purchase)}`
     : ''
-  return `${promotion.name} (${promotion.code}) — ${discount}${minimum}`
+  return `${promotion.name} (${promotion.code}): ${discount}${minimum}`
 }
 
 export default function Topbar({ title, subtitle, actions, role }: TopbarProps) {
