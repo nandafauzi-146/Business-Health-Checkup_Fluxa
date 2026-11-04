@@ -25,6 +25,7 @@ import { getUserFacingError } from '@/lib/user-facing-error'
 import { createClient } from '@/lib/supabase/client'
 import { getAbsoluteUrl } from '@/lib/site-url'
 import { AnimatedBackground, AuthIntro, useAuthIntro } from './AuthVisuals'
+import TermsModal from '@/components/legal/TermsModal'
 
 declare global {
   interface Window {
@@ -137,6 +138,8 @@ export default function RegisterForm({
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState(initialError)
   const [step, setStep] = useState<RegisterStep>(initialStep)
+  const [agreedTerms, setAgreedTerms] = useState(false)
+  const [showTermsModal, setShowTermsModal] = useState(false)
   const [plans, setPlans] = useState<PlanItem[]>([])
   const [loadingPlans, setLoadingPlans] = useState(false)
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
@@ -161,6 +164,12 @@ export default function RegisterForm({
 
   async function handleGoogleSignUp() {
     clearError()
+
+    if (!agreedTerms) {
+      setError('Harap membaca dan menyetujui Syarat dan Ketentuan Layanan Fluxa sebelum mendaftar.')
+      return
+    }
+
     setGoogleLoading(true)
 
     try {
@@ -204,6 +213,11 @@ export default function RegisterForm({
 
     if (password.length < 8 || password.length > 72) {
       setError('Kata sandi harus terdiri dari 8–72 karakter.')
+      return false
+    }
+
+    if (!agreedTerms) {
+      setError('Harap membaca dan menyetujui Syarat dan Ketentuan Layanan Fluxa untuk melanjutkan.')
       return false
     }
 
@@ -896,6 +910,45 @@ export default function RegisterForm({
               )}
             </button>
 
+            <div className="login-field login-stagger" style={{ marginTop: '8px', marginBottom: '14px' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  id="register-agree-terms"
+                  checked={agreedTerms}
+                  onChange={(event) => {
+                    setAgreedTerms(event.target.checked)
+                    clearError()
+                  }}
+                  disabled={loading}
+                  style={{ marginTop: '3px', accentColor: '#2563eb', width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }}
+                />
+                <span style={{ fontSize: '12px', color: '#b8c8e6', lineHeight: 1.5 }}>
+                  Saya telah membaca dan menyetujui{' '}
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      setShowTermsModal(true)
+                    }}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      padding: 0,
+                      color: '#69dfff',
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                      fontSize: 'inherit',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Syarat dan Ketentuan
+                  </button>{' '}
+                  Layanan Fluxa.
+                </span>
+              </label>
+            </div>
+
             {error && <p className="login-feedback login-feedback-error" role="alert">{error}</p>}
             <button className="login-submit register-submit login-stagger" type="submit" disabled={loading}>
               Lanjutkan ke Pilihan Akses <ArrowRight size={17} />
@@ -913,7 +966,14 @@ export default function RegisterForm({
           </Link>
         </section>
       )}
-      <p className={`register-legal${phase === 'login' ? ' is-visible' : ''}`}>Dengan mendaftar, Anda meminta akses untuk mengelola bisnis menggunakan Fluxa.</p>
+      <TermsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAgree={() => {
+          setAgreedTerms(true)
+          clearError()
+        }}
+      />
     </main>
   )
 }

@@ -10,3 +10,4 @@ export * from './ai/prompts';
 export * from './ai/normalize-text';
 export * from './ai/client';
 export * from './ai/chat';
+export * from './ai/customer-service';

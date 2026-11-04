@@ -227,27 +227,24 @@ export default function DebtReceivablesClient({
 
     setSaving(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Sesi login tidak ditemukan.')
-      const { data: inserted, error } = await supabase
-        .from('supplier_payables')
-        .insert({
-          supplier_name: form.party_name.trim(),
+      const res = await fetch('/api/admin/debt-receivables', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           party_name: form.party_name.trim(),
           type: form.type,
           category: selectedCategory,
           description: form.description.trim(),
           total_amount: total,
-          paid_amount: 0,
           due_date: form.due_date || null,
-          status: 'unpaid',
           note: form.note.trim() || null,
-          created_by: user.id
-        })
-        .select('*')
-        .single()
-      if (error) throw error
-      if (!inserted) throw new Error('Database tidak mengembalikan data hutang/piutang.')
+        }),
+      })
+
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Gagal menyimpan.')
+      const inserted = json.item
+      if (!inserted) throw new Error('Server tidak mengembalikan data hutang/piutang.')
 
       const newItem: DebtReceivableItem = {
         id: inserted.id,
