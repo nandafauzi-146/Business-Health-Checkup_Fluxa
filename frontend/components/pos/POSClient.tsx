@@ -377,7 +377,7 @@ export default function POSClient({
       const mat = rawMaterials.find(m => m.id === ing.raw_material_id)
       if (!mat) continue
 
-      const neededPerPortion = convertUnit(Number(ing.quantity) || 0, ing.unit, mat.unit, mat.density || 1.0)
+      const neededPerPortion = convertUnit(Number(ing.quantity) || 0, ing.unit, mat.unit)
       if (neededPerPortion <= 0) continue
 
       const currentCartUsage = sharedIngredientState.requirements.find(r => r.materialId === mat.id)?.totalRequired || 0

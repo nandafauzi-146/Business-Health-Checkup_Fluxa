@@ -47,7 +47,6 @@ export interface RawMaterial {
   min_stock: number
   unit: string
   cost_per_unit: number
-  density?: number | null
 }
 
 export interface ProductIngredient {
@@ -220,7 +219,7 @@ export default function ProductsClient({
       const mat = rawMaterials.find(m => m.id === item.raw_material_id)
       const qty = Number(item.quantity)
       if (mat && qty > 0) {
-        const neededInMatUnit = convertUnit(qty, item.unit || mat.unit, mat.unit, mat.density || 1.0)
+        const neededInMatUnit = convertUnit(qty, item.unit || mat.unit, mat.unit)
         if (neededInMatUnit > 0) {
           const portions = Math.floor(mat.stock / neededInMatUnit)
           if (portions < minPortions) {
@@ -249,7 +248,7 @@ export default function ProductsClient({
       const mat = rawMaterials.find(m => m.id === item.raw_material_id)
       const qty = Number(item.quantity) || 0
       if (!mat || qty <= 0) return total
-      const neededInMatUnit = convertUnit(qty, item.unit || mat.unit, mat.unit, mat.density || 1.0)
+      const neededInMatUnit = convertUnit(qty, item.unit || mat.unit, mat.unit)
       const costPerUnit = mat.cost_per_unit || 0
       return total + (neededInMatUnit * costPerUnit)
     }, 0)
