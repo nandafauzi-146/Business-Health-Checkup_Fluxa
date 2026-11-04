@@ -474,10 +474,10 @@ export default function ExpensesClient({
                   const isFromCashier = isCashierExpense(exp)
                   const cleanDesc = exp.description
                     ? exp.description.replace(/^\[Shift Operasional\]\s*/i, '').replace(/\s*\[Dicatat oleh:[^\]]*\]/i, '').trim()
-                    : '—'
+                    : 'Tidak ada keterangan'
                   const createdDate = exp.created_at ? new Date(exp.created_at) : new Date(exp.expense_date)
                   const dateFormatted = createdDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-                  const timeFormatted = exp.created_at ? createdDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB' : '—'
+                  const timeFormatted = exp.created_at ? createdDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB' : 'Waktu tidak tersedia'
 
                   return (
                     <tr key={exp.id}>

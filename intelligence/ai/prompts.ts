@@ -1,6 +1,6 @@
 /**
  * intelligence/ai/prompts.ts
- * Prompt templates untuk FluxAI — AI Business Health Checkup Advisor.
+ * Prompt templates untuk FluxAI, AI Business Health Checkup Advisor.
  * Didesain untuk menghasilkan analisis naratif yang luwes, elegan, profesional,
  * dan secara konkret membedah data transaksi, tanggal, serta nama debitur dari database.
  */
@@ -21,8 +21,9 @@ Pedoman Utama Gaya Komunikasi & Penulisan:
    - Jika terdapat data piutang/kasbon pelanggan, Anda **HARUS menyebutkan nama pelanggan, tanggal transaksi, tanggal jatuh tempo, status keterlambatan, dan nominal sisa tagihannya secara spesifik** (contoh: *"Perhatikan tagihan atas nama Warung Bu Joko per 2 Oktober 2026 sebesar Rp 2.850.000 dengan sisa Rp 2.350.000 yang sudah melewati jatuh tempo 5 Oktober 2026"*).
    - Jika terdapat rincian pos pengeluaran operasional, sebutkan tanggal, jenis beban, dan nominal pastinya (contoh: *"Gaji kasir per 5 Oktober Rp 3.200.000"*).
    - Jika ada rincian stok barang, sebutkan nama produk konkretnya.
-   - **DILARANG keras mengarang atau menduga-duga data yang tidak ada dalam laporan.** Jika suatu data kosong, katakan "belum ada catatan" — jangan menambah angka fiktif.
+   - **DILARANG keras mengarang atau menduga-duga data yang tidak ada dalam laporan.** Jika suatu data kosong, katakan "belum ada catatan". Jangan menambah angka fiktif.
 5. **Roadmap Taktis Terukur**: Berikan langkah aksi 7–30 hari yang realistis dan langsung dapat dieksekusi pemilik usaha tanpa membutuhkan modal tambahan yang besar.
+6. Hindari tanda pisah panjang sebagai pemisah kalimat. Gunakan koma, titik, atau titik dua sesuai konteks.
 `.trim();
 
 export function buildDiagnosticPrompt(input: FinancialHealthInput, metrics: FinancialHealthMetrics): string {

@@ -124,10 +124,10 @@ export default function SuperAdminTrials() {
               const daysLeft = end === null ? null : Math.max(0, Math.ceil((end - now) / (24 * 60 * 60 * 1000)))
               return <tr key={trial.id}>
                 <td><strong>{trial.full_name}</strong><small>{trial.email || 'Email tidak tersedia'}</small></td>
-                <td>{trial.trial_started_at ? dateFormat.format(new Date(trial.trial_started_at)) : '—'}</td>
-                <td>{trial.trial_ends_at ? dateFormat.format(new Date(trial.trial_ends_at)) : '—'}</td>
+                <td>{trial.trial_started_at ? dateFormat.format(new Date(trial.trial_started_at)) : 'Tanggal tidak tersedia'}</td>
+                <td>{trial.trial_ends_at ? dateFormat.format(new Date(trial.trial_ends_at)) : 'Tanggal tidak tersedia'}</td>
                 <td><span className={`${styles.badge} ${statusClass ? styles[statusClass] : ''}`}>{trialStatus}</span></td>
-                <td>{daysLeft === null ? '—' : daysLeft === 0 && end && end > now ? '< 1 hari' : `${daysLeft} hari`}</td>
+                <td>{daysLeft === null ? 'Belum dimulai' : daysLeft === 0 && end && end > now ? 'Kurang dari 1 hari' : `${daysLeft} hari`}</td>
                 <td><div className={styles.filters}><button className={styles.primaryButton} type="button" disabled={processing === trial.id} onClick={() => void updateTrial(trial, 'extend')}>{processing === trial.id ? 'Menyimpan...' : 'Tambah 7 hari'}</button>{trialStatus !== 'Kedaluwarsa' && trialStatus !== 'Belum dimulai' && <button className={styles.dangerButton} type="button" disabled={processing === trial.id} onClick={() => void updateTrial(trial, 'end')}>Akhiri trial</button>}</div></td>
               </tr>
             })}</tbody>

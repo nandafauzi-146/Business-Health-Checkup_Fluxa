@@ -639,7 +639,7 @@ export default function POSClient({
                     title="Klik untuk gunakan diskon"
                   >
                     <Tag size={11} />
-                    <span><strong>{p.code}</strong> — {p.type === 'percentage' ? `Diskon ${p.value}%` : `Potongan ${formatRp(p.value)}`}</span>
+                    <span><strong>{p.code}</strong>: {p.type === 'percentage' ? `Diskon ${p.value}%` : `Potongan ${formatRp(p.value)}`}</span>
                     {p.min_purchase > 0 && <span style={{ opacity: 0.8, fontSize: 10.5 }}>(Min. {formatRp(p.min_purchase)})</span>}
                   </button>
                 )

@@ -930,7 +930,7 @@ export default function ProductsClient({
                       </td>
 
                       <td style={{ fontSize: 12, color: 'var(--mute)', fontFamily: 'monospace' }}>
-                        {p.sku || '—'}
+                        {p.sku || 'Tidak dicantumkan'}
                       </td>
 
                       <td>
@@ -1089,7 +1089,7 @@ export default function ProductsClient({
                       onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))}
                       style={{ cursor: 'pointer' }}
                     >
-                      <option value="">— Tanpa Kategori —</option>
+                      <option value="">Tanpa Kategori</option>
                       {categories.map(c => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
@@ -1726,7 +1726,7 @@ export default function ProductsClient({
                         {mat?.name || 'Bahan Baku'}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--mute)', marginTop: 2 }}>
-                        Stok di gudang: <strong>{mat ? mat.stock : '—'} {item.unit}</strong>
+                        Stok di gudang: <strong>{mat ? mat.stock : 'Tidak tersedia'} {item.unit}</strong>
                         {isShortage ? (
                           <span style={{ color: 'var(--bad)', fontWeight: 600, marginLeft: 6 }}>
                             ⚠️ Stok Kurang!

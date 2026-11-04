@@ -49,7 +49,7 @@ function calculateDuration(start: string, end?: string | null) {
 
 export function parseShiftNotes(rawNote?: string | null) {
   if (!rawNote || !rawNote.trim()) {
-    return { openingNote: '—', closingNote: '—' }
+    return { openingNote: '', closingNote: '' }
   }
 
   const text = rawNote.trim()
@@ -58,14 +58,14 @@ export function parseShiftNotes(rawNote?: string | null) {
 
   if (bukaMatch || tutupMatch) {
     return {
-      openingNote: bukaMatch && bukaMatch[1].trim() ? bukaMatch[1].trim() : '—',
-      closingNote: tutupMatch && tutupMatch[1].trim() ? tutupMatch[1].trim() : '—'
+      openingNote: bukaMatch?.[1].trim() || '',
+      closingNote: tutupMatch?.[1].trim() || ''
     }
   }
 
   return {
     openingNote: text,
-    closingNote: '—'
+    closingNote: ''
   }
 }
 
@@ -764,7 +764,7 @@ export default function ShiftClient({
 
       {/* SECTION: Riwayat Shift & Audit Rekonsiliasi Kas */}
       <SectionCard
-        title={`Riwayat Sesi Shift — ${formatMonthIndo(selectedMonth)} (${filteredShifts.length})`}
+        title={`Riwayat Sesi Shift: ${formatMonthIndo(selectedMonth)} (${filteredShifts.length})`}
         action={
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             {/* Filter Tabs */}
@@ -933,15 +933,15 @@ export default function ShiftClient({
                         return (
                           <>
                             <td style={{ padding: '14px 14px', fontSize: 12.5, maxWidth: 200 }}>
-                              <div style={{ color: openingNote !== '—' ? 'var(--ink)' : 'var(--mute)', fontWeight: openingNote !== '—' ? 500 : 400 }}>
-                                {openingNote}
+                              <div style={{ color: openingNote ? 'var(--ink)' : 'var(--mute)', fontWeight: openingNote ? 500 : 400 }}>
+                                {openingNote || 'Tidak ada catatan'}
                               </div>
                             </td>
 
                             {/* Catatan Penutupan (Opsional) */}
                             <td style={{ padding: '14px 14px', fontSize: 12.5, maxWidth: 200 }}>
-                              <div style={{ color: closingNote !== '—' ? 'var(--ink)' : 'var(--mute)', fontWeight: closingNote !== '—' ? 500 : 400 }}>
-                                {closingNote}
+                              <div style={{ color: closingNote ? 'var(--ink)' : 'var(--mute)', fontWeight: closingNote ? 500 : 400 }}>
+                                {closingNote || 'Tidak ada catatan'}
                               </div>
                             </td>
                           </>
@@ -1304,8 +1304,8 @@ export default function ShiftClient({
                     <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mute)', textTransform: 'uppercase', marginBottom: 4 }}>
                       CATATAN PEMBUKAAN (OPSIONAL)
                     </div>
-                    <div style={{ color: notes.openingNote !== '—' ? 'var(--ink)' : 'var(--mute)', fontWeight: notes.openingNote !== '—' ? 600 : 400 }}>
-                      {notes.openingNote}
+                    <div style={{ color: notes.openingNote ? 'var(--ink)' : 'var(--mute)', fontWeight: notes.openingNote ? 600 : 400 }}>
+                      {notes.openingNote || 'Tidak ada catatan'}
                     </div>
                   </div>
 
@@ -1319,8 +1319,8 @@ export default function ShiftClient({
                     <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mute)', textTransform: 'uppercase', marginBottom: 4 }}>
                       CATATAN PENUTUPAN (OPSIONAL)
                     </div>
-                    <div style={{ color: notes.closingNote !== '—' ? 'var(--ink)' : 'var(--mute)', fontWeight: notes.closingNote !== '—' ? 600 : 400 }}>
-                      {notes.closingNote}
+                    <div style={{ color: notes.closingNote ? 'var(--ink)' : 'var(--mute)', fontWeight: notes.closingNote ? 600 : 400 }}>
+                      {notes.closingNote || 'Tidak ada catatan'}
                     </div>
                   </div>
                 </div>

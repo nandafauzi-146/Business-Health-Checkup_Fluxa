@@ -28,9 +28,9 @@ type AuditResponse = { entries: AuditEntry[]; total: number; page: number; pageS
 const dateTime = new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' })
 
 function summarize(value: unknown) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return '—'
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return 'Tidak ada data'
   const entries = Object.entries(value).slice(0, 4)
-  return entries.map(([key, item]) => `${key}: ${String(item)}`).join(' · ') || '—'
+  return entries.map(([key, item]) => `${key}: ${String(item)}`).join(' · ') || 'Tidak ada rincian'
 }
 
 export default function SuperAdminAuditLog() {
@@ -245,7 +245,7 @@ export default function SuperAdminAuditLog() {
                     </td>
                     <td>
                       <strong>{entry.table_name}</strong>
-                      <small>{entry.record_id || '—'}</small>
+                      <small>{entry.record_id || 'Tidak tersedia'}</small>
                     </td>
                     <td>
                       <div className={styles.activityDetails}>

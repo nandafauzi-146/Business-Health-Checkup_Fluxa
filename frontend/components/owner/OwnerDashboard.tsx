@@ -83,7 +83,7 @@ const currencyFormatter = new Intl.NumberFormat('id-ID', {
 })
 
 function formatRp(value: number | null | undefined) {
-  return value === null || value === undefined ? '—' : currencyFormatter.format(value)
+  return value === null || value === undefined ? 'Belum tersedia' : currencyFormatter.format(value)
 }
 
 function formatCompact(value: number) {
