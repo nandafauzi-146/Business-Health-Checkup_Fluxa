@@ -3,9 +3,9 @@
     "badge": "Data usaha, satu dashboard",
     "title": "Bisnis lebih terarah.",
     "ctaText": "Coba gratis 7 hari",
-    "eyebrow": "Platform bisnis untuk UMKM modern",
+    "eyebrow": "Platform bisnis untuk UMKM",
     "trustNote": "Satu platform untuk operasional dan insight bisnis",
-    "description": "Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan AI semua dalam satu platform.",
+    "description": "Kelola transaksi, pahami kesehatan usaha, dan temukan langkah berikutnya dengan bantuan AI — semua dalam satu platform.",
     "titleHighlight": "Tumbuh lebih percaya diri.",
     "ctaSecondaryText": "Kenali cara kerjanya"
   },
@@ -49,13 +49,13 @@
   ],
   "aiInsight": {
     "title": "Bukan sekadar angka.",
-    "eyebrow": "PEMAHAMAN BISNIS",
+    "eyebrow": "INSIGHT BISNIS BERBANTU AI",
     "checklist": [
       "Diagnosis kesehatan bisnis",
       "Tren penjualan dan arus kas",
       "Rekomendasi berdasarkan data"
     ],
-    "description": "Fluxa membantu merangkum kondisi usaha dari data operasional Anda, mengidentifikasi tren, dan menyajikan rekomendasi yang lebih mudah ditindaklanjuti.",
+    "description": "FluxAI membantu merangkum kondisi usaha dari data operasional Anda, mengidentifikasi tren, dan menyajikan rekomendasi yang lebih mudah ditindaklanjuti.",
     "titleHighlight": "Pahami ceritanya."
   },
   "steps": [
@@ -93,7 +93,7 @@
     }
   ],
   "contact": {
-    "eyebrow": "BUTUH BANTUAN?",
+    "eyebrow": "ADA PERTANYAAN?",
     "heading": "Mari bicarakan kebutuhan bisnis Anda.",
     "buttonText": "Tanya via WhatsApp",
     "description": "Tim Fluxa siap membantu Anda memahami fitur, trial, dan pilihan paket yang sesuai.",
@@ -123,7 +123,7 @@
         ],
         "priceLabel": "Hubungi kami",
         "description": "Untuk usaha kecil yang ingin mulai lebih rapi.",
-        "priceSublabel": "Hubungi tim kami untuk detail harga"
+        "priceSublabel": "untuk informasi harga"
       },
       {
         "name": "Growth",
@@ -136,7 +136,7 @@
         ],
         "priceLabel": "Hubungi kami",
         "description": "Untuk bisnis yang ingin memahami performa lebih dalam.",
-        "priceSublabel": "Hubungi tim kami untuk detail harga"
+        "priceSublabel": "untuk informasi harga"
       },
       {
         "name": "Multi-cabang",
@@ -149,7 +149,7 @@
         ],
         "priceLabel": "Hubungi kami",
         "description": "Untuk tim dan operasional dengan kebutuhan lebih luas.",
-        "priceSublabel": "Hubungi tim kami untuk detail harga"
+        "priceSublabel": "untuk informasi harga"
       }
     ],
     "buttonText": "Tanyakan paket",
@@ -178,6 +178,36 @@
     "tagline": "Kelola hari ini. Tumbuh untuk esok.",
     "copyright": "Semua hak dilindungi."
   },
-  "updatedAt": "2026-10-23T14:33:45.850Z",
-  "updatedBy": "44a61ac7-468f-4022-afcc-4e169a328c5b"
+  "updatedAt": "2026-10-27T05:01:56.167Z",
+  "updatedBy": "5a5d41cc-1a85-44cc-bbdf-49396d2a6e82",
+  "payment_links": {
+    "0596ced8-c02c-4707-bdae-3cf680be6d17": {
+      "payment_link_id": "PL-0596ced8-1792839387980",
+      "payment_link_url": "https://app.sandbox.midtrans.com/payment-links/9ed31d3f-7d9b-4420-891a-7f2b261ef555-8jOpYrM1",
+      "payment_link_status": "synced",
+      "payment_link_order_id": "PL-0596ced8-1792839387980",
+      "payment_link_updated_at": "2026-10-24T10:56:28.074Z"
+    },
+    "2a325a98-0b1d-42e4-ac1a-15fd13793e77": {
+      "payment_link_id": "PL-2a325a98-1792839387120",
+      "payment_link_url": "https://app.sandbox.midtrans.com/payment-links/ded31c85-160b-4171-8480-5766ebd5f657-FAMouUu6",
+      "payment_link_status": "synced",
+      "payment_link_order_id": "PL-2a325a98-1792839387120",
+      "payment_link_updated_at": "2026-10-24T10:56:27.230Z"
+    },
+    "96b79b9e-4408-4e0a-b934-51fe349c421f": {
+      "payment_link_id": "PL-96b79b9e-1792839385926",
+      "payment_link_url": "https://app.sandbox.midtrans.com/payment-links/dddbebee-1f41-4206-84e6-5f2258f99999-ctrpQcWZ",
+      "payment_link_status": "synced",
+      "payment_link_order_id": "PL-96b79b9e-1792839385926",
+      "payment_link_updated_at": "2026-10-24T10:56:26.022Z"
+    },
+    "b7f86aa1-8778-456f-9991-b4bf54ae6cbe": {
+      "payment_link_id": "PL-b7f86aa1-1792911808333",
+      "payment_link_url": "https://app.sandbox.midtrans.com/payment-links/d0eac348-8a38-47b5-acce-75f111b2c6c5-5hWkKTcZ",
+      "payment_link_status": "synced",
+      "payment_link_order_id": "PL-b7f86aa1-1792911808333",
+      "payment_link_updated_at": "2026-10-25T07:03:28.683Z"
+    }
+  }
 }
