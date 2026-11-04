@@ -4,7 +4,7 @@
   --muted: #71809b;
   color: var(--ink);
   background: #fff;
-  font-family: var(--font-inter), Inter, sans-serif;
+  font-family: var(--font-ui);
   font-size: 15px;
   line-height: 1.6;
   overflow: hidden;
@@ -2326,10 +2326,12 @@
   .desktopNav { display: none; }
   .navActions { display: none; }
   .tabletActions { display: none; }
-  .tabletThemeWrap { display: none; }
-  .hamburgerBtn { display: flex; margin-left: auto; }
-  .mobileMenuTop .themeToggle { display: inline-flex; }
-  .mobileCloseBtn { margin-left: 0; }
+  .tabletThemeWrap { display: flex; align-items: center; margin-left: auto; margin-right: 8px; }
+  .tabletThemeWrap .themeToggle { padding: 6px 10px; font-size: 11.5px; gap: 5px; }
+  .hamburgerBtn { display: flex; margin-left: 0; }
+  .mobileMenuTop { justify-content: flex-end; }
+  .mobileMenuTop .themeToggle { display: none !important; }
+  .mobileCloseBtn { margin-left: auto; }
   .mobileBackdrop { top: 72px; padding: 10px 14px 20px; }
   .hero { min-height: auto; }
   .heroInner, .sectionWrap { width: calc(100% - 32px); }

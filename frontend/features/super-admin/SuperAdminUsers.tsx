@@ -196,7 +196,7 @@ export default function SuperAdminUsers() {
                 return (
                   <tr key={user.id}>
                     <td><strong>{user.full_name}</strong><small>{user.email || 'Email tidak tersedia'}</small></td>
-                    <td>{user.phone || '—'}</td>
+                    <td>{user.phone || 'Tidak dicantumkan'}</td>
                     <td>{isSuperAdmin ? roleLabel[user.role] : (
                       <select aria-label={`Role ${user.full_name}`} value={user.role} disabled={processing === user.id} onChange={(event) => void updateUser(user, { role: event.target.value as UserRole })}>
                         <option value="kasir">Kasir</option><option value="admin">Admin</option><option value="owner">Owner</option>
@@ -204,8 +204,8 @@ export default function SuperAdminUsers() {
                     )}</td>
                     <td><span className={`${styles.badge} ${styles[`status_${user.approval_status}`]}`}>{statusLabel[user.approval_status]}</span></td>
                     <td>{dateFormat.format(new Date(user.created_at))}</td>
-                    <td>{user.trial_ends_at ? dateFormat.format(new Date(user.trial_ends_at)) : '—'}</td>
-                    <td>{isSuperAdmin || user.approval_status !== 'approved' ? <span className={`${styles.badge} ${styles.status_active}`}>{isSuperAdmin ? 'Dilindungi' : '—'}</span> : (
+                    <td>{user.trial_ends_at ? dateFormat.format(new Date(user.trial_ends_at)) : 'Belum ada tanggal'}</td>
+                    <td>{isSuperAdmin || user.approval_status !== 'approved' ? <span className={`${styles.badge} ${styles.status_active}`}>{isSuperAdmin ? 'Dilindungi' : 'Belum disetujui'}</span> : (
                       <button className={user.isActive ? styles.dangerButton : styles.primaryButton} type="button" disabled={processing === user.id} onClick={() => void updateUser(user, { active: !user.isActive })}>
                         {processing === user.id ? 'Menyimpan...' : user.isActive ? 'Nonaktifkan' : 'Aktifkan'}
                       </button>

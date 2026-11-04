@@ -410,7 +410,7 @@ export default function SuperAdminFinance() {
         <article className={`${styles.statCard} ${styles.tone_success}`}>
           <span className={styles.statIcon}><DollarSign size={20} /></span>
           <div>
-            <strong>{loading ? '—' : money.format(summary?.grossRevenue ?? 0)}</strong>
+            <strong>{loading ? 'Memuat...' : money.format(summary?.grossRevenue ?? 0)}</strong>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <ArrowUpRight size={13} color="var(--ok)" /> Total Pendapatan Subscription
             </span>
@@ -421,7 +421,7 @@ export default function SuperAdminFinance() {
         <article className={`${styles.statCard} ${styles.tone_warning}`}>
           <span className={styles.statIcon}><Wallet size={20} /></span>
           <div>
-            <strong>{loading ? '—' : money.format(summary?.totalExpenses ?? 0)}</strong>
+            <strong>{loading ? 'Memuat...' : money.format(summary?.totalExpenses ?? 0)}</strong>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <ArrowDownRight size={13} color="var(--warn)" /> Beban / Withdraw Tercatat ({summary?.expensesCount ?? 0} trx)
             </span>
@@ -439,7 +439,7 @@ export default function SuperAdminFinance() {
           <span className={styles.statIcon}><CheckCircle2 size={20} /></span>
           <div>
             <strong style={{ color: (summary?.netBalance ?? 0) >= 0 ? 'var(--ok)' : 'var(--bad)' }}>
-              {loading ? '—' : money.format(summary?.netBalance ?? 0)}
+              {loading ? 'Memuat...' : money.format(summary?.netBalance ?? 0)}
             </strong>
             <span style={{ fontWeight: 600 }}>Saldo Keuangan Bersih (Net Balance)</span>
           </div>
@@ -449,7 +449,7 @@ export default function SuperAdminFinance() {
         <article className={styles.statCard}>
           <span className={styles.statIcon}><Percent size={20} /></span>
           <div>
-            <strong>{loading ? '—' : `${summary?.successRate ?? 0}%`}</strong>
+            <strong>{loading ? 'Memuat...' : `${summary?.successRate ?? 0}%`}</strong>
             <span>Rasio Pembayaran Sukses ({summary?.successCount ?? 0} dari {summary?.totalPayments ?? 0})</span>
           </div>
         </article>
@@ -463,7 +463,7 @@ export default function SuperAdminFinance() {
             <article className={styles.statCard}>
               <span className={styles.statIcon}><CheckCircle2 size={16} /></span>
               <div>
-                <strong>{loading ? '—' : money.format(summary?.grossRevenue ?? 0)}</strong>
+                <strong>{loading ? 'Memuat...' : money.format(summary?.grossRevenue ?? 0)}</strong>
                 <span>{summary?.successCount ?? 0} Pembayaran Berhasil</span>
               </div>
             </article>
@@ -471,7 +471,7 @@ export default function SuperAdminFinance() {
             <article className={`${styles.statCard} ${styles.tone_warning}`}>
               <span className={styles.statIcon}><Clock3 size={16} /></span>
               <div>
-                <strong>{loading ? '—' : money.format(summary?.pendingAmount ?? 0)}</strong>
+                <strong>{loading ? 'Memuat...' : money.format(summary?.pendingAmount ?? 0)}</strong>
                 <span>{summary?.pendingCount ?? 0} Transaksi Pending</span>
               </div>
             </article>
@@ -479,7 +479,7 @@ export default function SuperAdminFinance() {
             <article className={`${styles.statCard} ${styles.tone_danger}`}>
               <span className={styles.statIcon}><XCircle size={16} /></span>
               <div>
-                <strong>{loading ? '—' : money.format(summary?.failedAmount ?? 0)}</strong>
+                <strong>{loading ? 'Memuat...' : money.format(summary?.failedAmount ?? 0)}</strong>
                 <span>{summary?.failedCount ?? 0} Transaksi Gagal / Expired</span>
               </div>
             </article>
@@ -487,7 +487,7 @@ export default function SuperAdminFinance() {
             <article className={styles.statCard}>
               <span className={styles.statIcon}><RefreshCw size={16} /></span>
               <div>
-                <strong>{loading ? '—' : money.format(summary?.refundedAmount ?? 0)}</strong>
+                <strong>{loading ? 'Memuat...' : money.format(summary?.refundedAmount ?? 0)}</strong>
                 <span>{summary?.refundedCount ?? 0} Refund / Dibatalkan</span>
               </div>
             </article>
@@ -638,7 +638,7 @@ export default function SuperAdminFinance() {
                               <strong style={{ color: 'var(--ink)' }}>{money.format(t.amount)}</strong>
                             </td>
                             <td>{dateTime.format(new Date(t.created_at))}</td>
-                            <td>{t.paid_at ? dateTime.format(new Date(t.paid_at)) : '—'}</td>
+                            <td>{t.paid_at ? dateTime.format(new Date(t.paid_at)) : 'Tanggal tidak tersedia'}</td>
                             <td>
                               {t.subscriptionPeriodEnd ? (
                                 <div>
@@ -646,7 +646,7 @@ export default function SuperAdminFinance() {
                                   <small style={{ color: 'var(--mute)' }}>{t.duration_days ?? 30} hari</small>
                                 </div>
                               ) : (
-                                <span style={{ color: 'var(--mute)' }}>—</span>
+                                <span style={{ color: 'var(--mute)' }}>Belum ada periode</span>
                               )}
                             </td>
                             <td>
@@ -945,7 +945,7 @@ export default function SuperAdminFinance() {
                         <td>{r.destination}</td>
                         <td>{r.created_by_name}</td>
                         <td style={{ maxWidth: '200px', whiteSpace: 'normal' }}>
-                          <small>{r.notes || '—'}</small>
+                          <small>{r.notes || 'Tidak ada catatan'}</small>
                         </td>
                         <td>
                           <span className={`${styles.badge} ${styles.status_active}`}>

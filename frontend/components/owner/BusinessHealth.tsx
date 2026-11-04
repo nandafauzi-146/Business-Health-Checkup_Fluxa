@@ -6,6 +6,7 @@ import { Sparkles, RefreshCw, CheckCircle, AlertTriangle, Bot, Activity, Layers,
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
 import { PageHeader } from '@/components/layout/Topbar'
 import { FinancialHealthInput, BusinessHealthDiagnosis } from '@intelligence/index'
+import { normalizeAiResponseText } from '@intelligence/ai/normalize-text'
 import { getUserFacingError } from '@/lib/user-facing-error'
 
 interface Props {
@@ -18,7 +19,7 @@ interface Props {
 function FormattedAiNarration({ text }: { text: string }) {
   if (!text) return null
 
-  const lines = text.split('\n')
+  const lines = normalizeAiResponseText(text).split('\n')
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14, lineHeight: 1.7, color: 'var(--ink)' }}>
       {lines.map((line, idx) => {
@@ -347,7 +348,7 @@ export default function BusinessHealthClient({
                   FluxAI
                 </span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--mute)', letterSpacing: 0 }}>
-                  — AI Business Health Checkup
+                  Analisis kesehatan bisnis
                 </span>
               </div>
               <div style={{ fontSize: 13, color: 'var(--mute)', marginTop: 4, lineHeight: 1.5 }}>

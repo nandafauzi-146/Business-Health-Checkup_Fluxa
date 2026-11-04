@@ -7,5 +7,6 @@ export * from './services/business-health/types';
 export * from './services/business-health/calculator';
 export * from './services/business-health/evaluator';
 export * from './ai/prompts';
+export * from './ai/normalize-text';
 export * from './ai/client';
 export * from './ai/chat';

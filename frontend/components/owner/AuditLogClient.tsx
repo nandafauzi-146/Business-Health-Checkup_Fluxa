@@ -328,7 +328,7 @@ const TABLE_FRIENDLY_NAMES: Record<string, { label: string; desc: string }> = {
 }
 
 function formatFieldValue(key: string, val: any): string {
-  if (val === null || val === undefined) return '—'
+  if (val === null || val === undefined) return 'Tidak tersedia'
   if (typeof val === 'boolean') {
     if (key === 'is_active') return val ? 'Aktif (Dapat Dijual)' : 'Non-Aktif (Disembunyikan)'
     if (key === 'restored_stock') return val ? 'Ya, stok dikembalikan' : 'Tidak dikembalikan'
@@ -509,7 +509,7 @@ export default function AuditLogClient({
             <strong>Koreksi Stok Fisik (Opname/Restock)</strong> produk <em>{nd.product_name || 'Produk'}</em>:{' '}
             <span style={{ fontWeight: 600, color: nd.qty >= 0 ? 'var(--ok)' : 'var(--bad)' }}>
               {nd.qty >= 0 ? `+${nd.qty}` : nd.qty} unit
-            </span> (Stok: {od.stock ?? '—'} → {nd.stock}).
+            </span> (Stok: {od.stock ?? 'Tidak tersedia'} → {nd.stock}).
             {nd.note && <div style={{ fontSize: 12, color: 'var(--mute)', marginTop: 2 }}>Keterangan: "{nd.note}"</div>}
           </div>
         )
@@ -546,7 +546,7 @@ export default function AuditLogClient({
         return (
           <div>
             <strong>Pembaruan Data & Harga Produk</strong> <em>{nd.name}</em>.{' '}
-            Harga Jual: {od.sell_price ? formatRp(od.sell_price) : '—'} → <strong style={{ color: 'var(--ink)' }}>{formatRp(nd.sell_price || 0)}</strong>.
+            Harga Jual: {od.sell_price ? formatRp(od.sell_price) : 'Tidak tersedia'} → <strong style={{ color: 'var(--ink)' }}>{formatRp(nd.sell_price || 0)}</strong>.
           </div>
         )
       case 'CREATE_DEBT':
@@ -1094,7 +1094,7 @@ export default function AuditLogClient({
                                     </span>
                                   ) : (
                                     <span style={{ color: 'var(--mute)', fontStyle: 'italic', fontSize: 11.5 }}>
-                                      {isCreateOnly ? '— (Pencatatan Baru)' : '— (Tidak ada)'}
+                                      {isCreateOnly ? 'Pencatatan baru' : 'Tidak ada data'}
                                     </span>
                                   )}
                                 </td>
@@ -1114,7 +1114,7 @@ export default function AuditLogClient({
                                     </span>
                                   ) : (
                                     <span style={{ color: 'var(--mute)', fontStyle: 'italic', fontSize: 11.5 }}>
-                                      {isDeleteOnly ? '— (Dihapus dari Sistem)' : '— (Dihapus)'}
+                                      {isDeleteOnly ? 'Dihapus dari sistem' : 'Data dihapus'}
                                     </span>
                                   )}
                                 </td>

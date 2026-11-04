@@ -899,7 +899,7 @@ export default function RawMaterialsClient({
                             ))}
                           </div>
                         ) : (
-                          <span style={{ fontSize: 11, color: 'var(--mute)' }}>—</span>
+                          <span style={{ fontSize: 11, color: 'var(--mute)' }}>Tidak ada bahan baku</span>
                         )}
                       </td>
 

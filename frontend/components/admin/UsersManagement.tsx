@@ -371,7 +371,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
                             {u.phone}
                           </div>
                         ) : (
-                          <span style={{ color: 'var(--mute)' }}>—</span>
+                          <span style={{ color: 'var(--mute)' }}>Tidak dicantumkan</span>
                         )}
                       </td>
                       <td style={{ fontSize: 12.5, color: 'var(--mute)' }}>

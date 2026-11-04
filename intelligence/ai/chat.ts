@@ -3,6 +3,8 @@
  * AI Chat Advisor (FluxAI) untuk konsultasi bisnis & keuangan UMKM.
  */
 
+import { normalizeAiResponseText } from './normalize-text';
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -64,6 +66,7 @@ Konteks & Persona:
 - Gunakan data konkret dari konteks yang diberikan. DILARANG keras mengarang angka atau nama yang tidak ada di data.
 - Jika data tidak tersedia untuk menjawab pertanyaan, katakan dengan jujur "Saya tidak menemukan data tersebut di sistem."
 - Format jawaban rapi menggunakan Markdown (heading ##, bold **teks**, bullet - item).
+- Hindari tanda pisah panjang sebagai pemisah kalimat. Gunakan koma, titik, atau titik dua sesuai konteks.
 - Jawaban singkat namun padat untuk pertanyaan sederhana, dan komprehensif untuk pertanyaan analitik.
 - Selalu akhiri dengan 1-2 langkah aksi konkret yang bisa langsung dieksekusi pemilik.
 `.trim();
@@ -181,7 +184,7 @@ export async function generateAiChatReply(
       const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (text && text.trim().length > 0) {
-        return { reply: text.trim(), model: 'FluxAI' };
+        return { reply: normalizeAiResponseText(text), model: 'FluxAI' };
       }
     } catch (err) {
       console.warn(`Chat: model ${model} threw:`, err);
