@@ -21,7 +21,7 @@ export default async function KasirPage() {
       .select('id, product_id, raw_material_id, quantity, unit'),
     supabase
       .from('raw_materials')
-      .select('id, name, material_type, stock, min_stock, unit, density')
+      .select('id, name, material_type, stock, min_stock, unit')
   ])
 
   // Check active shift
