@@ -58,18 +58,16 @@ export function getUnitInfo(unit: string): UnitInfo {
 
 /**
  * Convert quantity from one unit to another.
- * Cross-dimensional conversion (weight <-> volume) uses density (g/ml).
+ * Cross-dimensional conversion uses the universal rule 1 ml = 1 g.
  * @param quantity The quantity to convert
  * @param fromUnit Source unit (e.g. 'kg', 'g', 'ml', 'l')
  * @param toUnit Target unit (e.g. 'g', 'kg', 'ml', 'l')
- * @param density Density in g/ml (default: 1.0)
  * @returns Converted quantity
  */
 export function convertUnit(
   quantity: number,
   fromUnit: string,
   toUnit: string,
-  density: number = 1.0,
 ): number {
   if (quantity === 0) return 0
   const cleanFrom = (fromUnit || '').toLowerCase().trim()
@@ -80,8 +78,6 @@ export function convertUnit(
   const fromInfo = getUnitInfo(cleanFrom)
   const toInfo = getUnitInfo(cleanTo)
 
-  const d = density && density > 0 ? density : 1.0
-
   // If dimensions match:
   if (fromInfo.dimension === toInfo.dimension) {
     const inBase = quantity * fromInfo.multiplierToBase
@@ -90,21 +86,13 @@ export function convertUnit(
 
   // Cross-dimensional: Weight (g) <-> Volume (ml)
   if (fromInfo.dimension === 'weight' && toInfo.dimension === 'volume') {
-    // 1. Convert source to grams
     const inGrams = quantity * fromInfo.multiplierToBase
-    // 2. Convert grams to ml: ml = grams / density
-    const inMl = inGrams / d
-    // 3. Convert ml to target volume unit
-    return inMl / toInfo.multiplierToBase
+    return inGrams / toInfo.multiplierToBase
   }
 
   if (fromInfo.dimension === 'volume' && toInfo.dimension === 'weight') {
-    // 1. Convert source to ml
     const inMl = quantity * fromInfo.multiplierToBase
-    // 2. Convert ml to grams: grams = ml * density
-    const inGrams = inMl * d
-    // 3. Convert grams to target weight unit
-    return inGrams / toInfo.multiplierToBase
+    return inMl / toInfo.multiplierToBase
   }
 
   // Fallback if dimensions cannot be converted directly
@@ -116,8 +104,7 @@ export interface SubIngredientRatioItem {
   sub_material_name?: string
   quantity: number
   unit: string
-  density: number
-  normalizedQuantity: number // in base unit (g for weight, ml for volume converted to g equivalent using density)
+  normalizedQuantity: number // in grams equivalent
   ratio: number // 0 to 1 (fraction of total recipe composition)
   percentage: number // 0 to 100%
 }
@@ -126,7 +113,7 @@ export interface SubIngredientRatioItem {
  * Calculates recipe ingredient ratios based on PRD Section 2:
  * Total ingredient composition is used as a reference for calculating ingredient ratios.
  * Ingredient Ratio = Ingredient Quantity / Total Ingredient Composition.
- * Cross-dimensional ingredients (e.g. grams of egg + liters of oil) are normalized using density.
+ * Volume ingredients are normalized to their gram equivalent using 1 ml = 1 g.
  */
 export function calculateRecipeRatios(
   subIngredients: Array<{
@@ -134,7 +121,6 @@ export function calculateRecipeRatios(
     sub_material_name?: string
     quantity: number
     unit: string
-    density?: number
   }>,
 ): {
   totalCompositionBase: number
@@ -147,7 +133,6 @@ export function calculateRecipeRatios(
   // 1. Normalize each ingredient into base weight (g equivalent)
   const itemsWithNormalized = subIngredients.map(item => {
     const qty = Number(item.quantity) || 0
-    const d = item.density && item.density > 0 ? item.density : 1.0
     const unitInfo = getUnitInfo(item.unit)
 
     let normalized = qty
@@ -155,7 +140,7 @@ export function calculateRecipeRatios(
       normalized = qty * unitInfo.multiplierToBase // in grams
     } else if (unitInfo.dimension === 'volume') {
       const inMl = qty * unitInfo.multiplierToBase
-      normalized = inMl * d // converted to grams equivalent using density
+      normalized = inMl
     } else {
       normalized = qty
     }
@@ -165,7 +150,6 @@ export function calculateRecipeRatios(
       sub_material_name: item.sub_material_name,
       quantity: qty,
       unit: item.unit,
-      density: d,
       normalizedQuantity: normalized,
       ratio: 0,
       percentage: 0,
@@ -232,7 +216,6 @@ export function calculateCartSharedIngredients(
     material_type?: 'raw' | 'semi_finished'
     stock: number
     unit: string
-    density?: number
   }>,
 ): {
   hasShortage: boolean
@@ -256,7 +239,6 @@ export function calculateCartSharedIngredients(
         Number(ing.quantity) || 0,
         ing.unit,
         mat.unit,
-        mat.density || 1.0,
       )
       const requiredForCartItem = convertedQtyPerUnit * cartItem.quantity
 
@@ -307,4 +289,3 @@ export function calculateCartSharedIngredients(
     shortages,
   }
 }
-

@@ -42,7 +42,6 @@ export interface RawMaterialItem {
   unit: string
   cost_per_unit: number
   batch_yield: number | null
-  density?: number | null
   updated_at: string
   products?: { id: string; name: string }[]
   sub_ingredients?: SubIngredientItem[]
@@ -126,8 +125,7 @@ export default function RawMaterialsClient({
     min_stock: '100',
     unit: 'gram',
     cost_per_unit: '0',
-    batch_yield: '1000',
-    density: '1.0'
+    batch_yield: '1000'
   })
 
   // Sub-ingredients in Form (untuk Bumbu Olahan)
@@ -187,8 +185,7 @@ export default function RawMaterialsClient({
       min_stock: '100',
       unit: 'gram',
       cost_per_unit: '0',
-      batch_yield: '1000',
-      density: '1.0'
+      batch_yield: '1000'
     })
     setFormSubIngredients([])
     setShowAddEditDialog(true)
@@ -204,8 +201,7 @@ export default function RawMaterialsClient({
       min_stock: String(m.min_stock),
       unit: m.unit,
       cost_per_unit: String(m.cost_per_unit),
-      batch_yield: String(m.batch_yield || 1000),
-      density: String(m.density || 1.0)
+      batch_yield: String(m.batch_yield || 1000)
     })
 
     const existingSubs = (m.sub_ingredients || []).map(s => ({
@@ -262,7 +258,6 @@ export default function RawMaterialsClient({
     const unit = form.unit.trim() || 'gram'
     const sku = form.sku.trim() || null
     const batchYield = Number(form.batch_yield) || 1000
-    const densityVal = Number(form.density) > 0 ? Number(form.density) : 1.0
 
     if (!name) {
       showToast('Nama bahan baku wajib diisi.', 'bad')
@@ -293,7 +288,6 @@ export default function RawMaterialsClient({
             unit,
             cost_per_unit: costPerUnit,
             batch_yield: form.material_type === 'semi_finished' ? batchYield : null,
-            density: densityVal,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingMaterial.id)
@@ -335,8 +329,7 @@ export default function RawMaterialsClient({
             min_stock: minStock,
             unit,
             cost_per_unit: costPerUnit,
-            batch_yield: isSemi ? batchYield : null,
-            density: densityVal
+            batch_yield: isSemi ? batchYield : null
           })
           .select('*')
           .single()
@@ -626,8 +619,7 @@ export default function RawMaterialsClient({
         sub_material_id: s.sub_material_id,
         sub_material_name: mat?.name || 'Rempah',
         quantity: Number(s.quantity) || 0,
-        unit: s.unit || mat?.unit || 'g',
-        density: mat?.density || 1.0
+        unit: s.unit || mat?.unit || 'g'
       }
     })
   )
@@ -1211,24 +1203,6 @@ export default function RawMaterialsClient({
                     </select>
                   </div>
 
-                  <div>
-                    <label className="label" htmlFor="mat-density">
-                      Densitas / Massa Jenis (g/ml)
-                    </label>
-                    <input
-                      id="mat-density"
-                      className="input"
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      placeholder="1.0"
-                      value={form.density}
-                      onChange={e => setForm(f => ({ ...f, density: e.target.value }))}
-                    />
-                    <span style={{ fontSize: 10.5, color: 'var(--mute)', display: 'block', marginTop: 2 }}>
-                      Untuk konversi berat & volume (Air = 1.0, Minyak = 0.92, Madu = 1.42, Telur = 1.03)
-                    </span>
-                  </div>
                 </div>
 
                 {/* ======================================================== */}
@@ -1553,7 +1527,7 @@ export default function RawMaterialsClient({
                       const batchYield = produceMaterial.batch_yield || 1000
                       const ratio = (Number(produceQty) || 0) / batchYield
                       const neededRaw = sub.quantity * ratio
-                      const neededConverted = mat ? convertUnit(neededRaw, sub.unit, mat.unit, mat.density || 1.0) : neededRaw
+                      const neededConverted = mat ? convertUnit(neededRaw, sub.unit, mat.unit) : neededRaw
                       const needed = Math.round(neededConverted * 100) / 100
                       const isShort = mat ? mat.stock < needed : false
 
