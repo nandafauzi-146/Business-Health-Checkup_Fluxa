@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import {
   Plus, Search, Package, Edit, Trash2, X, Check, Filter, Camera,
   Image as ImageIcon, Upload, Link as LinkIcon, Boxes, AlertCircle,
@@ -12,7 +12,7 @@ import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
 import { PageHeader } from '@/components/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import { getUserFacingError } from '@/lib/user-facing-error'
-import { convertUnit } from '@/lib/unit-conversion'
+import { areUnitsCompatible, convertUnit } from '@/lib/unit-conversion'
 
 function formatRp(n: number) {
   return 'Rp' + new Intl.NumberFormat('id-ID').format(Math.round(n))
@@ -69,6 +69,13 @@ interface FormIngredient {
   raw_material_id: string
   quantity: string
   unit: string
+}
+
+interface RecipeIngredientCost {
+  ingredient_index: number
+  raw_material_id: string
+  normalized_quantity: number
+  ingredient_cost: number
 }
 
 interface Props {
@@ -136,10 +143,16 @@ export default function ProductsClient({
   initialIngredients = [],
   loadError
 }: Props) {
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const [products, setProducts] = useState<Product[]>(initialProducts)
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>(initialRawMaterials)
   const [ingredients, setIngredients] = useState<ProductIngredient[]>(initialIngredients)
+  const [recipeCostResult, setRecipeCostResult] = useState<{
+    requestKey: string
+    costs: RecipeIngredientCost[]
+    error: string | null
+    loading: boolean
+  }>({ requestKey: '', costs: [], error: null, loading: false })
 
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -204,6 +217,81 @@ export default function ProductsClient({
     setTimeout(() => setToast(null), 3500)
   }
 
+  const requestIngredients = useMemo(() => formIngredients.map(item => ({
+    raw_material_id: item.raw_material_id,
+    quantity: Number(item.quantity),
+    unit: item.unit,
+  })), [formIngredients])
+  const recipeRequestKey = JSON.stringify({
+    ingredients: requestIngredients,
+    materials: rawMaterials.map(({ id, unit, cost_per_unit }) => ({ id, unit, cost_per_unit })),
+  })
+  const currentRecipeCostResult = recipeCostResult.requestKey === recipeRequestKey
+    ? recipeCostResult
+    : null
+  const recipeIngredientCosts = currentRecipeCostResult?.costs || []
+  const recipeCostError = currentRecipeCostResult?.error || null
+  const recipeCalculationIsValid = requestIngredients.length > 0 &&
+    requestIngredients.every(item =>
+      item.raw_material_id && Number.isFinite(item.quantity) && item.quantity > 0
+    )
+  const recipeCostLoading = recipeCalculationIsValid &&
+    (!currentRecipeCostResult || currentRecipeCostResult.loading)
+
+  useEffect(() => {
+    if (!recipeCalculationIsValid) return
+
+    let cancelled = false
+    const timeoutId = setTimeout(() => {
+      setRecipeCostResult({ requestKey: recipeRequestKey, costs: [], error: null, loading: true })
+
+      void (async () => {
+        try {
+          const { data, error } = await supabase.rpc('calculate_recipe_ingredient_costs', {
+            p_ingredients: requestIngredients,
+          })
+          if (cancelled) return
+          if (error) {
+            console.error('Error calculating recipe ingredient costs:', error)
+            setRecipeCostResult({
+              requestKey: recipeRequestKey,
+              costs: [],
+              error: getUserFacingError(error, 'Biaya resep belum dapat dihitung.'),
+              loading: false,
+            })
+            return
+          }
+
+          setRecipeCostResult({
+            requestKey: recipeRequestKey,
+            costs: (data || []).map((item: RecipeIngredientCost) => ({
+              ...item,
+              ingredient_index: Number(item.ingredient_index),
+              normalized_quantity: Number(item.normalized_quantity),
+              ingredient_cost: Number(item.ingredient_cost),
+            })),
+            error: null,
+            loading: false,
+          })
+        } catch (error: unknown) {
+          if (cancelled) return
+          console.error('Error calculating recipe ingredient costs:', error)
+          setRecipeCostResult({
+            requestKey: recipeRequestKey,
+            costs: [],
+            error: getUserFacingError(error, 'Biaya resep belum dapat dihitung.'),
+            loading: false,
+          })
+        }
+      })()
+    }, 250)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timeoutId)
+    }
+  }, [recipeCalculationIsValid, recipeRequestKey, requestIngredients, supabase])
+
   // Get recipe ingredients for a product
   const getProductIngredients = (productId: string) => {
     return ingredients.filter(i => i.product_id === productId)
@@ -240,18 +328,6 @@ export default function ProductsClient({
       maxPortions: minPortions,
       bottleneck
     }
-  }
-
-  // Calculate estimated HPP from ingredients with unit conversion (PRD Section 3 & 4)
-  const calculateRecipeCost = (ings: FormIngredient[]) => {
-    return ings.reduce((total, item) => {
-      const mat = rawMaterials.find(m => m.id === item.raw_material_id)
-      const qty = Number(item.quantity) || 0
-      if (!mat || qty <= 0) return total
-      const neededInMatUnit = convertUnit(qty, item.unit || mat.unit, mat.unit)
-      const costPerUnit = mat.cost_per_unit || 0
-      return total + (neededInMatUnit * costPerUnit)
-    }, 0)
   }
 
   const handleOpenAdd = () => {
@@ -382,7 +458,15 @@ export default function ProductsClient({
   }
 
   const handleApplyRecipeCostToBuyPrice = () => {
-    const totalCost = calculateRecipeCost(formIngredients)
+    if (recipeCostLoading) {
+      showToast('Biaya resep masih dihitung. Silakan coba kembali.', 'bad')
+      return
+    }
+    if (recipeCostError) {
+      showToast(recipeCostError, 'bad')
+      return
+    }
+    const totalCost = recipeIngredientCosts.reduce((total, item) => total + item.ingredient_cost, 0)
     if (totalCost > 0) {
       setForm(f => ({ ...f, buy_price: String(Math.round(totalCost)) }))
       showToast(`Harga modal disesuaikan dengan HPP resep: ${formatRp(totalCost)}`, 'ok')
@@ -502,9 +586,34 @@ export default function ProductsClient({
       showToast('Harga modal, stok, dan batas stok harus berupa angka bulat nol atau lebih.', 'bad')
       return
     }
+
+    const validIngredients = formIngredients.map(item => ({
+      raw_material_id: item.raw_material_id,
+      quantity: Number(item.quantity),
+      unit: item.unit || rawMaterials.find(material => material.id === item.raw_material_id)?.unit || 'gram',
+    }))
+    const hasInvalidIngredient = validIngredients.some(item => {
+      const material = rawMaterials.find(rawMaterial => rawMaterial.id === item.raw_material_id)
+      return !material ||
+        !Number.isFinite(item.quantity) ||
+        item.quantity <= 0 ||
+        !areUnitsCompatible(item.unit, material.unit)
+    })
+    if (hasInvalidIngredient) {
+      showToast('Setiap bahan resep harus memiliki takaran positif dan satuan yang kompatibel dengan satuan stok.', 'bad')
+      return
+    }
+
     setSaving(true)
 
     try {
+      if (validIngredients.length > 0) {
+        const { error: calculationError } = await supabase.rpc('calculate_recipe_ingredient_costs', {
+          p_ingredients: validIngredients,
+        })
+        if (calculationError) throw calculationError
+      }
+
       let imageWasOmitted = false
       const payload = {
         name: form.name.trim(),
@@ -599,16 +708,12 @@ export default function ProductsClient({
           .delete()
           .eq('product_id', savedProductId)
 
-        const validIngredients = formIngredients.filter(
-          item => item.raw_material_id && Number(item.quantity) > 0
-        )
-
         if (validIngredients.length > 0) {
           const ingredientRows = validIngredients.map(item => ({
             product_id: savedProductId,
             raw_material_id: item.raw_material_id,
-            quantity: Number(item.quantity),
-            unit: item.unit || 'gram'
+            quantity: item.quantity,
+            unit: item.unit
           }))
 
           const { error: ingError } = await supabase
@@ -717,7 +822,7 @@ export default function ProductsClient({
   }
 
   const portionsData = calculatePortionsPossible(formIngredients)
-  const totalRecipeHPP = calculateRecipeCost(formIngredients)
+  const totalRecipeHPP = recipeIngredientCosts.reduce((total, item) => total + item.ingredient_cost, 0)
 
   return (
     <div>
@@ -1270,8 +1375,12 @@ export default function ProductsClient({
                       {formIngredients.map((ing, idx) => {
                         const mat = rawMaterials.find(m => m.id === ing.raw_material_id)
                         const qtyNum = Number(ing.quantity) || 0
-                        const matCost = (mat?.cost_per_unit || 0) * qtyNum
-                        const isShortage = mat ? mat.stock < qtyNum : false
+                        const unitsCompatible = mat ? areUnitsCompatible(ing.unit || mat.unit, mat.unit) : false
+                        const neededInMatUnit = mat && unitsCompatible
+                          ? convertUnit(qtyNum, ing.unit || mat.unit, mat.unit)
+                          : 0
+                        const ingredientCost = recipeIngredientCosts.find(cost => cost.ingredient_index === idx + 1)
+                        const isShortage = mat && unitsCompatible ? mat.stock < neededInMatUnit : false
 
                         return (
                           <div
@@ -1351,7 +1460,7 @@ export default function ProductsClient({
                                 Biaya Bahan
                               </label>
                               <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', paddingTop: 5 }}>
-                                {formatRp(matCost)}
+                                {recipeCostLoading ? 'Menghitung...' : ingredientCost ? formatRp(ingredientCost.ingredient_cost) : '—'}
                               </div>
                             </div>
 
@@ -1403,11 +1512,16 @@ export default function ProductsClient({
                             Estimasi Total HPP Bahan:
                           </div>
                           <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--acc)' }}>
-                            {formatRp(totalRecipeHPP)} / porsi
+                            {recipeCostLoading ? 'Menghitung...' : recipeCostError ? 'Tidak dapat dihitung' : `${formatRp(totalRecipeHPP)} / porsi`}
                           </div>
+                          {recipeCostError && (
+                            <div style={{ fontSize: 11, color: 'var(--bad)', marginTop: 4 }} role="alert">
+                              {recipeCostError}
+                            </div>
+                          )}
                         </div>
 
-                        {totalRecipeHPP > 0 && (
+                        {totalRecipeHPP > 0 && !recipeCostLoading && !recipeCostError && (
                           <button
                             type="button"
                             onClick={handleApplyRecipeCostToBuyPrice}
