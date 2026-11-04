@@ -6,6 +6,7 @@
 
 import { FinancialHealthInput, FinancialHealthMetrics } from '../services/business-health/types';
 import { buildDiagnosticPrompt, BUSINESS_HEALTH_SYSTEM_PROMPT } from './prompts';
+import { normalizeAiResponseText } from './normalize-text';
 
 export interface AiDiagnosisResponse {
   insights: string;
@@ -70,7 +71,7 @@ export async function generateAiHealthInsights(
 
         if (generatedText && generatedText.trim().length > 0) {
           return {
-            insights: generatedText.trim(),
+            insights: normalizeAiResponseText(generatedText),
             source: 'ai_llm',
             model: 'FluxAI Intelligence Engine (Live API)',
           };
@@ -101,7 +102,7 @@ function generateDeterministicNarrative(input: FinancialHealthInput, metrics: Fi
 
   const marginNote = metrics.net_margin_pct >= 15
     ? `Profitabilitas bisnis solid dengan margin bersih ${metrics.net_margin_pct}% (Laba Bersih Rp ${metrics.net_profit.toLocaleString('id-ID')}).`
-    : `Margin bersih tercatat ${metrics.net_margin_pct}% — tergolong tipis untuk menghadapi fluktuasi biaya operasional.`;
+    : `Margin bersih tercatat ${metrics.net_margin_pct}%, tergolong tipis untuk menghadapi fluktuasi biaya operasional.`;
 
   const cashNote = metrics.cash_runway_months >= 3
     ? `Cadangan kas riil Rp ${input.cash_on_hand.toLocaleString('id-ID')} mencukupi untuk operasional ${metrics.cash_runway_months} bulan ke depan.`

@@ -45,7 +45,7 @@ function formatRp(n: number) {
 }
 
 function formatDate(d: string | null) {
-  if (!d) return '—'
+  if (!d) return 'Tanggal tidak tersedia'
   return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
@@ -194,7 +194,7 @@ export default function DebtReceivablesClient({
   const handleDeleteCategory = async (id: string, name: string) => {
     const inUse = data.some(d => d.category === name)
     if (inUse) {
-      showToast(`Kategori "${name}" masih digunakan oleh transaksi — tidak dapat dihapus`, 'bad')
+      showToast(`Kategori "${name}" masih digunakan oleh transaksi, sehingga tidak dapat dihapus.`, 'bad')
       return
     }
     setCatSaving(true)
@@ -618,7 +618,9 @@ export default function DebtReceivablesClient({
                       {/* Jenis Badge */}
                       <td>
                         <span style={{
-                          display: 'inline-block',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
                           padding: '3px 8px',
                           borderRadius: 6,
                           fontSize: 11,
@@ -627,6 +629,7 @@ export default function DebtReceivablesClient({
                           color: item.type === 'payable' ? 'var(--bad)' : 'var(--ok)',
                           whiteSpace: 'nowrap'
                         }}>
+                          {item.type === 'payable' ? <ArrowUpRight size={12} /> : <ArrowDownLeft size={12} />}
                           {item.type === 'payable' ? 'HUTANG' : 'PIUTANG'}
                         </span>
                       </td>
@@ -731,38 +734,10 @@ export default function DebtReceivablesClient({
 
       {/* Modal 1: Catat Hutang / Piutang Baru */}
       {addOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: 16
-        }}>
-          <div style={{
-            background: 'var(--panel)',
-            border: '1px solid var(--line)',
-            borderRadius: 14,
-            width: '100%',
-            maxWidth: 520,
-            boxShadow: '0 16px 40px rgba(0,0,0,0.25)',
-            maxHeight: 'calc(100dvh - 32px)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-          }}>
+        <div className="debt-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setAddOpen(false) }}>
+          <div className="debt-modal-card">
             {/* Modal Header */}
-            <div style={{
-              padding: '16px 20px',
-              borderBottom: '1px solid var(--line)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexShrink: 0
-            }}>
+            <div className="debt-modal-header">
               <div style={{ fontWeight: 700, fontSize: 16 }}>
                 Catat Transaksi Hutang / Piutang Baru
               </div>
@@ -776,57 +751,69 @@ export default function DebtReceivablesClient({
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleAdd} style={{ padding: '20px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <form onSubmit={handleAdd} className="debt-modal-body">
               {/* Jenis: Hutang vs Piutang Selector */}
               <div style={{ marginBottom: 16 }}>
                 <label className="label" style={{ fontWeight: 700, marginBottom: 8, display: 'block' }}>
                   Jenis Transaksi <span style={{ color: 'var(--bad)' }}>*</span>
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div className="debt-type-grid">
                   <button
                     type="button"
                     onClick={() => setForm(f => ({ ...f, type: 'payable' }))}
+                    className="debt-type-btn"
                     style={{
-                      padding: '12px',
-                      borderRadius: 8,
                       border: `2px solid ${form.type === 'payable' ? 'var(--bad)' : 'var(--line)'}`,
                       background: form.type === 'payable' ? 'var(--bads)' : 'var(--panel)',
-                      color: form.type === 'payable' ? 'var(--bad)' : 'var(--ink)',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 4
+                      color: form.type === 'payable' ? 'var(--bad)' : 'var(--ink)'
                     }}
                   >
-                    <span style={{ fontSize: 15 }}>🧾 Hutang Toko</span>
-                    <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--mute)' }}>
-                      Kewajiban keluar (supplier, sewa, utilitas)
-                    </span>
+                    <div
+                      className="debt-type-icon-box"
+                      style={{
+                        background: form.type === 'payable' ? 'var(--bad)' : 'var(--bg)',
+                        color: form.type === 'payable' ? '#fff' : 'var(--mute)'
+                      }}
+                    >
+                      <ArrowUpRight size={18} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: form.type === 'payable' ? 'var(--bad)' : 'var(--ink)' }}>
+                        Hutang Toko
+                      </div>
+                      <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--mute)', lineHeight: 1.3, marginTop: 2 }}>
+                        Kewajiban keluar (supplier, sewa, utilitas)
+                      </div>
+                    </div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setForm(f => ({ ...f, type: 'receivable' }))}
+                    className="debt-type-btn"
                     style={{
-                      padding: '12px',
-                      borderRadius: 8,
                       border: `2px solid ${form.type === 'receivable' ? 'var(--ok)' : 'var(--line)'}`,
                       background: form.type === 'receivable' ? 'var(--oks)' : 'var(--panel)',
-                      color: form.type === 'receivable' ? 'var(--ok)' : 'var(--ink)',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 4
+                      color: form.type === 'receivable' ? 'var(--ok)' : 'var(--ink)'
                     }}
                   >
-                    <span style={{ fontSize: 15 }}>💰 Piutang Usaha</span>
-                    <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--mute)' }}>
-                      Hak tagih masuk (konsinyasi mitra, pesanan B2B)
-                    </span>
+                    <div
+                      className="debt-type-icon-box"
+                      style={{
+                        background: form.type === 'receivable' ? 'var(--ok)' : 'var(--bg)',
+                        color: form.type === 'receivable' ? '#fff' : 'var(--mute)'
+                      }}
+                    >
+                      <ArrowDownLeft size={18} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: form.type === 'receivable' ? 'var(--ok)' : 'var(--ink)' }}>
+                        Piutang Usaha
+                      </div>
+                      <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--mute)', lineHeight: 1.3, marginTop: 2 }}>
+                        Hak tagih masuk (konsinyasi mitra, pesanan B2B)
+                      </div>
+                    </div>
                   </button>
                 </div>
               </div>
@@ -887,8 +874,8 @@ export default function DebtReceivablesClient({
                 />
               </div>
 
-              {/* Total Nominal & Jatuh Tempo (2 Kolom) */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 12, marginBottom: 14 }}>
+              {/* Total Nominal & Jatuh Tempo (Responsive 2 Kolom) */}
+              <div className="debt-form-grid-2col">
                 <div>
                   <label className="label" htmlFor="total-amount-input">
                     Total Nominal (Rp) <span style={{ color: 'var(--bad)' }}>*</span>
@@ -936,18 +923,7 @@ export default function DebtReceivablesClient({
               </div>
 
               {/* Modal Footer */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: 10,
-                position: 'sticky',
-                bottom: -20,
-                background: 'var(--panel)',
-                paddingTop: 12,
-                paddingBottom: 4,
-                borderTop: '1px solid var(--line)',
-                marginTop: 16
-              }}>
+              <div className="debt-modal-footer">
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -970,40 +946,22 @@ export default function DebtReceivablesClient({
 
       {/* Modal 2: Catat Pembayaran / Pelunasan */}
       {payOpen && selected && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: 16
-        }}>
-          <div style={{
-            background: 'var(--panel)',
-            border: '1px solid var(--line)',
-            borderRadius: 14,
-            width: '100%',
-            maxWidth: 480,
-            boxShadow: '0 16px 40px rgba(0,0,0,0.25)',
-            maxHeight: 'calc(100dvh - 32px)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-          }}>
+        <div className="debt-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setPayOpen(false) }}>
+          <div className="debt-modal-card" style={{ maxWidth: 480 }}>
             {/* Header */}
-            <div style={{
-              padding: '16px 20px',
-              borderBottom: '1px solid var(--line)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexShrink: 0
-            }}>
-              <div style={{ fontWeight: 700, fontSize: 16 }}>
-                {selected.type === 'payable' ? 'Catat Pembayaran Hutang Toko' : 'Catat Penerimaan Pembayaran Piutang'}
+            <div className="debt-modal-header">
+              <div style={{ fontWeight: 700, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: 6,
+                  background: selected.type === 'payable' ? 'var(--bads)' : 'var(--oks)',
+                  color: selected.type === 'payable' ? 'var(--bad)' : 'var(--ok)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  {selected.type === 'payable' ? <ArrowUpRight size={16} /> : <ArrowDownLeft size={16} />}
+                </div>
+                <span>
+                  {selected.type === 'payable' ? 'Catat Pembayaran Hutang Toko' : 'Catat Penerimaan Pembayaran Piutang'}
+                </span>
               </div>
               <button
                 type="button"
@@ -1015,7 +973,7 @@ export default function DebtReceivablesClient({
             </div>
 
             {/* Form */}
-            <form onSubmit={handleRecordPayment} style={{ padding: '20px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <form onSubmit={handleRecordPayment} className="debt-modal-body">
               {/* Info Ringkas */}
               <div style={{
                 background: 'var(--bg)',
@@ -1028,7 +986,7 @@ export default function DebtReceivablesClient({
                   {selected.party_name}
                 </div>
                 <div style={{ fontSize: 12.5, color: 'var(--mute)', marginBottom: 8 }}>
-                  {selected.category} — {selected.description}
+                  {selected.category}: {selected.description}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, borderTop: '1px solid var(--line)', paddingTop: 8 }}>
                   <span>Total Tagihan:</span>
@@ -1121,18 +1079,7 @@ export default function DebtReceivablesClient({
               </div>
 
               {/* Modal Footer */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: 10,
-                position: 'sticky',
-                bottom: -20,
-                background: 'var(--panel)',
-                paddingTop: 12,
-                paddingBottom: 4,
-                borderTop: '1px solid var(--line)',
-                marginTop: 16
-              }}>
+              <div className="debt-modal-footer">
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -1155,38 +1102,10 @@ export default function DebtReceivablesClient({
 
       {/* Modal 3: Kelola Kategori */}
       {catOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: 16
-        }}>
-          <div style={{
-            background: 'var(--panel)',
-            border: '1px solid var(--line)',
-            borderRadius: 14,
-            width: '100%',
-            maxWidth: 480,
-            boxShadow: '0 16px 40px rgba(0,0,0,0.25)',
-            overflow: 'hidden',
-            maxHeight: '85vh',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
+        <div className="debt-modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setCatOpen(false); setEditingCatId(null); setNewCatName('') } }}>
+          <div className="debt-modal-card" style={{ maxWidth: 480 }}>
             {/* Header */}
-            <div style={{
-              padding: '16px 20px',
-              borderBottom: '1px solid var(--line)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexShrink: 0
-            }}>
+            <div className="debt-modal-header">
               <div>
                 <div style={{ fontWeight: 700, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Tags size={18} style={{ color: 'var(--acc)' }} />

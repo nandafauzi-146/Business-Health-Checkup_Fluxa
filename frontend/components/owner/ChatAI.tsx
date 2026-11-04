@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Bot, X, Send, Minimize2, Maximize2, Sparkles, ChevronRight, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
 import { getUserFacingError } from '@/lib/user-facing-error'
+import { normalizeAiResponseText } from '@intelligence/ai/normalize-text'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -20,7 +21,7 @@ const STARTER_QUESTIONS = [
 ]
 
 function FormattedMessage({ text }: { text: string }) {
-  const lines = text.split('\n')
+  const lines = normalizeAiResponseText(text).split('\n')
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13.5, lineHeight: 1.65 }}>
       {lines.map((line, idx) => {
@@ -304,7 +305,7 @@ export default function ChatAI() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <Sparkles size={15} color="var(--acc)" />
                   <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
-                    Halo! Saya FluxAI — Asisten Bisnis Anda 👋
+                    Halo! Saya FluxAI, asisten bisnis Anda 👋
                   </span>
                 </div>
                 <p style={{ fontSize: 13, color: 'var(--mute)', margin: 0, lineHeight: 1.6 }}>
