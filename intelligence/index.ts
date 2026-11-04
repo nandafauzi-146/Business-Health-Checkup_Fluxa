@@ -9,3 +9,4 @@ export * from './services/business-health/evaluator';
 export * from './ai/prompts';
 export * from './ai/client';
 export * from './ai/chat';
+export * from './ai/customer-service';
