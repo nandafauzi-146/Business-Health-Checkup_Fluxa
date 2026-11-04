@@ -1093,8 +1093,8 @@ export default function RawMaterialsClient({
       {/* Add / Edit Material Modal */}
       {showAddEditDialog && (
         <div className="dialog-overlay" onClick={e => e.target === e.currentTarget && setShowAddEditDialog(false)}>
-          <div className="dialog" style={{ maxWidth: 640, maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div className="dialog" style={{ maxWidth: 640, maxHeight: 'calc(100dvh - 32px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '22px 26px 18px', flexShrink: 0 }}>
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 700 }}>
                   {editingMaterial ? 'Edit Bahan / Bumbu' : 'Tambah Bahan Baku / Bumbu Olahan'}
@@ -1108,8 +1108,9 @@ export default function RawMaterialsClient({
               </button>
             </div>
 
-            <form onSubmit={handleSaveMaterial}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <form onSubmit={handleSaveMaterial} style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0, overflow: 'hidden' }}>
+              <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 26px 24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {/* Tipe Bahan Selector */}
                 <div>
                   <label className="label">Tipe Bahan</label>
@@ -1454,9 +1455,10 @@ export default function RawMaterialsClient({
                     </div>
                   )}
                 </div>
+                </div>
               </div>
 
-              <div className="modal-footer-sticky">
+              <div className="modal-footer-sticky" style={{ flexShrink: 0, marginTop: 0, padding: '14px 26px 20px', background: 'var(--panel)' }}>
                 <button
                   type="button"
                   className="btn btn-secondary"

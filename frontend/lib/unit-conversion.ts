@@ -33,6 +33,7 @@ const UNIT_MAP: Record<string, UnitInfo> = {
   buah: { dimension: 'count', baseUnit: 'pcs', multiplierToBase: 1 },
   biji: { dimension: 'count', baseUnit: 'pcs', multiplierToBase: 1 },
   cup: { dimension: 'count', baseUnit: 'pcs', multiplierToBase: 1 },
+  butir: { dimension: 'count', baseUnit: 'pcs', multiplierToBase: 1 },
   pax: { dimension: 'count', baseUnit: 'pcs', multiplierToBase: 1 },
 }
 
@@ -54,6 +55,22 @@ export function getUnitInfo(unit: string): UnitInfo {
       multiplierToBase: 1,
     }
   )
+}
+
+export function areUnitsCompatible(fromUnit: string, toUnit: string): boolean {
+  const cleanFrom = normalizeUnitString(fromUnit)
+  const cleanTo = normalizeUnitString(toUnit)
+  if (cleanFrom === cleanTo) return true
+
+  const fromInfo = getUnitInfo(cleanFrom)
+  const toInfo = getUnitInfo(cleanTo)
+  if (fromInfo.dimension === 'other' || toInfo.dimension === 'other') return false
+  if (fromInfo.dimension === 'count' || toInfo.dimension === 'count') {
+    return fromInfo.dimension === 'count' &&
+      toInfo.dimension === 'count' &&
+      fromInfo.baseUnit === toInfo.baseUnit
+  }
+  return true
 }
 
 /**
