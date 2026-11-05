@@ -23,6 +23,7 @@ import {
   Search,
   TrendingUp,
   Wallet,
+  X,
   XCircle,
 } from 'lucide-react'
 import { Empty, ErrorBox, Loading } from './SuperAdminOverview'
@@ -965,36 +966,36 @@ export default function SuperAdminFinance() {
       {/* Modal: Catat Pengeluaran / Withdraw Eksternal (Recordkeeping Only) */}
       {showAddExpenseModal && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: '20px',
+          className={styles.modalBackdrop}
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !expenseSubmitting) setShowAddExpenseModal(false)
           }}
         >
           <div
-            style={{
-              background: 'var(--panel)',
-              border: '1px solid var(--line)',
-              borderRadius: 'var(--radius-card)',
-              width: '100%',
-              maxWidth: '520px',
-              padding: '24px',
-              boxShadow: 'var(--shadow-hard)',
-            }}
+            className={`${styles.panel} ${styles.expenseDialog}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="expense-modal-title"
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <h2 style={{ margin: 0, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Wallet size={18} color="var(--role-acc, var(--acc))" />
-                Catat Pengeluaran / Withdraw Eksternal
-              </h2>
+            <div className={styles.modalHeading}>
+              <div className={styles.modalHeadingIcon}><Wallet size={18} /></div>
+              <div className={styles.modalHeadingCopy}>
+                <h2 id="expense-modal-title">Catat Pengeluaran / Withdraw Eksternal</h2>
+                <p>Catatan untuk pelaporan dan pembukuan internal.</p>
+              </div>
               <span className={styles.badge} style={{ background: 'var(--role-accs, var(--accs))', color: 'var(--role-acc, var(--acc))' }}>
                 Reporting Only
               </span>
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={() => setShowAddExpenseModal(false)}
+                aria-label="Tutup form pengeluaran"
+                disabled={expenseSubmitting}
+              >
+                <X size={17} />
+              </button>
             </div>
 
             <p style={{ margin: '0 0 16px', fontSize: '12px', color: 'var(--mute)', lineHeight: 1.5 }}>
@@ -1035,7 +1036,7 @@ export default function SuperAdminFinance() {
                 </div>
 
                 {/* Tanggal & Kategori (2 Kolom) */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div className={styles.expenseDateCategory}>
                   <div>
                     <label htmlFor="exp-date" style={{ display: 'block', fontSize: '12px', fontWeight: 650, marginBottom: '4px' }}>
                       Tanggal Transaksi Eksternal *
@@ -1153,7 +1154,7 @@ export default function SuperAdminFinance() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
+              <div className={styles.modalActions}>
                 <button
                   type="button"
                   className={styles.secondaryButton}

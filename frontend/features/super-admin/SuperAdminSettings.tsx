@@ -168,8 +168,9 @@ export default function SuperAdminSettings() {
             <span>{successMessage}</span>
           </div>
           {extensionSummary && extensionSummary.usersExtended > 0 && (
-            <div style={{ fontSize: 12, paddingLeft: 24, color: 'var(--ink)' }}>
-              🎉 <strong>{extensionSummary.usersExtended} akun Owner trial aktif</strong> telah diperpanjang otomatis sebesar <strong>+{extensionSummary.additionalDays} hari</strong> dari tanggal kedaluwarsa sebelumnya.
+            <div style={{ fontSize: 12, paddingLeft: 24, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Check size={14} color="var(--ok)" aria-hidden="true" />
+              <span><strong>{extensionSummary.usersExtended} akun Owner trial aktif</strong> telah diperpanjang otomatis sebesar <strong>+{extensionSummary.additionalDays} hari</strong> dari tanggal kedaluwarsa sebelumnya.</span>
             </div>
           )}
         </div>
@@ -362,4 +363,3 @@ export default function SuperAdminSettings() {
     </section>
   )
 }
-

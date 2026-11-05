@@ -111,7 +111,7 @@ export default function ChatAI() {
       if (!res.ok || data.error) {
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: `⚠️ ${getUserFacingError(data.error, 'Layanan AI belum dapat memproses permintaan. Silakan coba lagi.')}`,
+          content: getUserFacingError(data.error, 'Layanan AI belum dapat memproses permintaan. Silakan coba lagi.'),
           timestamp: new Date(),
         }])
       } else {
@@ -121,7 +121,7 @@ export default function ChatAI() {
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '⚠️ Gagal terhubung ke FluxAI. Periksa koneksi internet Anda.',
+        content: 'Gagal terhubung ke FluxAI. Periksa koneksi internet Anda.',
         timestamp: new Date(),
       }])
     } finally {
@@ -305,7 +305,7 @@ export default function ChatAI() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <Sparkles size={15} color="var(--acc)" />
                   <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
-                    Halo! Saya FluxAI, asisten bisnis Anda 👋
+                    Halo! Saya FluxAI, asisten bisnis Anda.
                   </span>
                 </div>
                 <p style={{ fontSize: 13, color: 'var(--mute)', margin: 0, lineHeight: 1.6 }}>

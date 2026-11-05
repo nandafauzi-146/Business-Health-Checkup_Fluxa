@@ -1018,21 +1018,25 @@ export default function AuditLogClient({
           </div>
 
           {/* Filter Kategori Aksi */}
-          <select
-            className="input"
-            value={actionCategory}
-            onChange={e => setActionCategory(e.target.value)}
-            style={{ width: 'auto', minWidth: 170 }}
-          >
-            <option value="all">Semua Kategori Aksi</option>
-            <option value="pos">🛒 Penjualan POS Kasir</option>
-            <option value="void">🚫 Void Transaksi Kasir</option>
-            <option value="shift">⏱️ Buka / Tutup Shift Kasir</option>
-            <option value="stock">📦 Koreksi & Opname Stok</option>
-            <option value="expense">💸 Biaya Operasional Toko</option>
-            <option value="debt">⚖️ Hutang & Piutang Usaha</option>
-            <option value="product">🏷️ Perubahan Harga / Produk</option>
-          </select>
+          <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+            <Filter size={14} aria-hidden="true" style={{ position: 'absolute', left: 10, color: 'var(--mute)', pointerEvents: 'none' }} />
+            <select
+              className="input"
+              value={actionCategory}
+              onChange={e => setActionCategory(e.target.value)}
+              aria-label="Kategori aktivitas usaha"
+              style={{ width: 'auto', minWidth: 190, paddingLeft: 30 }}
+            >
+              <option value="all">Semua Kategori Aksi</option>
+              <option value="pos">Penjualan POS Kasir</option>
+              <option value="void">Void Transaksi Kasir</option>
+              <option value="shift">Buka / Tutup Shift Kasir</option>
+              <option value="stock">Koreksi & Opname Stok</option>
+              <option value="expense">Biaya Operasional Toko</option>
+              <option value="debt">Hutang & Piutang Usaha</option>
+              <option value="product">Perubahan Harga / Produk</option>
+            </select>
+          </label>
 
           {/* Filter Rentang Tanggal */}
           <select
@@ -1248,11 +1252,14 @@ export default function AuditLogClient({
                         fontWeight: 700,
                         background: isUpdate ? 'var(--warns)' : (isCreateOnly ? 'var(--oks)' : 'var(--bads)'),
                         color: isUpdate ? 'var(--warn)' : (isCreateOnly ? 'var(--ok)' : 'var(--bad)'),
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'nowrap',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4
                       }}>
-                        {isUpdate && '● Pembaruan Data'}
-                        {isCreateOnly && '✓ Pencatatan Baru'}
-                        {isDeleteOnly && '✕ Penghapusan Data'}
+                        {isUpdate && <><RefreshCw size={11} /> Pembaruan Data</>}
+                        {isCreateOnly && <><CheckCircle size={11} /> Pencatatan Baru</>}
+                        {isDeleteOnly && <><X size={11} /> Penghapusan Data</>}
                       </span>
                     </div>
 

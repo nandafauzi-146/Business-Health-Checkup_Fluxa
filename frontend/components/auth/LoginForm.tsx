@@ -10,6 +10,7 @@ import {
   BarChart3,
   Eye,
   EyeOff,
+  Hand,
   LoaderCircle,
   LockKeyhole,
   Mail,
@@ -214,7 +215,7 @@ export default function LoginForm({ registrationStatus }: { registrationStatus?:
         </header>
 
         <div className="login-welcome login-stagger">
-          <h1 id="login-title">Selamat datang <span aria-hidden="true">👋</span></h1>
+          <h1 id="login-title">Selamat datang <span aria-hidden="true"><Hand size={22} /></span></h1>
           <p>Masuk ke akun Anda untuk melanjutkan</p>
         </div>
 

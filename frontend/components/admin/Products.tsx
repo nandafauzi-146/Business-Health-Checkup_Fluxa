@@ -1418,8 +1418,7 @@ export default function ProductsClient({
                               >
                                 {rawMaterials.map(m => (
                                   <option key={m.id} value={m.id}>
-                                    {m.material_type === 'semi_finished' ? '🧂 ' : '🥩 '}
-                                    {m.name} {m.material_type === 'semi_finished' ? '(Bumbu Olahan)' : ''} (Stok: {m.stock} {m.unit})
+                                    {m.name} {m.material_type === 'semi_finished' ? '(Bumbu Olahan)' : '(Bahan Mentah)'} (Stok: {m.stock} {m.unit})
                                   </option>
                                 ))}
                               </select>
@@ -1484,7 +1483,7 @@ export default function ProductsClient({
                                   fontWeight: 600,
                                   color: isShortage ? 'var(--bad)' : mat.stock <= mat.min_stock ? 'var(--warn)' : 'var(--ok)'
                                 }}>
-                                  {isShortage ? '⚠️ Kurang' : mat.stock <= mat.min_stock ? '⚠️ Menipis' : '✓ Aman'} ({mat.stock} {mat.unit})
+                                  {isShortage ? <><AlertCircle size={12} /> Kurang</> : mat.stock <= mat.min_stock ? <><AlertCircle size={12} /> Menipis</> : <><CheckCircle2 size={12} /> Aman</>} ({mat.stock} {mat.unit})
                                 </div>
                               ) : null}
                             </div>
@@ -1863,15 +1862,15 @@ export default function ProductsClient({
                         Stok di gudang: <strong>{mat ? mat.stock : 'Tidak tersedia'} {item.unit}</strong>
                         {isShortage ? (
                           <span style={{ color: 'var(--bad)', fontWeight: 600, marginLeft: 6 }}>
-                            ⚠️ Stok Kurang!
+                            <><AlertCircle size={12} /> Stok Kurang!</>
                           </span>
                         ) : isLow ? (
                           <span style={{ color: 'var(--warn)', fontWeight: 600, marginLeft: 6 }}>
-                            ⚠️ Perlu Restock
+                            <><AlertCircle size={12} /> Perlu Restock</>
                           </span>
                         ) : (
                           <span style={{ color: 'var(--ok)', fontWeight: 600, marginLeft: 6 }}>
-                            ✓ Cukup
+                            <><CheckCircle2 size={12} /> Cukup</>
                           </span>
                         )}
                       </div>
