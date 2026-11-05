@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import Image from 'next/image'
 
 export type AuthIntroPhase = 'intro' | 'transition' | 'login'
@@ -126,75 +126,66 @@ export function useAuthIntro() {
     return () => window.clearTimeout(introTimer)
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (phase !== 'transition') return
 
     const introSymbol = introSymbolRef.current?.querySelector('img')
+    const introMark = introSymbolRef.current
     const introName = introNameRef.current
     const loginLogo = brandLogoRef.current?.querySelector('img')
-    const loginName = brandNameRef.current
-    const loginBrand = loginLogo?.closest<HTMLElement>('.login-brand')
     const card = loginLogo?.closest<HTMLElement>('.login-card')
     const transitionAnimations: Animation[] = []
-    const finishTimer = window.setTimeout(() => setPhase('login'), 1050)
+    const finishTimer = window.setTimeout(() => setPhase('login'), 1000)
 
-    if (introSymbol && introName && loginLogo && loginName && loginBrand && card) {
-      const frame = window.requestAnimationFrame(() => {
-        const cardStyles = getComputedStyle(card)
-        const transform = cardStyles.transform === 'none' ? new DOMMatrix() : new DOMMatrix(cardStyles.transform)
-        const transformOrigin = cardStyles.transformOrigin.split(' ')
-        const scaleOriginX = Number.parseFloat(transformOrigin[0])
-        const scaleOriginY = Number.parseFloat(transformOrigin[1])
-        const scaleX = Math.hypot(transform.a, transform.b)
-        const scaleY = Math.hypot(transform.c, transform.d)
-        const cardRect = card.getBoundingClientRect()
-        const layoutLeft = cardRect.left - scaleOriginX - transform.e + scaleX * scaleOriginX
-        const layoutTop = cardRect.top - scaleOriginY - transform.f + scaleY * scaleOriginY
+    if (introSymbol && introMark && introName && loginLogo && card) {
+      const cardRect = card.getBoundingClientRect()
+      const targetRect = loginLogo.getBoundingClientRect()
+      const cardTransform = getComputedStyle(card).transform
+      const matrix = cardTransform === 'none' ? new DOMMatrix() : new DOMMatrix(cardTransform)
+      const [originX, originY] = getComputedStyle(card).transformOrigin
+        .split(' ')
+        .map((value) => Number.parseFloat(value))
+      const scaleX = Math.hypot(matrix.a, matrix.b) || 1
+      const scaleY = Math.hypot(matrix.c, matrix.d) || 1
+      const layoutLeft = cardRect.left - originX - matrix.e + scaleX * originX
+      const layoutTop = cardRect.top - originY - matrix.f + scaleY * originY
+      const targetCenterX = targetRect.left + targetRect.width / 2
+      const targetCenterY = targetRect.top + targetRect.height / 2
+      const finalCenterX = layoutLeft + originX
+        + (targetCenterX - layoutLeft - originX - matrix.e) / scaleX
+      const finalCenterY = layoutTop + originY
+        + (targetCenterY - layoutTop - originY - matrix.f) / scaleY
+      const sourceRect = introSymbol.getBoundingClientRect()
+      const x = finalCenterX - sourceRect.left - sourceRect.width / 2
+      const y = finalCenterY - sourceRect.top - sourceRect.height / 2
+      const targetWidth = targetRect.width / scaleX
+      const targetHeight = targetRect.height / scaleY
+      const angle = Math.atan2(y, x)
+      const destination = `translate(${x}px, ${y}px) scale(${targetWidth / sourceRect.width}, ${targetHeight / sourceRect.height})`
 
-        const animateSymbolTo = (source: HTMLElement, target: HTMLElement) => {
-          const from = source.getBoundingClientRect()
-          const targetRect = target.getBoundingClientRect()
-          const targetX = layoutLeft + scaleOriginX
-            + (targetRect.left + targetRect.width / 2 - layoutLeft - scaleOriginX - transform.e) / scaleX
-          const targetY = layoutTop + scaleOriginY
-            + (targetRect.top + targetRect.height / 2 - layoutTop - scaleOriginY - transform.f) / scaleY
-          const targetScaleX = targetRect.width / scaleX / from.width
-          const targetScaleY = targetRect.height / scaleY / from.height
-          const x = targetX - (from.left + from.width / 2)
-          const y = targetY - (from.top + from.height / 2)
-          const destination = `translate(${x}px, ${y}px) scale(${targetScaleX}, ${targetScaleY})`
-
-          transitionAnimations.push(source.animate(
-            [
-              { transform: 'translate(0, 0) scale(1)', opacity: 1, offset: 0 },
-              { transform: destination, opacity: 1, offset: 0.82 },
-              { transform: destination, opacity: 0, offset: 1 },
-            ],
-            { duration: 1000, easing: 'cubic-bezier(.2, .75, .25, 1)', fill: 'forwards' },
-          ))
-        }
-
-        animateSymbolTo(introSymbol, loginLogo)
-        transitionAnimations.push(introName.animate(
-          [
-            { opacity: 1, transform: 'translateY(0)' },
-            { opacity: 0, transform: 'translateY(-4px)' },
-          ],
-          { duration: 320, easing: 'ease-out', fill: 'forwards' },
-        ))
-        transitionAnimations.push(loginLogo.animate(
-          [
-            { opacity: 0, offset: 0 },
-            { opacity: 0, offset: 0.8 },
-            { opacity: 1, offset: 1 },
-          ],
-          { duration: 1000, easing: 'ease-out', fill: 'forwards' },
-        ))
-      })
+      introMark.style.setProperty('--login-logo-trail-angle', `${angle}rad`)
+      introMark.classList.add('is-trailing')
+      const logoAnimation = introSymbol.animate(
+        [
+          { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+          { transform: destination, opacity: 1 },
+        ],
+        { duration: 800, easing: 'cubic-bezier(.2, .75, .25, 1)', fill: 'forwards' },
+      )
+      transitionAnimations.push(logoAnimation)
+      logoAnimation.onfinish = () => setPhase('login')
+      transitionAnimations.push(introName.animate(
+        [
+          { opacity: 1, transform: 'translateY(0)' },
+          { opacity: 0, transform: 'translateY(-4px)' },
+        ],
+        { duration: 320, easing: 'ease-out', fill: 'forwards' },
+      ))
 
       return () => {
-        window.cancelAnimationFrame(frame)
         transitionAnimations.forEach((animation) => animation.cancel())
+        introMark.classList.remove('is-trailing')
+        introMark.style.removeProperty('--login-logo-trail-angle')
         window.clearTimeout(finishTimer)
       }
     }
