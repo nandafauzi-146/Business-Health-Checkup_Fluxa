@@ -827,7 +827,7 @@ export default function ProductsClient({
   return (
     <div>
       <PageHeader
-        title="Kelola Produk & Resep"
+        title="Kelola Produk"
         subtitle="Manajemen katalog menu, harga jual, dan takaran bahan baku resep untuk pemantauan restock"
         actions={
           <div style={{ display: 'flex', gap: 8 }}>
@@ -1151,12 +1151,20 @@ export default function ProductsClient({
             maxWidth: 680,
             width: '100%',
             maxHeight: 'calc(100dvh - 32px)',
-            overflowY: 'auto',
-            WebkitOverflowScrolling: 'touch',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            overflow: 'hidden',
+            padding: 0
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              padding: '22px 26px 18px',
+              borderBottom: '1px solid var(--line)',
+              flexShrink: 0
+            }}>
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 700 }}>
                   {editingProduct ? 'Edit Informasi Produk & Resep' : 'Tambah Produk Baru'}
@@ -1170,8 +1178,9 @@ export default function ProductsClient({
               </button>
             </div>
 
-            <form onSubmit={handleSave}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0, overflow: 'hidden' }}>
+              <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '20px 26px 24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
                   <label className="label" htmlFor="prod-name">Nama Produk *</label>
                   <input
@@ -1670,25 +1679,36 @@ export default function ProductsClient({
                   </label>
                 </div>
               </div>
+            </div>
 
-              <div className="modal-footer-sticky">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowDialog(false)}
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  id="simpan-produk-btn"
-                  className="btn btn-primary"
-                  disabled={saving || !form.name || !form.sell_price}
-                >
-                  <Check size={15} /> {saving ? 'Menyimpan...' : (editingProduct ? 'Perbarui Produk' : 'Simpan Produk')}
-                </button>
-              </div>
-            </form>
+            <div className="modal-footer-sticky" style={{
+              flexShrink: 0,
+              marginTop: 0,
+              padding: '14px 26px 18px',
+              background: 'var(--panel)',
+              borderTop: '1px solid var(--line)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: 10
+            }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowDialog(false)}
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                id="simpan-produk-btn"
+                className="btn btn-primary"
+                disabled={saving || !form.name || !form.sell_price}
+              >
+                <Check size={15} /> {saving ? 'Menyimpan...' : (editingProduct ? 'Perbarui Produk' : 'Simpan Produk')}
+              </button>
+            </div>
+          </form>
           </div>
         </div>
       )}
