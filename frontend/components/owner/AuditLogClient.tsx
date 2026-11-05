@@ -3,13 +3,23 @@
 import { useState, useMemo } from 'react'
 import {
   ShieldAlert, Search, Filter, Calendar, User, Clock, CheckCircle,
-  AlertTriangle, ArrowUpRight, ArrowDownLeft, Printer, RefreshCw,
+  AlertTriangle, ArrowUpRight, ArrowDownLeft, RefreshCw,
   FileText, ShoppingCart, Layers, DollarSign, Scale, X, ChevronRight, Eye,
   ArrowRight, Info
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, FormatRupiah } from '@/components/ui/Cards'
-import { auditActionLabel, auditFieldLabel, auditTableLabel, summarizeAuditData } from '@/lib/audit-log-format'
+import {
+  auditActionLabel,
+  auditChanges,
+  auditSnapshots,
+  auditTableLabel,
+  summarizeAuditChange,
+  summarizeAuditData,
+  technicalAuditSnapshot,
+} from '@/lib/audit-log-format'
+import OwnerReportExport from '@/components/owner/OwnerReportExport'
+import type { OwnerReport } from '@/lib/owner-report-export'
 
 export interface AuditLogItem {
   id: string
@@ -234,14 +244,64 @@ function formatRp(n: number) {
 
 function formatDate(iso: string) {
   const d = new Date(iso)
-  return d.toLocaleString('id-ID', {
+  return new Intl.DateTimeFormat('id-ID', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
-  })
+    second: '2-digit',
+    timeZone: 'Asia/Jakarta',
+  }).format(d)
+}
+
+function getJakartaDate(iso: string) {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta' }).format(new Date(iso))
+}
+
+function reportDate(iso: string) {
+  const date = new Date(iso)
+  return new Intl.DateTimeFormat('id-ID', { dateStyle: 'long', timeZone: 'Asia/Jakarta' }).format(date)
+}
+
+function reportDateFilePart(iso: string) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'Asia/Jakarta',
+  }).formatToParts(new Date(iso))
+  const part = (type: string) => parts.find((item) => item.type === type)?.value ?? ''
+  return `${part('day')}-${part('month')}-${part('year')}`
+}
+
+function activityCategory(action: string) {
+  if (action === 'CREATE_SALE') return 'Penjualan'
+  if (action === 'VOID_SALE') return 'Pembatalan transaksi'
+  if (action.includes('SHIFT')) return 'Shift kasir'
+  if (action.includes('STOCK') || action.includes('INVENTORY')) return 'Stok'
+  if (action.includes('EXPENSE')) return 'Biaya operasional'
+  if (action.includes('DEBT') || action.includes('RECEIVABLE')) return 'Utang dan piutang'
+  if (action.includes('PRODUCT')) return 'Produk'
+  if (action.includes('SUBSCRIPTION') || action.includes('PAYMENT') || action.includes('MIDTRANS')) return 'Langganan dan pembayaran'
+  if (action.includes('USER') || action.includes('PROFILE') || action.includes('ROLE') || action.includes('ACCOUNT')) return 'Akun dan hak akses'
+  return 'Lainnya'
+}
+
+function activitySummary(log: AuditLogItem) {
+  const changes = summarizeAuditChange(log.old_data, log.new_data, 6)
+  if (changes) {
+    const { before } = auditSnapshots(log.old_data, log.new_data)
+    return before === null || before === undefined
+      ? `Keterangan: ${auditActionLabel(log.action)} · ${changes}`
+      : changes
+  }
+
+  const data = log.new_data ?? log.old_data
+  const values = summarizeAuditData(data, 6)
+  if (values.length > 0) return values.join(' · ')
+
+  return 'Aktivitas tercatat; rincian lengkap tersedia pada worksheet Detail Teknis.'
 }
 
 function timeAgo(iso: string) {
@@ -432,8 +492,12 @@ function formatFieldValue(key: string, val: any): string {
 
 export default function AuditLogClient({
   initialLogs,
+  businessName,
+  generatedBy,
 }: {
   initialLogs: AuditLogItem[]
+  businessName?: string
+  generatedBy?: string
 }) {
   const logs = initialLogs
 
@@ -468,7 +532,7 @@ export default function AuditLogClient({
       if (dateRange !== 'all') {
         const logTime = new Date(log.created_at).getTime()
         if (dateRange === 'today') {
-          const isToday = new Date(log.created_at).toDateString() === new Date().toDateString()
+          const isToday = getJakartaDate(log.created_at) === getJakartaDate(new Date().toISOString())
           if (!isToday) return false
         } else if (dateRange === '7days') {
           if (now - logTime > 7 * 86400000) return false
@@ -497,6 +561,136 @@ export default function AuditLogClient({
   const adminActions = logs.filter(l => l.user_role === 'admin').length
   const cashierActions = logs.filter(l => l.user_role === 'kasir').length
   const voidActions = logs.filter(l => l.action === 'VOID_SALE').length
+  const actionCategories: Record<string, string> = {
+    pos: 'Penjualan POS Kasir',
+    void: 'Void Transaksi Kasir',
+    shift: 'Buka / Tutup Shift Kasir',
+    stock: 'Koreksi & Opname Stok',
+    expense: 'Biaya Operasional Toko',
+    debt: 'Hutang & Piutang Usaha',
+    product: 'Perubahan Harga / Produk',
+  }
+  const dateLabels = { all: 'Semua Waktu', today: 'Hari Ini', '7days': '7 Hari Terakhir', '30days': '30 Hari Terakhir' }
+  const now = new Date()
+  const rangeStart = dateRange === 'today'
+    ? new Date(`${getJakartaDate(now.toISOString())}T00:00:00+07:00`)
+    : dateRange === '7days'
+      ? new Date(now.getTime() - 7 * 86400000)
+      : dateRange === '30days'
+        ? new Date(now.getTime() - 30 * 86400000)
+        : filtered.length > 0
+          ? new Date(filtered[filtered.length - 1].created_at)
+          : null
+  const rangeEnd = dateRange === 'all' && filtered.length > 0
+    ? new Date(filtered[0].created_at)
+    : now
+  const dateRangeLabel = rangeStart
+    ? `${reportDate(rangeStart.toISOString())} s.d. ${reportDate(rangeEnd.toISOString())}`
+    : dateLabels[dateRange]
+  const fileRangeLabel = rangeStart
+    ? `${reportDateFilePart(rangeStart.toISOString())}_s.d_${reportDateFilePart(rangeEnd.toISOString())}`
+    : reportDateFilePart(now.toISOString())
+  const categoryCounts = new Map<string, number>()
+  for (const log of filtered) {
+    const category = activityCategory(log.action)
+    categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1)
+  }
+  const roleLabels = { owner: 'Owner', admin: 'Admin', kasir: 'Kasir' }
+  const latestLog = filtered[0]
+  const reportRows = filtered.map((log, index) => {
+    const dateTime = log.created_at
+    return {
+      no: index + 1,
+      date: dateTime,
+      time: dateTime,
+      actor: log.user_name || 'Pengguna tidak diketahui',
+      role: log.user_role ? roleLabels[log.user_role] : 'Tidak tersedia',
+      action: auditActionLabel(log.action),
+      table: auditTableLabel(log.table_name),
+      summary: activitySummary(log),
+    }
+  })
+  const report: OwnerReport = {
+    title: 'Laporan Aktivitas Usaha',
+    exportDialogTitle: 'Ekspor Laporan Aktivitas Usaha',
+    period: [
+      dateRangeLabel,
+      roleFilter === 'all' ? null : `Peran: ${roleFilter.toUpperCase()}`,
+      actionCategory === 'all' ? null : actionCategories[actionCategory] ?? actionCategory,
+      search.trim() ? `Pencarian: ${search.trim()}` : null,
+    ].filter(Boolean).join(' · '),
+    fileName: `Laporan_Aktivitas_Usaha_${fileRangeLabel}${roleFilter !== 'all' ? `_Peran_${roleFilter}` : ''}${actionCategory !== 'all' ? `_${actionCategory}` : ''}`,
+    businessName,
+    generatedBy,
+    summary: [
+      { label: 'Jumlah aktivitas', value: filtered.length, format: 'number' },
+      { label: 'Owner', value: filtered.filter((log) => log.user_role === 'owner').length, format: 'number' },
+      { label: 'Admin', value: filtered.filter((log) => log.user_role === 'admin').length, format: 'number' },
+      { label: 'Kasir', value: filtered.filter((log) => log.user_role === 'kasir').length, format: 'number' },
+      ...[...categoryCounts.entries()].sort((left, right) => right[1] - left[1]).map(([category, count]) => ({
+        label: `Kategori · ${category}`,
+        value: count,
+        format: 'number' as const,
+      })),
+      ...(latestLog
+        ? [{
+            label: 'Aktivitas terbaru',
+            value: `${auditActionLabel(latestLog.action)} · ${latestLog.user_name || 'Pengguna tidak diketahui'} · ${formatDate(latestLog.created_at)}`,
+          }]
+        : []),
+    ],
+    columns: [
+      { key: 'no', header: 'No.', format: 'number' },
+      { key: 'date', header: 'Tanggal', format: 'date' },
+      { key: 'time', header: 'Waktu', format: 'time' },
+      { key: 'actor', header: 'Pengguna' },
+      { key: 'role', header: 'Peran' },
+      { key: 'action', header: 'Aktivitas' },
+      { key: 'table', header: 'Jenis Data' },
+      { key: 'summary', header: 'Ringkasan Perubahan' },
+    ],
+    rows: reportRows,
+    technicalColumns: [
+      { key: 'no', header: 'Nomor Aktivitas', format: 'number' },
+      { key: 'activityId', header: 'ID Aktivitas' },
+      { key: 'date', header: 'Tanggal', format: 'date' },
+      { key: 'time', header: 'Waktu', format: 'time' },
+      { key: 'actor', header: 'Pengguna' },
+      { key: 'role', header: 'Peran' },
+      { key: 'action', header: 'Jenis Aktivitas' },
+      { key: 'table', header: 'Jenis Data' },
+      { key: 'recordId', header: 'ID Data' },
+      { key: 'before', header: 'Data Sebelum Perubahan' },
+      { key: 'after', header: 'Data Sesudah Perubahan' },
+    ],
+    technicalRows: filtered.map((log, index) => {
+      const { before, after } = auditSnapshots(log.old_data, log.new_data)
+      return {
+        no: index + 1,
+        activityId: log.id,
+        date: log.created_at,
+        time: log.created_at,
+        actor: log.user_name || 'Pengguna tidak diketahui',
+        role: log.user_role ? roleLabels[log.user_role] : 'Tidak tersedia',
+        action: auditActionLabel(log.action),
+        table: auditTableLabel(log.table_name),
+        recordId: log.record_id || '',
+        before: technicalAuditSnapshot(before),
+        after: technicalAuditSnapshot(after),
+      }
+    }),
+    detailSections: filtered.flatMap((log, index) => {
+      const changes = auditChanges(log.old_data, log.new_data)
+      if (changes.length === 0) return []
+      return [{
+        title: `${index + 1}. ${auditActionLabel(log.action)}`,
+        description: `${formatDate(log.created_at)} · ${log.user_name || 'Pengguna tidak diketahui'} (${log.user_role ? roleLabels[log.user_role] : 'Tidak tersedia'}) · ${auditTableLabel(log.table_name)}`,
+        changes,
+      }]
+    }),
+    csvTableOnly: true,
+    pdfOrientation: 'landscape',
+  }
 
   // Helper formatting narrative per action
   const formatNarrative = (log: AuditLogItem) => {
@@ -677,14 +871,7 @@ export default function AuditLogClient({
         title="Aktivitas Usaha"
         subtitle="Rekaman aktivitas Owner, Admin, dan Kasir pada usaha Anda."
         actions={
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => window.print()}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontWeight: 600 }}
-          >
-            <Printer size={15} /> Cetak / Ekspor Laporan
-          </button>
+          <OwnerReportExport report={report} label="Cetak / Ekspor Laporan" />
         }
       />
 

@@ -57,6 +57,22 @@ const fieldLabels: Record<string, string> = {
   total_amount: 'Total tagihan',
   final_amount: 'Total pembayaran',
   gross_amount: 'Total pembayaran',
+  initial_cash: 'Modal awal kas',
+  final_cash: 'Kas fisik',
+  expected_cash: 'Kas menurut sistem',
+  difference: 'Selisih kas',
+  discount: 'Diskon',
+  qty: 'Jumlah',
+  quantity: 'Jumlah',
+  stock: 'Stok',
+  previous_stock: 'Stok sebelumnya',
+  current_stock: 'Stok terbaru',
+  product_name: 'Nama produk',
+  party_name: 'Nama pihak terkait',
+  category: 'Kategori',
+  note: 'Catatan',
+  void_reason: 'Alasan pembatalan',
+  items_count: 'Jumlah jenis barang',
   plan_name: 'Paket langganan',
   order_id: 'Nomor tagihan',
   invoice_number: 'Nomor transaksi',
@@ -105,6 +121,34 @@ const paymentStatuses: Record<string, string> = {
   refunded: 'Dikembalikan',
   partial: 'Dibayar sebagian',
   unpaid: 'Belum dibayar',
+  completed: 'Selesai',
+  voided: 'Dibatalkan',
+  open: 'Dibuka',
+  closed: 'Ditutup',
+  active: 'Aktif',
+  inactive: 'Nonaktif',
+  approved: 'Disetujui',
+  rejected: 'Ditolak',
+}
+
+const currencyFields = new Set([
+  'amount',
+  'total_amount',
+  'final_amount',
+  'gross_amount',
+  'initial_cash',
+  'final_cash',
+  'expected_cash',
+  'difference',
+  'discount',
+  'sell_price',
+  'buy_price',
+  'price',
+  'cost',
+])
+
+function isSensitiveField(key: string) {
+  return /email|phone|password|token|secret|(^|_)key($|_)/i.test(key)
 }
 
 export function auditActionLabel(action: string) {
@@ -129,17 +173,17 @@ export function auditFieldLabel(key: string) {
 }
 
 function formatValue(key: string, value: unknown): string | null {
-  if (value === null || value === undefined || ignoredFields.has(key)) return null
+  if (value === null || value === undefined || ignoredFields.has(key) || isSensitiveField(key)) return null
   if (typeof value === 'boolean') return value ? 'Ya' : 'Tidak'
   if (typeof value === 'number') {
-    if (key.includes('amount') || key.includes('price')) {
+    if (currencyFields.has(key) || key.endsWith('_amount') || key.endsWith('_price')) {
       return `Rp ${new Intl.NumberFormat('id-ID').format(value)}`
     }
     if (key === 'duration_days') return `${value} hari`
     return new Intl.NumberFormat('id-ID').format(value)
   }
   if (typeof value === 'string') {
-    if (key === 'status') return paymentStatuses[value.toLowerCase()] ?? value
+    if (key === 'status' || key.endsWith('_status')) return paymentStatuses[value.toLowerCase()] ?? value
     if (key === 'payment_method' || key === 'payment_type') {
       const methods: Record<string, string> = {
         bank_transfer: 'Transfer bank',
@@ -159,6 +203,7 @@ function formatValue(key: string, value: unknown): string | null {
       }
       return roles[value] ?? value
     }
+    if (key === 'currency' && value.toUpperCase() === 'IDR') return 'Rupiah (IDR)'
     if (key === 'approval_status') {
       const statuses: Record<string, string> = {
         approved: 'Disetujui',
@@ -175,6 +220,18 @@ function formatValue(key: string, value: unknown): string | null {
       }).format(new Date(value))
     }
     if (/^https?:\/\//i.test(value)) return 'Tautan tersedia'
+    if (/^[\[{]/.test(value.trim())) {
+      try {
+        const parsed: unknown = JSON.parse(value)
+        if (Array.isArray(parsed)) return `${parsed.length} rincian`
+        if (parsed && typeof parsed === 'object') {
+          const nestedSummary = summarizeAuditData(parsed, 3)
+          return nestedSummary.length > 0 ? nestedSummary.join(' · ') : 'Data terstruktur tersedia pada detail teknis'
+        }
+      } catch {
+        return 'Data terstruktur tersedia pada detail teknis'
+      }
+    }
     return value.length > 100 ? `${value.slice(0, 97)}...` : value
   }
   return null
@@ -184,11 +241,110 @@ export function summarizeAuditData(value: unknown, limit = 4) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return []
 
   return Object.entries(value)
-    .filter(([key]) => !ignoredFields.has(key) && !/password|secret|token|key/i.test(key))
+    .filter(([key]) => !ignoredFields.has(key) && !isSensitiveField(key))
     .map(([key, item]) => {
       const formatted = formatValue(key, item)
       return formatted ? `${auditFieldLabel(key)}: ${formatted}` : null
     })
     .filter((entry): entry is string => entry !== null)
     .slice(0, limit)
+}
+
+export interface AuditChange {
+  field: string
+  before: string
+  after: string
+}
+
+function recordValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {}
+}
+
+function flattenAuditFields(value: Record<string, unknown>, prefix = ''): [string, unknown][] {
+  return Object.entries(value).flatMap(([key, item]) => {
+    if (ignoredFields.has(key) || isSensitiveField(key)) return []
+    const field = prefix ? `${prefix}.${key}` : key
+    if (item && typeof item === 'object' && !Array.isArray(item)) {
+      return flattenAuditFields(item as Record<string, unknown>, field)
+    }
+    if (Array.isArray(item)) {
+      return [[field, item.map((entry) => typeof entry === 'object' ? 'rincian' : String(entry)).join(', ')]]
+    }
+    return [[field, item]]
+  })
+}
+
+export function auditSnapshots(oldData: unknown, newData: unknown) {
+  const oldRecord = recordValue(oldData)
+  const newRecord = recordValue(newData)
+  const envelope = (record: Record<string, unknown>) => {
+    const before = record.before ?? record.sebelum
+    const after = record.after ?? record.sesudah
+    return before !== undefined || after !== undefined
+      ? { before, after, found: true }
+      : { before: undefined, after: undefined, found: false }
+  }
+  const newEnvelope = envelope(newRecord)
+  if (newEnvelope.found) {
+    return {
+      before: newEnvelope.before !== undefined ? newEnvelope.before : oldData,
+      after: newEnvelope.after,
+    }
+  }
+  const oldEnvelope = envelope(oldRecord)
+  if (oldEnvelope.found) {
+    return {
+      before: oldEnvelope.before,
+      after: oldEnvelope.after !== undefined ? oldEnvelope.after : newData,
+    }
+  }
+  return { before: oldData, after: newData }
+}
+
+export function auditChanges(oldData: unknown, newData: unknown): AuditChange[] {
+  const { before, after } = auditSnapshots(oldData, newData)
+  const beforeFields = flattenAuditFields(recordValue(before))
+  const afterFields = flattenAuditFields(recordValue(after))
+  const beforeMap = new Map(beforeFields)
+  const afterMap = new Map(afterFields)
+  const fields = new Set([...beforeMap.keys(), ...afterMap.keys()])
+
+  return [...fields].flatMap((key) => {
+    const oldValue = beforeMap.get(key)
+    const newValue = afterMap.get(key)
+    if (JSON.stringify(oldValue) === JSON.stringify(newValue)) return []
+    const label = key.split('.').map((part) => auditFieldLabel(part)).join(' · ')
+    return [{
+      field: label,
+      before: formatValue(key.split('.').at(-1) ?? key, oldValue) ?? '—',
+      after: formatValue(key.split('.').at(-1) ?? key, newValue) ?? '—',
+    }]
+  })
+}
+
+export function summarizeAuditChange(oldData: unknown, newData: unknown, limit = 4) {
+  const changes = auditChanges(oldData, newData)
+  if (changes.length === 0) return ''
+
+  return changes.slice(0, limit).map((change) => {
+    if (change.before === '—') return `${change.field}: ${change.after}`
+    if (change.after === '—') return `${change.field} dihapus (sebelumnya ${change.before})`
+    return `${change.field}: ${change.before} → ${change.after}`
+  }).join(' · ')
+}
+
+export function technicalAuditSnapshot(value: unknown) {
+  const visit = (item: unknown): unknown => {
+    if (Array.isArray(item)) return item.map(visit)
+    if (!item || typeof item !== 'object') return item
+    return Object.fromEntries(Object.entries(item).flatMap(([key, nested]) =>
+      isSensitiveField(key) ? [] : [[key, visit(nested)]],
+    ))
+  }
+  const sanitized = visit(value)
+  return sanitized && typeof sanitized === 'object' && !Array.isArray(sanitized)
+    ? JSON.stringify(sanitized, null, 2)
+    : sanitized === null || sanitized === undefined ? '' : String(sanitized)
 }

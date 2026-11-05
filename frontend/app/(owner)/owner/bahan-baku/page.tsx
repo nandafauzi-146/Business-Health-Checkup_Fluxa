@@ -14,7 +14,7 @@ export default async function OwnerBahanBakuPage() {
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('role, approval_status, business_id')
+    .select('role, approval_status, business_id, full_name')
     .eq('id', user.id)
     .single()
 
@@ -39,7 +39,7 @@ export default async function OwnerBahanBakuPage() {
   }
 
   // Fetch Bahan Baku & Riwayat Mutasi (Terisolasi strictly untuk tenant owner ini)
-  const [materialsRes, movementsRes, ingredientsRes, subIngredientsRes] = await Promise.all([
+  const [materialsRes, movementsRes, ingredientsRes, subIngredientsRes, businessRes] = await Promise.all([
     supabase
       .from('raw_materials')
       .select('*')
@@ -76,8 +76,14 @@ export default async function OwnerBahanBakuPage() {
         unit,
         sub_materials:sub_material_id (id, name, unit, cost_per_unit)
       `)
-      .eq('business_id', businessId)
+      .eq('business_id', businessId),
+    supabase
+      .from('businesses')
+      .select('name')
+      .eq('id', businessId)
+      .maybeSingle()
   ])
+  if (businessRes.error) throw new Error('Informasi usaha belum dapat dimuat.')
 
   const loadError = materialsRes.error
     ? 'Data bahan baku belum dapat dimuat.'
@@ -172,6 +178,8 @@ export default async function OwnerBahanBakuPage() {
       materials={formattedMaterials}
       movements={formattedMovements}
       loadError={loadError}
+      businessName={businessRes.data?.name ?? undefined}
+      generatedBy={profile.full_name}
     />
   )
 }
