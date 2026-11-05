@@ -260,7 +260,6 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
   const pathname = usePathname()
   const router = useRouter()
   const [notifOpen, setNotifOpen] = useState(false)
-  const [appearanceOpen, setAppearanceOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const deferredSearchQuery = useDeferredValue(searchQuery)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -269,10 +268,9 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
   const [mounted, setMounted] = useState(false)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const notifRef = useRef<HTMLDivElement>(null)
-  const appearanceRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
-  const { preference, isDark, setPreference } = useTheme()
+  const { isDark, setPreference } = useTheme()
 
   // Tentukan role efektif
   const effectiveRole: 'kasir' | 'admin' | 'owner' | 'super_admin' = useMemo(() => {
@@ -331,7 +329,6 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node
       if (notifRef.current && !notifRef.current.contains(target)) setNotifOpen(false)
-      if (appearanceRef.current && !appearanceRef.current.contains(target)) setAppearanceOpen(false)
       if (searchRef.current && !searchRef.current.contains(target)) setSearchOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -674,46 +671,17 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
 
       {/* Right side */}
       <div className="topbar-actions">
-        {/* Appearance menu */}
-        <div ref={appearanceRef} className="appearance-menu">
-          <button
-            className="icon-btn"
-            onClick={() => setAppearanceOpen((open) => !open)}
-            aria-label="Appearance"
-            aria-expanded={appearanceOpen}
-            aria-haspopup="menu"
-            id="theme-toggle"
-            title="Appearance"
-          >
-            {isDark ? <Moon size={15} /> : <Sun size={15} />}
-          </button>
-          {appearanceOpen && (
-            <div className="appearance-popover" role="menu" aria-label="Appearance">
-              <strong>Appearance</strong>
-              {([
-                ['dark', 'Dark'],
-                ['light', 'Light'],
-              ] as const).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  className="appearance-option"
-                  role="menuitemradio"
-                  aria-checked={preference === value}
-                  onClick={() => {
-                    setPreference(value)
-                    setAppearanceOpen(false)
-                  }}
-                >
-                  <span className="appearance-radio" aria-hidden="true">
-                    {preference === value && <span />}
-                  </span>
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <button
+          type="button"
+          className="icon-btn"
+          onClick={() => setPreference(isDark ? 'light' : 'dark')}
+          aria-label={`Beralih ke ${isDark ? 'Light' : 'Dark'} Mode`}
+          aria-pressed={isDark}
+          id="theme-toggle"
+          title={`Beralih ke ${isDark ? 'Light' : 'Dark'} Mode`}
+        >
+          {isDark ? <Moon size={15} /> : <Sun size={15} />}
+        </button>
 
         {/* Notifikasi Lonceng */}
         <div ref={notifRef} style={{ position: 'relative' }}>

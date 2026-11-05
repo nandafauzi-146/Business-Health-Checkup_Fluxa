@@ -25,6 +25,13 @@ function isThemePreference(value: string | null): value is ThemePreference {
   return value === 'light' || value === 'dark'
 }
 
+function applyThemePreference(preference: ThemePreference) {
+  const isDark = preference === 'dark'
+  document.documentElement.dataset.themePreference = preference
+  document.documentElement.dataset.theme = preference
+  document.documentElement.style.colorScheme = isDark ? 'dark' : 'light'
+}
+
 function getPreferenceSnapshot(): ThemePreference {
   const userId = activeUserId ?? getLastActiveUserId()
   const key = userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY
@@ -105,6 +112,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const userId = activeUserId ?? getLastActiveUserId()
     const key = userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY
     memoryPreferences.set(key, nextPreference)
+    applyThemePreference(nextPreference)
     try {
       window.localStorage.setItem(key, nextPreference)
     } catch (error) {
@@ -114,10 +122,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    document.documentElement.dataset.themePreference = preference
-    document.documentElement.dataset.theme = isDark ? 'dark' : 'light'
-    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light'
-  }, [preference, isDark])
+    applyThemePreference(preference)
+  }, [preference])
 
   const value = useMemo(
     () => ({ preference, isDark, setPreference }),
