@@ -613,21 +613,22 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
 
                       {/* Aksi */}
                       <td style={{ padding: '14px 14px', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                           <button
                             onClick={() => handleOpenEdit(promo)}
                             className="btn btn-secondary btn-sm"
                             title="Edit Promo"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
                           >
-                            <Edit2 size={13} />
+                            <Edit2 size={13} /> Edit
                           </button>
                           <button
                             onClick={() => handleDelete(promo.id, promo.code)}
                             className="btn btn-danger btn-sm"
-                            style={{ borderColor: 'var(--bad)', color: 'var(--bad)' }}
                             title="Hapus Promo"
+                            style={{ borderColor: 'var(--bad)', color: 'var(--bad)', display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={13} /> Hapus
                           </button>
                         </div>
                       </td>

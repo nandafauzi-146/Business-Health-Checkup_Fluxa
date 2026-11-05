@@ -269,7 +269,7 @@ export default function SuperAdminUsers() {
                           <button className={styles.secondaryButton} type="button" onClick={() => openEdit(user)}><Pencil size={13} /> Edit</button>
                           {user.isActive ? (
                             <button className={styles.dangerButton} type="button" disabled={processing === user.id} onClick={() => setPendingUserChange({ user, change: { active: false } })}>
-                              <Trash2 size={13} /> {processing === user.id ? 'Memproses...' : 'Hapus'}
+                              <Trash2 size={13} />                               {processing === user.id ? 'Memproses...' : 'Nonaktifkan'}
                             </button>
                           ) : user.approval_status === 'approved' ? (
                             <button className={styles.primaryButton} type="button" disabled={processing === user.id} onClick={() => setPendingUserChange({ user, change: { active: true } })}>
