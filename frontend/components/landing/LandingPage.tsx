@@ -520,7 +520,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
               aria-label={`Aktifkan mode ${isDark ? 'terang' : 'gelap'}`}
               title={`Mode ${isDark ? 'terang' : 'gelap'}`}
             >
-              {isDark ? <Sun size={15} /> : <Moon size={15} />}
+              {isDark ? <Moon size={15} /> : <Sun size={15} />}
               <span>{isDark ? 'Terang' : 'Gelap'}</span>
             </button>
             <Link className={styles.loginLink} href="/login">Masuk</Link>
@@ -538,7 +538,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
               aria-label={`Aktifkan mode ${isDark ? 'terang' : 'gelap'}`}
               title={`Mode ${isDark ? 'terang' : 'gelap'}`}
             >
-              {isDark ? <Sun size={15} /> : <Moon size={15} />}
+              {isDark ? <Moon size={15} /> : <Sun size={15} />}
               <span>{isDark ? 'Terang' : 'Gelap'}</span>
             </button>
           </div>
