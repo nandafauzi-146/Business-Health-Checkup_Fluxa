@@ -12,7 +12,7 @@ function sanitizeSensitiveData(value: unknown): unknown {
 
   return Object.fromEntries(
     Object.entries(value).flatMap(([key, entry]) =>
-      /email|phone|password|token|secret|key/i.test(key)
+      /email|phone|password|token|secret|(^|_)key($|_)/i.test(key)
         ? []
         : [[key, sanitizeSensitiveData(entry)]],
     ),
@@ -36,6 +36,10 @@ export default async function OwnerAuditPage() {
   }
 
   const businessId = profile.business_id
+  const { data: business, error: businessError } = businessId
+    ? await supabase.from('businesses').select('name').eq('id', businessId).maybeSingle()
+    : { data: null, error: null }
+  if (businessError) throw new Error('Informasi usaha belum dapat dimuat.')
 
   // Owner HANYA dapat melihat log aktivitas bisnis miliknya sendiri (terisolasi per-tenant)
   // Aktivitas whole system (lintas tenant/platform) hanya dapat diakses oleh Super Admin
@@ -100,7 +104,11 @@ export default async function OwnerAuditPage() {
       <div className="main-area">
         <Topbar title="Aktivitas Usaha" role="owner" />
         <div className="content-area">
-          <AuditLogClient initialLogs={logs} />
+          <AuditLogClient
+            initialLogs={logs}
+            businessName={business?.name ?? undefined}
+            generatedBy={profile.full_name}
+          />
         </div>
       </div>
     </div>
