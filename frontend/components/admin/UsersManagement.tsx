@@ -68,6 +68,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [notification, setNotification] = useState<{ type: 'ok' | 'bad'; text: string } | null>(null)
+  const [createError, setCreateError] = useState('')
 
   const showNotification = (text: string, type: 'ok' | 'bad' = 'ok') => {
     setNotification({ type, text })
@@ -83,6 +84,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
 
   // 1. Handle Tambah User
   const handleOpenAdd = () => {
+    setCreateError('')
     setAddForm({
       full_name: '',
       email: '',
@@ -98,6 +100,7 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
     if (!addForm.full_name.trim() || !addForm.email.trim() || !addForm.password) return
 
     setIsSubmitting(true)
+    setCreateError('')
     try {
       const res = await fetch('/api/admin/users', {
         method: 'POST',
@@ -112,14 +115,20 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
       })
 
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Gagal menambahkan pengguna baru.')
+      if (!res.ok) {
+        const message = json.error || 'Gagal menambahkan pengguna baru.'
+        setCreateError(message)
+        if (res.status !== 409) console.error('Unable to create user account:', message)
+        return
+      }
 
       setUsers(prev => [json.user, ...prev])
       showNotification(`Akun ${json.user.full_name} (${json.user.role.toUpperCase()}) berhasil dibuat.`, 'ok')
       setAddModalOpen(false)
     } catch (err: any) {
-      console.error('Error create user:', err)
-      showNotification(getUserFacingError(err, 'Akun belum dapat dibuat. Periksa kembali data dan coba lagi.'), 'bad')
+      const message = getUserFacingError(err, 'Akun belum dapat dibuat. Periksa kembali data dan coba lagi.')
+      setCreateError(message)
+      console.error('Unable to submit user creation request:', err)
     } finally {
       setIsSubmitting(false)
     }
@@ -464,9 +473,32 @@ export default function UsersManagementClient({ initialUsers, roleScope = 'all',
                     className="input"
                     placeholder="Contoh: staf@fluxa.local"
                     value={addForm.email}
-                    onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))}
+                    aria-invalid={Boolean(createError)}
+                    aria-describedby={createError ? 'user-create-error' : undefined}
+                    onChange={e => {
+                      setCreateError('')
+                      setAddForm(f => ({ ...f, email: e.target.value }))
+                    }}
                   />
                 </div>
+
+                {createError && (
+                  <p
+                    id="user-create-error"
+                    role="alert"
+                    style={{
+                      margin: '-4px 0 0',
+                      padding: '10px 12px',
+                      borderRadius: 9,
+                      border: '1px solid var(--bad)',
+                      background: 'var(--bads)',
+                      color: 'var(--bad)',
+                      fontSize: 12,
+                    }}
+                  >
+                    {createError}
+                  </p>
+                )}
 
                 <div>
                   <label className="label" htmlFor="user-pwd">Password Login (min. 6 karakter) *</label>

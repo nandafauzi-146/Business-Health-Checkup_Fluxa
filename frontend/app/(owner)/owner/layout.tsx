@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
 import ChatAI from '@/components/owner/ChatAI'
+import UserScopedSWRProvider from '@/components/providers/UserScopedSWRProvider'
 
 export default async function OwnerLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers()
@@ -50,6 +51,7 @@ export default async function OwnerLayout({ children }: { children: React.ReactN
   )
 
   return (
+    <UserScopedSWRProvider userId={user.id}>
     <div className="app-layout" data-role="owner">
       <Sidebar role="owner" userName={profile.full_name || 'Owner'} />
       <div className="main-area">
@@ -90,5 +92,6 @@ export default async function OwnerLayout({ children }: { children: React.ReactN
       {/* FluxAI Chat Widget — hanya aktif jika akses operasional terbuka dan memiliki langganan berbayar */}
       {!accessLocked && hasPaidSubscription && <ChatAI />}
     </div>
+    </UserScopedSWRProvider>
   )
 }

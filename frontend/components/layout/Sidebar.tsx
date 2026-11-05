@@ -11,6 +11,7 @@ import {
 import { TutupShiftModal } from '@/components/pos/KasMasukModal'
 import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
 import { menuByRole, type NavItem, type UserRole } from '@/components/layout/role-navigation'
+import { useRefundRequests } from '@/lib/hooks/use-refund-requests'
 
 interface SidebarProps {
   role: UserRole
@@ -26,13 +27,22 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
   const [pinnedOpen, setPinnedOpen] = useState(false)
   const [hoverOpen, setHoverOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [pendingRefundCount, setPendingRefundCount] = useState(0)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const mobileTriggerRef = useRef<HTMLButtonElement>(null)
   const hoverCloseTimer = useRef<number | null>(null)
   const keyboardNavigationRef = useRef(false)
   const isExpanded = pinnedOpen || hoverOpen || mobileOpen
+  const { data: refundRequestsData, error: refundRequestsError } = useRefundRequests(role === 'admin')
+  const pendingRefundCount = role === 'admin'
+    ? refundRequestsData?.requests.filter(request => request.status === 'pending').length || 0
+    : 0
+
+  useEffect(() => {
+    if (refundRequestsError) {
+      console.error('Unable to refresh pending refund count in sidebar:', refundRequestsError)
+    }
+  }, [refundRequestsError])
 
   useEffect(() => {
     try {
@@ -56,31 +66,6 @@ export default function Sidebar({ role, userName, activeShift: initialShift }: S
       return next
     })
   }
-
-  useEffect(() => {
-    if (role !== 'admin') return
-
-    let active = true
-    const loadPendingRefundCount = async () => {
-      try {
-        const response = await fetch('/api/admin/refund-requests', { cache: 'no-store' })
-        const result: { requests?: { status: string }[] } = await response.json()
-        if (!response.ok || !Array.isArray(result.requests) || !active) return
-        setPendingRefundCount(result.requests.filter(request => request.status === 'pending').length)
-      } catch (error) {
-        console.error('Unable to refresh pending refund count in sidebar:', error)
-      }
-    }
-
-    void loadPendingRefundCount()
-    const intervalId = window.setInterval(() => void loadPendingRefundCount(), 30_000)
-    window.addEventListener('focus', loadPendingRefundCount)
-    return () => {
-      active = false
-      window.clearInterval(intervalId)
-      window.removeEventListener('focus', loadPendingRefundCount)
-    }
-  }, [role])
 
   useEffect(() => () => {
     if (hoverCloseTimer.current !== null) window.clearTimeout(hoverCloseTimer.current)

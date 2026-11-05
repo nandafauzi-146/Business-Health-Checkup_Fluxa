@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { sendSubscriptionPaymentEmail } from '@/lib/email/subscription-payment'
 
 export interface ApplyPaymentParams {
   orderId: string
@@ -17,6 +18,71 @@ export async function applySubscriptionPayment(
   params: ApplyPaymentParams
 ): Promise<{ success: boolean; error?: string }> {
   const { orderId, status, transactionId = null, paidAt = null } = params
+  const { data: originalPayment, error: originalPaymentError } = await admin
+    .from('subscription_payments')
+    .select('id, order_id, owner_id, plan_name, amount, status')
+    .eq('order_id', orderId)
+    .maybeSingle()
+
+  if (originalPaymentError || !originalPayment) {
+    console.error('Payment record not found before applying status:', orderId, originalPaymentError)
+    return { success: false, error: 'Tagihan tidak ditemukan.' }
+  }
+
+  const sendSuccessEmail = async () => {
+    if (status !== 'success') return
+
+    try {
+      const [
+        { data: profile, error: profileError },
+        { data: subscription, error: subscriptionError },
+        { data: confirmedPayment, error: confirmedPaymentError },
+      ] = await Promise.all([
+        admin.from('profiles')
+          .select('full_name, email')
+          .eq('id', originalPayment.owner_id)
+          .maybeSingle(),
+        admin.from('subscriptions')
+          .select('current_period_end')
+          .eq('owner_id', originalPayment.owner_id)
+          .maybeSingle(),
+        admin.from('subscription_payments')
+          .select('status, paid_at')
+          .eq('id', originalPayment.id)
+          .maybeSingle(),
+      ])
+
+      if (profileError || subscriptionError || confirmedPaymentError) {
+        throw profileError || subscriptionError || confirmedPaymentError
+      }
+      if (confirmedPayment?.status !== 'success') {
+        throw new Error('Pembayaran belum tercatat berhasil di database.')
+      }
+      if (!profile?.email) {
+        console.error('Subscription payment succeeded, but the owner has no email address.', {
+          paymentId: originalPayment.id,
+          ownerId: originalPayment.owner_id,
+        })
+        return
+      }
+
+      await sendSubscriptionPaymentEmail({
+        paymentId: originalPayment.id,
+        email: profile.email,
+        fullName: profile.full_name || 'Pelanggan Fluxa',
+        planName: originalPayment.plan_name,
+        amount: originalPayment.amount,
+        orderId: originalPayment.order_id,
+        paidAt: confirmedPayment.paid_at || paidAt || new Date().toISOString(),
+        subscriptionEndsAt: subscription?.current_period_end ?? null,
+      })
+    } catch (emailError) {
+      console.error('Subscription payment succeeded, but confirmation email could not be sent.', {
+        paymentId: originalPayment.id,
+        error: emailError,
+      })
+    }
+  }
 
   // 1. First, attempt to call the RPC if it exists in Supabase
   try {
@@ -28,6 +94,7 @@ export async function applySubscriptionPayment(
     })
 
     if (!rpcError) {
+      await sendSuccessEmail()
       return { success: true }
     }
 
@@ -50,8 +117,11 @@ export async function applySubscriptionPayment(
       return { success: false, error: 'Tagihan tidak ditemukan.' }
     }
 
-    if (payment.status === 'refunded' || (payment.status === 'success' && status !== 'refunded')) {
-      // Already successfully processed or refunded
+    if (payment.status === 'refunded') {
+      return { success: true }
+    }
+    if (payment.status === 'success' && status !== 'refunded') {
+      await sendSuccessEmail()
       return { success: true }
     }
 
@@ -70,9 +140,7 @@ export async function applySubscriptionPayment(
       .update(updatePayload)
       .eq('id', payment.id)
 
-    if (updatePaymentErr) {
-      console.error('Error updating subscription_payments:', updatePaymentErr)
-    }
+    if (updatePaymentErr) throw updatePaymentErr
 
     // Insert into webhook events ledger if table exists
     try {
@@ -151,9 +219,8 @@ export async function applySubscriptionPayment(
       .select('id')
       .maybeSingle()
 
-    if (subErr) {
-      console.error('Error upserting subscription:', subErr)
-    } else if (upsertedSub?.id) {
+    if (subErr) throw subErr
+    if (upsertedSub?.id) {
       // Link subscription_id to payment
       await admin
         .from('subscription_payments')
@@ -174,10 +241,10 @@ export async function applySubscriptionPayment(
       // Ignore if table or constraint differs
     }
 
+    await sendSuccessEmail()
     return { success: true }
   } catch (err) {
     console.error('Fatal error in direct subscription payment apply:', err)
     return { success: false, error: err instanceof Error ? err.message : 'Gagal memproses pembayaran' }
   }
 }
-

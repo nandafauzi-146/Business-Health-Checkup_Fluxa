@@ -233,6 +233,18 @@ export async function POST(req: Request) {
       });
 
     if (authError) {
+      const authErrorMessage = authError.message.toLowerCase()
+      if (
+        authError.code === "user_already_exists" ||
+        authErrorMessage.includes("already been registered") ||
+        authErrorMessage.includes("already registered")
+      ) {
+        return NextResponse.json(
+          { error: "Email tersebut sudah terdaftar. Gunakan email lain atau edit akun yang sudah ada." },
+          { status: 409 },
+        );
+      }
+
       return NextResponse.json(
         {
           error: getErrorMessage(

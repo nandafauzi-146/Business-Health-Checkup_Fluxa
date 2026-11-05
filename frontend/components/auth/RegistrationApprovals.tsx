@@ -147,10 +147,20 @@ export default function RegistrationApprovals() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: registration.id, action: 'approve' }),
       })
-      const result: { error?: string; auditRecorded?: boolean } = await response.json()
+      const result: {
+        error?: string
+        auditRecorded?: boolean
+        approvalEmailSent?: boolean
+        approvalEmailMessage?: string
+      } = await response.json()
       if (!response.ok) throw new Error(result.error || 'Tindakan belum dapat diproses.')
 
-      setNotice(`Pendaftaran ${registration.full_name} berhasil disetujui.`)
+      setNotice(result.approvalEmailSent
+        ? `Pendaftaran ${registration.full_name} disetujui dan email pemberitahuan telah dikirim ke ${registration.email || 'alamat email pendaftar'}.`
+        : `Pendaftaran ${registration.full_name} berhasil disetujui. ${result.approvalEmailMessage || 'Email pemberitahuan belum berhasil dikirim.'}`)
+      if (result.auditRecorded === false) {
+        setNotice((current) => `${current} Catatan aktivitas juga belum tersimpan.`)
+      }
       await loadRegistrations()
     } catch (processError) {
       console.error('Unable to approve registration.', processError)
