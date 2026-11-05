@@ -122,3 +122,180 @@ export async function POST(req: NextRequest) {
     )
   }
 }
+
+// PATCH — Perbarui informasi hutang/piutang tanpa mengubah catatan pembayaran.
+export async function PATCH(req: NextRequest) {
+  try {
+    const auth = await requireAdminOrOwner()
+    if (!auth) {
+      return NextResponse.json({ error: 'Akses ditolak. Hanya admin atau owner yang dapat mengubah hutang/piutang.' }, { status: 403 })
+    }
+
+    const businessId = auth.profile.business_id
+    if (!businessId) {
+      return NextResponse.json({ error: 'Akun belum terhubung ke data bisnis.' }, { status: 422 })
+    }
+
+    const body = await req.json() as {
+      id?: unknown
+      party_name?: unknown
+      type?: unknown
+      category?: unknown
+      description?: unknown
+      total_amount?: unknown
+      due_date?: unknown
+      note?: unknown
+    }
+    if (typeof body.id !== 'string' || !body.id.trim()) {
+      return NextResponse.json({ error: 'ID hutang/piutang tidak valid.' }, { status: 400 })
+    }
+
+    const partyName = typeof body.party_name === 'string' ? body.party_name.trim() : ''
+    const category = typeof body.category === 'string' ? body.category.trim() : ''
+    const description = typeof body.description === 'string' ? body.description.trim() : ''
+    const type = body.type
+    const amount = typeof body.total_amount === 'number' ? body.total_amount : Number(body.total_amount)
+    const dueDate = body.due_date === '' || body.due_date === null ? null : body.due_date
+    const note = body.note === null || body.note === '' ? null : body.note
+
+    if (!partyName || !category || !description) {
+      return NextResponse.json({ error: 'Nama pihak, kategori, dan keterangan wajib diisi.' }, { status: 400 })
+    }
+    if (type !== 'payable' && type !== 'receivable') {
+      return NextResponse.json({ error: 'Jenis transaksi tidak valid.' }, { status: 400 })
+    }
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+      return NextResponse.json({ error: 'Nominal harus berupa angka bulat lebih dari 0.' }, { status: 400 })
+    }
+    if (dueDate !== null) {
+      if (typeof dueDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+        return NextResponse.json({ error: 'Tanggal jatuh tempo tidak valid.' }, { status: 400 })
+      }
+      const parsedDueDate = new Date(`${dueDate}T00:00:00.000Z`)
+      if (Number.isNaN(parsedDueDate.getTime()) || parsedDueDate.toISOString().slice(0, 10) !== dueDate) {
+        return NextResponse.json({ error: 'Tanggal jatuh tempo tidak valid.' }, { status: 400 })
+      }
+    }
+    if (note !== null && typeof note !== 'string') {
+      return NextResponse.json({ error: 'Catatan tidak valid.' }, { status: 400 })
+    }
+
+    const admin = getServiceClient()
+    const { data: current, error: currentError } = await admin
+      .from('supplier_payables')
+      .select('id, type, total_amount, paid_amount, status, updated_at')
+      .eq('id', body.id)
+      .eq('business_id', businessId)
+      .maybeSingle()
+    if (currentError) throw currentError
+    if (!current) return NextResponse.json({ error: 'Data hutang/piutang tidak ditemukan.' }, { status: 404 })
+    if (amount < current.paid_amount) {
+      return NextResponse.json({ error: 'Total nominal tidak boleh lebih kecil dari jumlah yang sudah dibayar.' }, { status: 400 })
+    }
+
+    const { count: paymentCount, error: paymentError } = await admin
+      .from('supplier_payments')
+      .select('id', { count: 'exact', head: true })
+      .eq('supplier_payable_id', body.id)
+    if (paymentError) throw paymentError
+    const hasPaymentHistory = (paymentCount ?? 0) > 0 || current.paid_amount > 0 || current.status !== 'unpaid'
+    if (hasPaymentHistory && (amount !== current.total_amount || type !== current.type)) {
+      return NextResponse.json({
+        error: 'Jenis transaksi dan nominal tidak dapat diubah karena sudah memiliki riwayat pembayaran.',
+      }, { status: 409 })
+    }
+
+    const { data: updated, error: updateError } = await admin
+      .from('supplier_payables')
+      .update({
+        party_name: partyName,
+        supplier_name: partyName,
+        type,
+        category,
+        description,
+        total_amount: amount,
+        due_date: dueDate,
+        note: typeof note === 'string' ? note.trim() || null : null,
+      })
+      .eq('id', body.id)
+      .eq('business_id', businessId)
+      .eq('paid_amount', current.paid_amount)
+      .eq('status', current.status)
+      .eq('updated_at', current.updated_at)
+      .select('*')
+      .maybeSingle()
+    if (updateError) throw updateError
+    if (!updated) {
+      return NextResponse.json({
+        error: 'Data berubah bersamaan dengan proses ini. Muat ulang data lalu coba lagi.',
+      }, { status: 409 })
+    }
+
+    return NextResponse.json({ item: updated })
+  } catch (err: unknown) {
+    console.error('[debt-receivables PATCH] Unexpected error:', err instanceof Error ? err.message : err)
+    return NextResponse.json({ error: 'Terjadi kesalahan saat memperbarui hutang/piutang.' }, { status: 500 })
+  }
+}
+
+// DELETE — Hanya hapus catatan yang belum memiliki pembayaran.
+export async function DELETE(req: NextRequest) {
+  try {
+    const auth = await requireAdminOrOwner()
+    if (!auth) {
+      return NextResponse.json({ error: 'Akses ditolak. Hanya admin atau owner yang dapat menghapus hutang/piutang.' }, { status: 403 })
+    }
+
+    const businessId = auth.profile.business_id
+    if (!businessId) {
+      return NextResponse.json({ error: 'Akun belum terhubung ke data bisnis.' }, { status: 422 })
+    }
+
+    const body = await req.json() as { id?: unknown }
+    if (typeof body.id !== 'string' || !body.id.trim()) {
+      return NextResponse.json({ error: 'ID hutang/piutang tidak valid.' }, { status: 400 })
+    }
+
+    const admin = getServiceClient()
+    const { data: current, error: currentError } = await admin
+      .from('supplier_payables')
+      .select('id, paid_amount, status')
+      .eq('id', body.id)
+      .eq('business_id', businessId)
+      .maybeSingle()
+    if (currentError) throw currentError
+    if (!current) return NextResponse.json({ error: 'Data hutang/piutang tidak ditemukan.' }, { status: 404 })
+
+    const { count: paymentCount, error: paymentError } = await admin
+      .from('supplier_payments')
+      .select('id', { count: 'exact', head: true })
+      .eq('supplier_payable_id', body.id)
+    if (paymentError) throw paymentError
+    if ((paymentCount ?? 0) > 0 || current.paid_amount > 0 || current.status !== 'unpaid') {
+      return NextResponse.json({
+        error: 'Data tidak dapat dihapus karena sudah memiliki pembayaran atau statusnya bukan Belum Lunas.',
+      }, { status: 409 })
+    }
+
+    const { data: deleted, error: deleteError } = await admin
+      .from('supplier_payables')
+      .delete()
+      .eq('id', body.id)
+      .eq('business_id', businessId)
+      .eq('paid_amount', 0)
+      .eq('status', 'unpaid')
+      .select('id')
+      .maybeSingle()
+    if (deleteError) throw deleteError
+    if (!deleted) {
+      return NextResponse.json({
+        error: 'Data berubah bersamaan dengan proses ini. Muat ulang data lalu coba lagi.',
+      }, { status: 409 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (err: unknown) {
+    console.error('[debt-receivables DELETE] Unexpected error:', err instanceof Error ? err.message : err)
+    return NextResponse.json({ error: 'Terjadi kesalahan saat menghapus hutang/piutang.' }, { status: 500 })
+  }
+}

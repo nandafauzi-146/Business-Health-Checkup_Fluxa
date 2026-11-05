@@ -740,6 +740,7 @@ export default function SuperAdminCMS() {
                         onClick={() => handleRemoveChecklist(idx)}
                       >
                         <Trash2 size={13} />
+                        <span>Hapus</span>
                       </button>
                     )}
                   </div>
@@ -1008,6 +1009,7 @@ export default function SuperAdminCMS() {
                               onClick={() => handleRemovePackageFeature(idx, fIdx)}
                             >
                               <Trash2 size={12} />
+                              <span>Hapus</span>
                             </button>
                           )}
                         </div>

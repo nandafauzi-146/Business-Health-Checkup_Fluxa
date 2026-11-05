@@ -544,22 +544,24 @@ export default function ExpensesClient({
                         <FormatRupiah amount={exp.amount} />
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: 6 }}>
+                        <div style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 6 }}>
                           <button
                             onClick={() => handleOpenEdit(exp)}
                             className="btn btn-sm"
                             style={{ background: 'var(--accs)', color: 'var(--acc)', border: 'none' }}
                             title="Edit Catatan"
+                            aria-label={`Edit catatan ${exp.description}`}
                           >
-                            <Pencil size={12} />
+                            <Pencil size={12} /> Edit
                           </button>
                           <button
                             onClick={() => handleDelete(exp)}
                             className="btn btn-sm"
                             style={{ background: 'var(--bads)', color: 'var(--bad)', border: 'none' }}
                             title="Hapus Catatan"
+                            aria-label={`Hapus catatan ${exp.description}`}
                           >
-                            <Trash2 size={12} />
+                            <Trash2 size={12} /> Hapus
                           </button>
                         </div>
                       </td>
