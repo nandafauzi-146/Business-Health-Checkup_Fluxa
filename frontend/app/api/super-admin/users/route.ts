@@ -44,6 +44,27 @@ export async function POST(request: Request) {
 
     const now = new Date()
     const isOwner = role === 'owner'
+    let trialDays = 7
+    if (isOwner) {
+      try {
+        const { data: settingRow } = await admin
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'trial_duration_days')
+          .maybeSingle()
+        if (settingRow?.value !== undefined && settingRow?.value !== null) {
+          const parsed = typeof settingRow.value === 'number'
+            ? settingRow.value
+            : parseInt(String(settingRow.value), 10)
+          if (!isNaN(parsed) && parsed > 0) {
+            trialDays = parsed
+          }
+        }
+      } catch {
+        trialDays = 7
+      }
+    }
+
     const { error: profileError } = await admin.from('profiles').upsert({
       id: authData.user.id,
       full_name: fullName,
@@ -55,7 +76,7 @@ export async function POST(request: Request) {
       reviewed_by: auth.actorId,
       reviewed_at: now.toISOString(),
       trial_started_at: isOwner ? now.toISOString() : null,
-      trial_ends_at: isOwner ? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString() : null,
+      trial_ends_at: isOwner ? new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000).toISOString() : null,
       updated_at: now.toISOString(),
     })
     if (profileError) {
