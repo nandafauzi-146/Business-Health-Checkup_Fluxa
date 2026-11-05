@@ -155,6 +155,27 @@ export async function PATCH(request: Request) {
       ? rejection_reason.trim()
       : null
 
+    let trialDays = 7
+    if (action === 'approve') {
+      try {
+        const { data: settingRow } = await adminClient
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'trial_duration_days')
+          .maybeSingle()
+        if (settingRow?.value !== undefined && settingRow?.value !== null) {
+          const parsed = typeof settingRow.value === 'number'
+            ? settingRow.value
+            : parseInt(String(settingRow.value), 10)
+          if (!isNaN(parsed) && parsed > 0) {
+            trialDays = parsed
+          }
+        }
+      } catch {
+        trialDays = 7
+      }
+    }
+
     const approvalFields = action === 'approve'
       ? {
         approval_status: 'approved' as const,
@@ -163,7 +184,7 @@ export async function PATCH(request: Request) {
         reviewed_at: now.toISOString(),
         rejection_reason: null,
         trial_started_at: now.toISOString(),
-        trial_ends_at: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        trial_ends_at: new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000).toISOString(),
       }
       : {
         approval_status: 'rejected' as const,
