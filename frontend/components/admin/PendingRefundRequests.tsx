@@ -1,54 +1,17 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Check, RefreshCw, X } from 'lucide-react'
 import { FormatRupiah, SectionCard } from '@/components/ui/Cards'
 import { getUserFacingError } from '@/lib/user-facing-error'
-
-interface RefundRequest {
-  id: string
-  sale_id: string
-  status: 'pending' | 'approved' | 'rejected'
-  reason: string
-  created_at: string
-  sale: {
-    invoice_number: string
-    final_amount: number
-  } | null
-  requester: {
-    full_name: string
-  } | null
-}
+import { useRefundRequests } from '@/lib/hooks/use-refund-requests'
 
 export default function PendingRefundRequests() {
-  const [requests, setRequests] = useState<RefundRequest[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data, error: loadError, isLoading, mutate } = useRefundRequests()
+  const requests = data?.requests.filter(request => request.status === 'pending') || []
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-
-  const loadRequests = useCallback(async () => {
-    try {
-      const response = await fetch('/api/admin/refund-requests', { cache: 'no-store' })
-      const result: { requests?: RefundRequest[]; error?: string } = await response.json()
-      if (!response.ok || !Array.isArray(result.requests)) {
-        throw new Error(result.error || 'Pengajuan refund belum dapat dimuat.')
-      }
-      setRequests(result.requests.filter(request => request.status === 'pending'))
-      setError('')
-    } catch (loadError) {
-      console.error('Unable to load pending refund requests on admin dashboard:', loadError)
-      setError(getUserFacingError(loadError, 'Pengajuan refund belum dapat dimuat. Silakan coba lagi.'))
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void loadRequests()
-    const intervalId = window.setInterval(() => void loadRequests(), 30_000)
-    return () => window.clearInterval(intervalId)
-  }, [loadRequests])
 
   const decideRequest = async (requestId: string, action: 'approve' | 'reject') => {
     setProcessingId(requestId)
@@ -62,7 +25,7 @@ export default function PendingRefundRequests() {
       const result: { error?: string } = await response.json()
       if (!response.ok) throw new Error(result.error || 'Keputusan refund belum dapat disimpan.')
 
-      setRequests(current => current.filter(request => request.id !== requestId))
+      void mutate()
       setNotice(action === 'approve'
         ? 'Refund disetujui dan transaksi telah dibatalkan.'
         : 'Pengajuan refund ditolak.')
@@ -86,7 +49,12 @@ export default function PendingRefundRequests() {
           {error}
         </div>
       )}
-      {loading ? (
+      {loadError && (
+        <div role="alert" style={{ marginBottom: 12, color: 'var(--bad)', fontSize: 12.5 }}>
+          {getUserFacingError(loadError, 'Pengajuan refund belum dapat dimuat. Silakan coba lagi.')}
+        </div>
+      )}
+      {isLoading ? (
         <div style={{ padding: '12px 0', color: 'var(--mute)', fontSize: 12.5 }}>
           Memuat pengajuan refund...
         </div>
@@ -151,8 +119,8 @@ export default function PendingRefundRequests() {
       )}
       <button
         type="button"
-        onClick={() => void loadRequests()}
-        disabled={loading}
+        onClick={() => void mutate()}
+        disabled={isLoading}
         className="btn btn-secondary"
         style={{ marginTop: 12, padding: '6px 10px', fontSize: 11.5 }}
       >

@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
+import { getSupabaseAdminClient } from '@backend/index'
 
-function getServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !serviceKey) throw new Error('Konfigurasi Supabase server belum lengkap.')
-  return createSupabaseAdminClient(url, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
+const categorySchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  description: z.string().trim().max(500).nullable().optional(),
+})
+const updateCategorySchema = categorySchema.extend({ id: z.string().uuid() })
+const deleteCategorySchema = z.object({ id: z.string().uuid() })
+
+async function readJson(request: Request): Promise<unknown> {
+  try {
+    return await request.json()
+  } catch {
+    return null
+  }
 }
 
 async function requireAdminOrOwner() {
@@ -28,15 +35,22 @@ async function requireAdminOrOwner() {
 // GET — daftar semua kategori
 export async function GET() {
   try {
-    const admin = getServiceClient()
+    const user = await requireAdminOrOwner()
+    if (!user) return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 })
+
+    const admin = getSupabaseAdminClient()
     const { data, error } = await admin
       .from('expense_categories')
       .select('id, name, description, created_at')
       .order('name')
+      .limit(100)
     if (error) throw error
-    return NextResponse.json({ categories: data ?? [] })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Gagal memuat kategori.' }, { status: 500 })
+    return NextResponse.json({ categories: data ?? [] }, {
+      headers: { 'Cache-Control': 'private, no-store' },
+    })
+  } catch (error) {
+    console.error('Unable to load expense categories:', error)
+    return NextResponse.json({ error: 'Gagal memuat kategori.' }, { status: 500 })
   }
 }
 
@@ -46,13 +60,13 @@ export async function POST(req: Request) {
     const user = await requireAdminOrOwner()
     if (!user) return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 })
 
-    const { name, description } = await req.json()
-    if (!name?.trim()) return NextResponse.json({ error: 'Nama kategori wajib diisi.' }, { status: 400 })
+    const parsed = categorySchema.safeParse(await readJson(req))
+    if (!parsed.success) return NextResponse.json({ error: 'Data kategori tidak valid.' }, { status: 400 })
 
-    const admin = getServiceClient()
+    const admin = getSupabaseAdminClient()
     const { data, error } = await admin
       .from('expense_categories')
-      .insert({ name: name.trim(), description: description?.trim() || null })
+      .insert({ name: parsed.data.name, description: parsed.data.description || null })
       .select('id, name, description, created_at')
       .single()
     if (error) {
@@ -60,8 +74,9 @@ export async function POST(req: Request) {
       throw error
     }
     return NextResponse.json({ category: data }, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Gagal menambah kategori.' }, { status: 500 })
+  } catch (error) {
+    console.error('Unable to create expense category:', error)
+    return NextResponse.json({ error: 'Gagal menambah kategori.' }, { status: 500 })
   }
 }
 
@@ -71,15 +86,14 @@ export async function PATCH(req: Request) {
     const user = await requireAdminOrOwner()
     if (!user) return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 })
 
-    const { id, name, description } = await req.json()
-    if (!id) return NextResponse.json({ error: 'ID kategori wajib ada.' }, { status: 400 })
-    if (!name?.trim()) return NextResponse.json({ error: 'Nama kategori wajib diisi.' }, { status: 400 })
+    const parsed = updateCategorySchema.safeParse(await readJson(req))
+    if (!parsed.success) return NextResponse.json({ error: 'Data kategori tidak valid.' }, { status: 400 })
 
-    const admin = getServiceClient()
+    const admin = getSupabaseAdminClient()
     const { data, error } = await admin
       .from('expense_categories')
-      .update({ name: name.trim(), description: description?.trim() || null })
-      .eq('id', id)
+      .update({ name: parsed.data.name, description: parsed.data.description || null })
+      .eq('id', parsed.data.id)
       .select('id, name, description, created_at')
       .single()
     if (error) {
@@ -87,8 +101,9 @@ export async function PATCH(req: Request) {
       throw error
     }
     return NextResponse.json({ category: data })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Gagal memperbarui kategori.' }, { status: 500 })
+  } catch (error) {
+    console.error('Unable to update expense category:', error)
+    return NextResponse.json({ error: 'Gagal memperbarui kategori.' }, { status: 500 })
   }
 }
 
@@ -98,16 +113,17 @@ export async function DELETE(req: Request) {
     const user = await requireAdminOrOwner()
     if (!user) return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 })
 
-    const { id } = await req.json()
-    if (!id) return NextResponse.json({ error: 'ID kategori wajib ada.' }, { status: 400 })
+    const parsed = deleteCategorySchema.safeParse(await readJson(req))
+    if (!parsed.success) return NextResponse.json({ error: 'ID kategori tidak valid.' }, { status: 400 })
 
-    const admin = getServiceClient()
+    const admin = getSupabaseAdminClient()
 
     // Cek apakah kategori masih dipakai
-    const { count } = await admin
+    const { count, error: countError } = await admin
       .from('expenses')
       .select('id', { count: 'exact', head: true })
-      .eq('category_id', id)
+      .eq('category_id', parsed.data.id)
+    if (countError) throw countError
     if (count && count > 0) {
       return NextResponse.json(
         { error: `Kategori tidak bisa dihapus karena masih digunakan oleh ${count} catatan biaya.` },
@@ -115,10 +131,11 @@ export async function DELETE(req: Request) {
       )
     }
 
-    const { error } = await admin.from('expense_categories').delete().eq('id', id)
+    const { error } = await admin.from('expense_categories').delete().eq('id', parsed.data.id)
     if (error) throw error
     return NextResponse.json({ success: true })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Gagal menghapus kategori.' }, { status: 500 })
+  } catch (error) {
+    console.error('Unable to delete expense category:', error)
+    return NextResponse.json({ error: 'Gagal menghapus kategori.' }, { status: 500 })
   }
 }

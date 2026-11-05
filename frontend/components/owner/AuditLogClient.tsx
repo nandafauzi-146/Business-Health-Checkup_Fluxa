@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, FormatRupiah } from '@/components/ui/Cards'
+import { auditActionLabel, auditFieldLabel, auditTableLabel, summarizeAuditData } from '@/lib/audit-log-format'
 
 export interface AuditLogItem {
   id: string
@@ -303,7 +304,15 @@ const FIELD_LABELS: Record<string, string> = {
   paid_amount: 'Jumlah Sudah Terbayar',
   due_date: 'Batas Waktu Jatuh Tempo',
   note: 'Catatan Keterangan',
-  payment_date: 'Tanggal Pembayaran'
+  payment_date: 'Tanggal Pembayaran',
+  order_id: 'Nomor Tagihan',
+  plan_name: 'Paket Langganan',
+  payment_type: 'Cara Pembayaran',
+  expires_at: 'Batas Waktu Pembayaran',
+  paid_at: 'Waktu Pembayaran',
+  duration_days: 'Lama Berlangganan',
+  currency: 'Mata Uang',
+  approval_status: 'Status Pendaftaran',
 }
 
 // Daftar atribut teknis internal database yang tidak boleh ditampilkan ke pemilik
@@ -311,7 +320,8 @@ const TECHNICAL_KEYS_TO_IGNORE = new Set([
   'id', 'created_at', 'updated_at', 'user_id', 'cashier_id',
   'created_by', 'updated_by', 'sale_id', 'product_id', 'profile_id',
   'supplier_payable_id', 'expense_category_id', 'category_id',
-  'tenant_id', 'store_id', 'ip_address'
+  'tenant_id', 'store_id', 'ip_address', 'transaction_id',
+  'gateway_transaction_id', 'snap_token'
 ])
 
 const TABLE_FRIENDLY_NAMES: Record<string, { label: string; desc: string }> = {
@@ -324,7 +334,14 @@ const TABLE_FRIENDLY_NAMES: Record<string, { label: string; desc: string }> = {
   supplier_payments: { label: 'Riwayat Pembayaran Hutang', desc: 'Pencatatan cicilan / pelunasan hutang' },
   receivables: { label: 'Buku Piutang Pelanggan', desc: 'Tagihan penjualan tempo ke pelanggan' },
   receivable_payments: { label: 'Pembayaran Piutang', desc: 'Pelunasan tagihan pelanggan' },
-  debt_categories: { label: 'Kategori Hutang & Piutang', desc: 'Pengelompokan jenis kewajiban' }
+  debt_categories: { label: 'Kategori Hutang & Piutang', desc: 'Pengelompokan jenis kewajiban' },
+  subscription_payments: { label: 'Tagihan Langganan', desc: 'Tagihan dan pembayaran paket Fluxa' },
+  subscriptions: { label: 'Langganan Usaha', desc: 'Paket dan masa aktif layanan usaha' },
+  subscription_plans: { label: 'Paket Langganan', desc: 'Informasi paket layanan' },
+  profiles: { label: 'Akun Pengguna', desc: 'Informasi akun dan hak akses' },
+  businesses: { label: 'Informasi Usaha', desc: 'Profil usaha yang terdaftar' },
+  platform_withdrawals: { label: 'Penarikan Dana Platform', desc: 'Catatan penarikan dana platform' },
+  platform_ledger_entries: { label: 'Catatan Keuangan Platform', desc: 'Riwayat pencatatan keuangan' },
 }
 
 function formatFieldValue(key: string, val: any): string {
@@ -365,6 +382,7 @@ function formatFieldValue(key: string, val: any): string {
         tunai: 'Uang Tunai (Cash)',
         qris: 'QRIS',
         transfer: 'Transfer Bank',
+        bank_transfer: 'Transfer Bank',
         non_cash: 'Non-Tunai'
       }
       return pmMap[val.toLowerCase()] || val.toUpperCase()
@@ -377,7 +395,12 @@ function formatFieldValue(key: string, val: any): string {
         closed: 'Shift Telah Ditutup',
         unpaid: 'Belum Lunas',
         partial: 'Cicilan Sebagian',
-        paid: 'Lunas Sepenuhnya'
+        paid: 'Lunas Sepenuhnya',
+        pending: 'Menunggu Pembayaran',
+        success: 'Berhasil',
+        failed: 'Gagal',
+        cancelled: 'Dibatalkan',
+        refunded: 'Dikembalikan'
       }
       return statusMap[val.toLowerCase()] || val
     }
@@ -574,10 +597,15 @@ export default function AuditLogClient({
           </div>
         )
       default:
+        const details = summarizeAuditData(log.new_data)
         return (
           <div>
-            <strong>{log.action}</strong> pada tabel <code>{log.table_name}</code>
-            {nd ? <div style={{ fontSize: 12, color: 'var(--mute)' }}>{JSON.stringify(nd).slice(0, 70)}...</div> : null}
+            <strong>{auditActionLabel(log.action)}</strong>
+            {details.length > 0 && (
+              <div style={{ fontSize: 12, color: 'var(--mute)', marginTop: 3 }}>
+                {details.join(' · ')}
+              </div>
+            )}
           </div>
         )
     }
@@ -604,7 +632,7 @@ export default function AuditLogClient({
       case 'RECORD_DEBT_PAYMENT':
         return <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'var(--accs)', color: 'var(--acc)', whiteSpace: 'nowrap' }}>Cicilan Hutang</span>
       default:
-        return <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'var(--bg)', color: 'var(--mute)', whiteSpace: 'nowrap' }}>{action}</span>
+        return <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'var(--bg)', color: 'var(--mute)', whiteSpace: 'nowrap' }}>{auditActionLabel(action)}</span>
     }
   }
 
@@ -646,7 +674,7 @@ export default function AuditLogClient({
   return (
     <div>
       <PageHeader
-        title="Aktifitas Operasional"
+        title="Aktivitas Usaha"
         subtitle="Rekaman aktivitas Owner, Admin, dan Kasir pada usaha Anda."
         actions={
           <button
@@ -714,7 +742,7 @@ export default function AuditLogClient({
       </div>
 
       {/* Main Section */}
-      <SectionCard title="Kronologi Jejak Audit Sistem">
+      <SectionCard title="Riwayat Aktivitas Usaha">
         {/* Filter Bar */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 18, alignItems: 'center' }}>
           {/* Search Box */}
@@ -838,11 +866,11 @@ export default function AuditLogClient({
           <table className="data-table" style={{ minWidth: 620 }}>
             <thead>
               <tr>
-                <th style={{ width: 140 }}>Waktu & Tanggal</th>
-                <th style={{ width: 160 }}>Pelaku (Staf)</th>
-                <th style={{ width: 130 }}>Aksi Sistem</th>
-                <th>Laporan Deskripsi Aktivitas</th>
-                <th style={{ width: 90, textAlign: 'center' }}>Detail</th>
+                <th style={{ width: 140 }}>Tanggal & waktu</th>
+                <th style={{ width: 160 }}>Dilakukan oleh</th>
+                <th style={{ width: 150 }}>Aktivitas</th>
+                <th>Ringkasan</th>
+                <th style={{ width: 90, textAlign: 'center' }}>Rincian</th>
               </tr>
             </thead>
             <tbody>
@@ -877,8 +905,8 @@ export default function AuditLogClient({
                     {/* Aksi Badge */}
                     <td>
                       {getActionBadge(item.action)}
-                      <div style={{ fontSize: 10.5, fontFamily: 'monospace', color: 'var(--mute)', marginTop: 4 }}>
-                        tbl: {item.table_name}
+                      <div style={{ fontSize: 10.5, color: 'var(--mute)', marginTop: 4 }}>
+                        {TABLE_FRIENDLY_NAMES[item.table_name]?.label || auditTableLabel(item.table_name)}
                       </div>
                     </td>
 
@@ -906,7 +934,7 @@ export default function AuditLogClient({
         </div>
       </SectionCard>
 
-      {/* Modal Detail JSON & Metadata */}
+      {/* Rincian aktivitas */}
       {selectedLog && (
         <div style={{
           position: 'fixed',
@@ -942,11 +970,11 @@ export default function AuditLogClient({
             }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  Detail Log Aktivitas Audit
+                  Rincian Aktivitas
                   {getActionBadge(selectedLog.action)}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--mute)', marginTop: 2 }}>
-                  Waktu: {formatDate(selectedLog.created_at)} ({timeAgo(selectedLog.created_at)})
+                  {formatDate(selectedLog.created_at)} ({timeAgo(selectedLog.created_at)})
                 </div>
               </div>
               <button
@@ -973,18 +1001,18 @@ export default function AuditLogClient({
               {/* Data Pelaku & Target Modul */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div style={{ background: 'var(--bg)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--mute)', fontWeight: 600 }}>Staf Pelaksana:</div>
+                  <div style={{ fontSize: 11, color: 'var(--mute)', fontWeight: 600 }}>Dilakukan oleh:</div>
                   <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2, color: 'var(--ink)' }}>{selectedLog.user_name || 'Sistem Otomatis'}</div>
                   <div style={{ marginTop: 4 }}>{getRoleBadge(selectedLog.user_role)}</div>
                 </div>
 
                 <div style={{ background: 'var(--bg)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--mute)', fontWeight: 600 }}>Bagian / Modul Terkait:</div>
+                  <div style={{ fontSize: 11, color: 'var(--mute)', fontWeight: 600 }}>Bagian terkait:</div>
                   <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2, color: 'var(--ink)' }}>
-                    {TABLE_FRIENDLY_NAMES[selectedLog.table_name]?.label || selectedLog.table_name}
+                    {TABLE_FRIENDLY_NAMES[selectedLog.table_name]?.label || auditTableLabel(selectedLog.table_name)}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--mute)', marginTop: 2 }}>
-                    {TABLE_FRIENDLY_NAMES[selectedLog.table_name]?.desc || 'Aktivitas sistem internal'}
+                    {TABLE_FRIENDLY_NAMES[selectedLog.table_name]?.desc || 'Informasi terkait aktivitas ini'}
                   </div>
                 </div>
               </div>
@@ -1018,7 +1046,7 @@ export default function AuditLogClient({
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
-                          Perbandingan Rincian Aktivitas
+                          Perubahan yang tercatat
                         </div>
                         <div style={{ fontSize: 11.5, color: 'var(--mute)', marginTop: 2 }}>
                           {isUpdate && 'Membandingkan data sebelum dilakukan perubahan dengan nilai terbaru.'}
@@ -1049,10 +1077,10 @@ export default function AuditLogClient({
                               Informasi Bagian
                             </th>
                             <th style={{ padding: '11px 14px', width: '32%', color: 'var(--bad)', fontWeight: 700 }}>
-                              Sebelum Perubahan (Data Lama)
+                              Sebelum
                             </th>
                             <th style={{ padding: '11px 14px', width: '32%', color: 'var(--ok)', fontWeight: 700 }}>
-                              Sesudah Perubahan (Data Baru)
+                              Sesudah
                             </th>
                           </tr>
                         </thead>

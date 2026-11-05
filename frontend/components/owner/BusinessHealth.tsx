@@ -13,6 +13,7 @@ interface Props {
   initialInput: FinancialHealthInput
   initialDiagnosis: BusinessHealthDiagnosis
   pastCheckups: any[]
+  ownerId: string
 }
 
 // Markdown formatter yang rapi dan elegan untuk narasi AI eksekutif
@@ -91,9 +92,10 @@ function FormattedAiNarration({ text }: { text: string }) {
 export default function BusinessHealthClient({
   initialInput,
   initialDiagnosis,
-  pastCheckups
+  pastCheckups,
+  ownerId
 }: Props) {
-  const CACHE_KEY = 'fluxa_ai_narration_cache'
+  const cacheKey = `fluxa_ai_narration_cache:${ownerId}`
 
   const [input] = useState<FinancialHealthInput>(initialInput)
   const [diagnosis, setDiagnosis] = useState<BusinessHealthDiagnosis>(initialDiagnosis)
@@ -109,7 +111,7 @@ export default function BusinessHealthClient({
   // Restore cache dari sessionStorage setelah komponen mount di browser
   useEffect(() => {
     try {
-      const cached = sessionStorage.getItem(CACHE_KEY)
+      const cached = sessionStorage.getItem(cacheKey)
       if (cached) {
         const parsed = JSON.parse(cached)
         if (parsed.narration) setAiNarration(parsed.narration)
@@ -124,18 +126,18 @@ export default function BusinessHealthClient({
     } catch {
       /* ignore */
     }
-  }, [])
+  }, [cacheKey])
   // Simpan ke sessionStorage setiap kali narasi/source/model berubah
   const persistCache = useCallback((narration: string, source: string, model: string | null) => {
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem(CACHE_KEY, JSON.stringify({ narration, source, model }))
+      sessionStorage.setItem(cacheKey, JSON.stringify({ narration, source, model }))
     }
-  }, [])
+  }, [cacheKey])
 
   const handleGenerate = async () => {
     // Hapus cache lama sebelum generate ulang
     if (typeof window !== 'undefined') {
-      sessionStorage.removeItem(CACHE_KEY)
+      sessionStorage.removeItem(cacheKey)
     }
     setLoading(true)
     try {
@@ -143,8 +145,8 @@ export default function BusinessHealthClient({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...input,
-          saveToDb: true
+          period_start: input.period_start,
+          period_end: input.period_end,
         })
       })
 

@@ -4,6 +4,7 @@ import {
   getSuperAdminServiceClient,
   writeSuperAdminAudit,
 } from '@/lib/supabase/super-admin'
+import { sendRegistrationApprovalEmail } from '@/lib/email/registration-approval'
 
 async function requireSuperAdmin() {
   const supabase = await createClient()
@@ -134,14 +135,22 @@ export async function PATCH(request: Request) {
     const now = new Date()
 
     // Check if the user is a direct subscriber who already paid
-    const { data: existingUser } = await adminClient
+    const { data: existingUser, error: existingUserError } = await adminClient
       .from('profiles')
-      .select('id, full_name, approval_status, registration_path')
+      .select('id, full_name, email, approval_status, registration_path')
       .eq('id', id)
       .maybeSingle()
 
+    if (existingUserError) throw existingUserError
     if (!existingUser) {
       return NextResponse.json({ error: 'Pendaftaran tidak ditemukan.' }, { status: 404 })
+    }
+
+    if (action === 'approve' && existingUser.approval_status === 'approved') {
+      return NextResponse.json(
+        { error: 'Pendaftaran ini sudah disetujui sebelumnya.' },
+        { status: 409 },
+      )
     }
 
     if (existingUser.approval_status === 'approved' && existingUser.registration_path === 'subscribe') {
@@ -154,27 +163,7 @@ export async function PATCH(request: Request) {
     const rejectionReasonText = typeof rejection_reason === 'string' && rejection_reason.trim()
       ? rejection_reason.trim()
       : null
-
-    let trialDays = 7
-    if (action === 'approve') {
-      try {
-        const { data: settingRow } = await adminClient
-          .from('system_settings')
-          .select('value')
-          .eq('key', 'trial_duration_days')
-          .maybeSingle()
-        if (settingRow?.value !== undefined && settingRow?.value !== null) {
-          const parsed = typeof settingRow.value === 'number'
-            ? settingRow.value
-            : parseInt(String(settingRow.value), 10)
-          if (!isNaN(parsed) && parsed > 0) {
-            trialDays = parsed
-          }
-        }
-      } catch {
-        trialDays = 7
-      }
-    }
+    const trialEndsAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
 
     const approvalFields = action === 'approve'
       ? {
@@ -184,7 +173,7 @@ export async function PATCH(request: Request) {
         reviewed_at: now.toISOString(),
         rejection_reason: null,
         trial_started_at: now.toISOString(),
-        trial_ends_at: new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000).toISOString(),
+        trial_ends_at: trialEndsAt,
       }
       : {
         approval_status: 'rejected' as const,
@@ -209,24 +198,53 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Pendaftaran tidak ditemukan atau sudah diproses.' }, { status: 409 })
     }
 
-    const auditRecorded = await writeSuperAdminAudit(
-      adminClient,
-      auth.userId,
-      action === 'approve' ? 'SUPER_ADMIN_REGISTRATION_APPROVED' : 'SUPER_ADMIN_REGISTRATION_REJECTED',
-      id,
-      { approval_status: existingUser.approval_status },
-      {
-        approval_status: action === 'approve' ? 'approved' : 'rejected',
-        trial_ends_at: action === 'approve' ? approvalFields.trial_ends_at : null,
-        rejection_reason: rejectionReasonText,
-      },
-    )
+    let auditRecorded = true
+    try {
+      auditRecorded = await writeSuperAdminAudit(
+        adminClient,
+        auth.userId,
+        action === 'approve' ? 'SUPER_ADMIN_REGISTRATION_APPROVED' : 'SUPER_ADMIN_REGISTRATION_REJECTED',
+        id,
+        { approval_status: existingUser.approval_status },
+        {
+          approval_status: action === 'approve' ? 'approved' : 'rejected',
+          trial_ends_at: action === 'approve' ? trialEndsAt : null,
+          rejection_reason: rejectionReasonText,
+        },
+      )
+    } catch (auditError) {
+      auditRecorded = false
+      console.error('Registration approval saved, but its audit record could not be written.', auditError)
+    }
+
+    let approvalEmailSent = false
+    let approvalEmailMessage = ''
+    if (action === 'approve') {
+      if (!existingUser.email) {
+        approvalEmailMessage = 'Email belum dikirim karena alamat email pendaftar tidak tersedia.'
+      } else {
+        try {
+          const emailResult = await sendRegistrationApprovalEmail({
+            email: existingUser.email,
+            fullName: existingUser.full_name,
+            trialEndsAt,
+          })
+          approvalEmailSent = emailResult.sent
+          if (!emailResult.sent) approvalEmailMessage = emailResult.message
+        } catch (emailError) {
+          console.error('Unable to send registration approval email.', emailError)
+          approvalEmailMessage = 'Pendaftaran berhasil disetujui, tetapi email belum berhasil dikirim. Periksa konfigurasi dan log layanan email.'
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,
       auditRecorded,
       approvalStatus: action === 'approve' ? 'approved' : 'rejected',
-      trialEndsAt: action === 'approve' ? approvalFields.trial_ends_at : null,
+      trialEndsAt: action === 'approve' ? trialEndsAt : null,
+      approvalEmailSent,
+      approvalEmailMessage: action === 'approve' ? approvalEmailMessage : null,
     })
   } catch (error) {
     console.error('Unable to process registration approval.', error)
