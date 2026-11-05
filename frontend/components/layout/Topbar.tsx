@@ -12,6 +12,7 @@ import { useTheme } from '@/components/layout/ThemeProvider'
 import { menuByRole } from '@/components/layout/role-navigation'
 import { createClient } from '@/lib/supabase/client'
 import { fetchActivePromotions } from '@/lib/active-promotions'
+import { useRefundRequests } from '@/lib/hooks/use-refund-requests'
 
 export interface NotificationItem {
   id: string
@@ -281,6 +282,7 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
     if (pathname?.startsWith('/admin')) return 'admin'
     return 'kasir'
   }, [role, pathname])
+  const { data: refundRequestsData, error: refundRequestsError } = useRefundRequests(effectiveRole === 'admin')
   const isDashboardPage = pathname === '/admin' || pathname === '/owner' || pathname === '/kasir' || pathname === '/super-admin'
   const isSearchPending = searchQuery !== deferredSearchQuery
   const searchableMenuItems = useMemo(
@@ -362,77 +364,50 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
   }, [effectiveRole])
 
   useEffect(() => {
-    if (effectiveRole !== 'admin') return
+    if (effectiveRole !== 'admin' || !refundRequestsData) return
 
-    let active = true
-    let refreshing = false
     const storageKey = 'fluxa_notifications_admin'
-
-    const refreshRefundNotifications = async () => {
-      if (refreshing) return
-      refreshing = true
-      try {
-        const response = await fetch('/api/admin/refund-requests', { cache: 'no-store' })
-        const result: {
-          requests?: {
-            id: string
-            status: string
-            sale?: { invoice_number?: string; final_amount?: number } | null
-            requester?: { full_name?: string } | null
-            reason?: string
-            created_at: string
-          }[]
-        } = await response.json()
-        if (!response.ok || !Array.isArray(result.requests) || !active) return
-
-        setNotifications(previous => {
-          const existingById = new Map(previous.map(notification => [notification.id, notification]))
-          const pendingNotifications: NotificationItem[] = result.requests!
-            .filter(request => request.status === 'pending')
-            .map(request => {
-              const id = `refund-request-${request.id}`
-              const existing = existingById.get(id)
-              const invoice = request.sale?.invoice_number || 'Transaksi'
-              const amount = typeof request.sale?.final_amount === 'number'
-                ? ` (Rp${new Intl.NumberFormat('id-ID').format(request.sale.final_amount)})`
-                : ''
-              return {
-                id,
-                title: 'Pengajuan Refund Menunggu Persetujuan',
-                message: `${request.requester?.full_name || 'Kasir'} mengajukan refund ${invoice}${amount}. Alasan: ${request.reason || 'Tidak dicantumkan'}.`,
-                time: formatRelativeTime(request.created_at),
-                timestamp: request.created_at,
-                type: 'refund',
-                badge: 'Perlu Persetujuan',
-                badgeColor: 'var(--bad)',
-                badgeBg: 'var(--bads)',
-                link: '/admin/transaksi',
-                actionLabel: 'Tinjau Pengajuan',
-                read: existing?.read ?? false,
-                isReport: true,
-              }
-            })
-          const retained = previous.filter(notification => notification.type !== 'refund')
-          const updated = [...pendingNotifications, ...retained]
-          try { localStorage.setItem(storageKey, JSON.stringify(updated)) } catch {}
-          return updated
+    // Reconcile fetched requests while preserving notification read state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNotifications(previous => {
+      const existingById = new Map(previous.map(notification => [notification.id, notification]))
+      const pendingNotifications: NotificationItem[] = refundRequestsData.requests
+        .filter(request => request.status === 'pending')
+        .map(request => {
+          const id = `refund-request-${request.id}`
+          const existing = existingById.get(id)
+          const invoice = request.sale?.invoice_number || 'Transaksi'
+          const amount = typeof request.sale?.final_amount === 'number'
+            ? ` (Rp${new Intl.NumberFormat('id-ID').format(request.sale.final_amount)})`
+            : ''
+          return {
+            id,
+            title: 'Pengajuan Refund Menunggu Persetujuan',
+            message: `${request.requester?.full_name || 'Kasir'} mengajukan refund ${invoice}${amount}. Alasan: ${request.reason || 'Tidak dicantumkan'}.`,
+            time: formatRelativeTime(request.created_at),
+            timestamp: request.created_at,
+            type: 'refund',
+            badge: 'Perlu Persetujuan',
+            badgeColor: 'var(--bad)',
+            badgeBg: 'var(--bads)',
+            link: '/admin/transaksi',
+            actionLabel: 'Tinjau Pengajuan',
+            read: existing?.read ?? false,
+            isReport: true,
+          }
         })
-      } catch (error) {
-        console.error('Could not refresh admin refund notifications:', error)
-      } finally {
-        refreshing = false
-      }
-    }
+      const retained = previous.filter(notification => notification.type !== 'refund')
+      const updated = [...pendingNotifications, ...retained]
+      try { localStorage.setItem(storageKey, JSON.stringify(updated)) } catch {}
+      return updated
+    })
+  }, [effectiveRole, refundRequestsData])
 
-    void refreshRefundNotifications()
-    const intervalId = window.setInterval(() => void refreshRefundNotifications(), 30_000)
-    window.addEventListener('focus', refreshRefundNotifications)
-    return () => {
-      active = false
-      window.clearInterval(intervalId)
-      window.removeEventListener('focus', refreshRefundNotifications)
+  useEffect(() => {
+    if (refundRequestsError) {
+      console.error('Could not refresh admin refund notifications:', refundRequestsError)
     }
-  }, [effectiveRole])
+  }, [refundRequestsError])
 
   useEffect(() => {
     if (effectiveRole !== 'kasir') return

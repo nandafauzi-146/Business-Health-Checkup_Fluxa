@@ -138,15 +138,25 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Data perubahan pengguna tidak valid.' }, { status: 400 })
     }
 
-    const { id, role, active } = body as Record<string, unknown>
+    const { id, role, active, full_name, email, phone } = body as Record<string, unknown>
     if (typeof id !== 'string' || !idPattern.test(id)) {
       return NextResponse.json({ error: 'ID pengguna tidak valid.' }, { status: 400 })
     }
-    if (role === undefined && typeof active !== 'boolean') {
-      return NextResponse.json({ error: 'Pilih perubahan role atau status akun.' }, { status: 400 })
+    const hasProfileChanges = full_name !== undefined || email !== undefined || phone !== undefined
+    if (role === undefined && typeof active !== 'boolean' && !hasProfileChanges) {
+      return NextResponse.json({ error: 'Tidak ada perubahan pengguna yang dipilih.' }, { status: 400 })
     }
     if (role !== undefined && (!roles.includes(role as UserRole) || role === 'super_admin')) {
       return NextResponse.json({ error: 'Role yang dipilih tidak dapat diterapkan melalui modul ini.' }, { status: 400 })
+    }
+    if (full_name !== undefined && (typeof full_name !== 'string' || full_name.trim().length < 2 || full_name.trim().length > 120)) {
+      return NextResponse.json({ error: 'Nama lengkap harus berisi 2 sampai 120 karakter.' }, { status: 400 })
+    }
+    if (email !== undefined && (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || email.trim().length > 254)) {
+      return NextResponse.json({ error: 'Alamat email tidak valid.' }, { status: 400 })
+    }
+    if (phone !== undefined && (typeof phone !== 'string' || phone.trim().length > 32)) {
+      return NextResponse.json({ error: 'Nomor telepon tidak valid.' }, { status: 400 })
     }
     if (id === auth.actorId && active === false) {
       return NextResponse.json({ error: 'Anda tidak dapat menonaktifkan akun sendiri.' }, { status: 400 })
@@ -154,7 +164,7 @@ export async function PATCH(request: Request) {
 
     const adminClient = getSuperAdminServiceClient()
     const { data: target, error: targetError } = await adminClient.from('profiles')
-      .select('id, role, approval_status')
+      .select('id, full_name, email, phone, role, approval_status')
       .eq('id', id)
       .maybeSingle()
     if (targetError) throw targetError
@@ -162,8 +172,61 @@ export async function PATCH(request: Request) {
     if (target.role === 'super_admin') {
       return NextResponse.json({ error: 'Akun Super Admin hanya dapat dikelola melalui prosedur operator.' }, { status: 403 })
     }
-    if (active !== undefined && target.approval_status !== 'approved') {
-      return NextResponse.json({ error: 'Hanya akun yang disetujui yang dapat diaktifkan atau dinonaktifkan.' }, { status: 409 })
+    if (active === true && target.approval_status !== 'approved') {
+      return NextResponse.json({ error: 'Hanya akun yang disetujui yang dapat diaktifkan.' }, { status: 409 })
+    }
+
+    if (hasProfileChanges) {
+      const profileChanges: { full_name?: string; email?: string; phone?: string | null } = {}
+      if (full_name !== undefined) profileChanges.full_name = (full_name as string).trim()
+      if (email !== undefined) profileChanges.email = (email as string).trim().toLowerCase()
+      if (phone !== undefined) profileChanges.phone = (phone as string).trim() || null
+
+      const emailChanged = profileChanges.email !== undefined && profileChanges.email !== target.email
+      let previousMetadata: Record<string, unknown> | null = null
+      if (emailChanged || profileChanges.full_name !== undefined || profileChanges.phone !== undefined) {
+        const { data: authUserData, error: authUserError } = await adminClient.auth.admin.getUserById(id)
+        if (authUserError) throw authUserError
+        previousMetadata = authUserData.user.user_metadata ?? {}
+        const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(id, {
+          ...(emailChanged ? { email: profileChanges.email, email_confirm: true } : {}),
+          user_metadata: {
+            ...previousMetadata,
+            ...(profileChanges.full_name !== undefined ? { full_name: profileChanges.full_name } : {}),
+            ...(profileChanges.phone !== undefined ? { phone: profileChanges.phone } : {}),
+          },
+        })
+        if (authUpdateError) throw authUpdateError
+      }
+
+      const { error: profileUpdateError } = await adminClient.from('profiles').update(profileChanges).eq('id', id)
+      if (profileUpdateError) {
+        if (previousMetadata) {
+          const { error: rollbackError } = await adminClient.auth.admin.updateUserById(id, {
+            ...(emailChanged ? { email: target.email ?? undefined, email_confirm: true } : {}),
+            user_metadata: previousMetadata,
+          })
+          if (rollbackError) console.error('Unable to roll back auth user after profile update failed.', rollbackError)
+        }
+        throw profileUpdateError
+      }
+
+      await writeSuperAdminAudit(
+        adminClient,
+        auth.actorId,
+        'SUPER_ADMIN_USER_EDIT',
+        id,
+        {
+          full_name: target.full_name,
+          email: target.email,
+          phone: target.phone,
+        },
+        {
+          full_name: profileChanges.full_name ?? target.full_name,
+          email: profileChanges.email ?? target.email,
+          phone: profileChanges.phone ?? target.phone,
+        },
+      )
     }
 
     if (role !== undefined && role !== target.role) {

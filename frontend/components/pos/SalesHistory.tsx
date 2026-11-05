@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Search, FileText, CheckCircle, XCircle, Printer, Eye,
@@ -13,6 +13,7 @@ import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
 import { getUserFacingError } from '@/lib/user-facing-error'
 import { createClient } from '@/lib/supabase/client'
 import MonthNavigator, { getCurrentYearMonth, formatMonthIndo } from '@/components/ui/MonthNavigator'
+import { useRefundRequests, type RefundRequest } from '@/lib/hooks/use-refund-requests'
 
 interface SaleItem {
   id: string
@@ -38,13 +39,6 @@ interface Sale {
   refund_status?: 'pending' | 'approved' | 'rejected'
   refund_approver_name?: string | null
   items?: SaleItem[]
-}
-
-interface RefundRequest {
-  sale_id: string
-  status: 'pending' | 'approved' | 'rejected'
-  created_at: string
-  reviewer?: { full_name: string } | null
 }
 
 const paymentLabels: Record<string, { label: string; color: string; bg: string }> = {
@@ -73,6 +67,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   const supabase = createClient()
+  const { data: refundRequestsData, error: refundRequestsError, mutate: mutateRefundRequests } = useRefundRequests()
 
   // State untuk modal refund/void
   const [voidingSale, setVoidingSale] = useState<Sale | null>(null)
@@ -206,62 +201,50 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
     setTimeout(() => setToast(null), 3500)
   }
 
-  const refreshRefundStatuses = useCallback(async () => {
-    try {
-      const response = await fetch('/api/admin/refund-requests', { cache: 'no-store' })
-      const result: { requests?: RefundRequest[] } = await response.json()
-      if (!response.ok || !Array.isArray(result.requests)) {
-        throw new Error('Refund statuses could not be loaded.')
+  useEffect(() => {
+    if (!refundRequestsData) return
+    const latestBySale = new Map<string, RefundRequest>()
+    for (const request of refundRequestsData.requests) {
+      const existing = latestBySale.get(request.sale_id)
+      if (!existing || request.created_at > existing.created_at) {
+        latestBySale.set(request.sale_id, request)
       }
-
-      const latestBySale = new Map<string, RefundRequest>()
-      for (const request of result.requests) {
-        const existing = latestBySale.get(request.sale_id)
-        if (!existing || request.created_at > existing.created_at) {
-          latestBySale.set(request.sale_id, request)
-        }
-      }
-      const statusBySale = new Map(
-        [...latestBySale].map(([saleId, request]) => [saleId, request.status] as const),
-      )
-      const approverBySale = new Map(
-        [...latestBySale].map(([saleId, request]) => [
-          saleId,
-          request.status === 'approved' ? request.reviewer?.full_name || null : null,
-        ] as const),
-      )
-
-      setSales(current => current.map(sale => ({
-        ...sale,
-        refund_status: statusBySale.get(sale.id),
-        refund_approver_name: approverBySale.get(sale.id),
-      })))
-      setSelectedSale(current => current
-        ? {
-            ...current,
-            refund_status: statusBySale.get(current.id),
-            refund_approver_name: approverBySale.get(current.id),
-          }
-        : null)
-    } catch (error) {
-      console.warn('Could not refresh cashier refund statuses:', error)
     }
-  }, [])
+    const statusBySale = new Map(
+      [...latestBySale].map(([saleId, request]) => [saleId, request.status] as const),
+    )
+    const approverBySale = new Map(
+      [...latestBySale].map(([saleId, request]) => [
+        saleId,
+        request.status === 'approved' ? request.reviewer?.full_name || null : null,
+      ] as const),
+    )
+    // Apply the shared server status snapshot to the sales currently shown.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSales(current => current.map(sale => ({
+      ...sale,
+      refund_status: statusBySale.get(sale.id),
+      refund_approver_name: approverBySale.get(sale.id),
+    })))
+    setSelectedSale(current => current
+      ? {
+          ...current,
+          refund_status: statusBySale.get(current.id),
+          refund_approver_name: approverBySale.get(current.id),
+        }
+      : null)
+  }, [refundRequestsData])
 
   useEffect(() => {
-    void refreshRefundStatuses()
-    const intervalId = window.setInterval(() => void refreshRefundStatuses(), 30_000)
-    window.addEventListener('focus', refreshRefundStatuses)
-    return () => {
-      window.clearInterval(intervalId)
-      window.removeEventListener('focus', refreshRefundStatuses)
+    if (refundRequestsError) {
+      console.error('Could not refresh cashier refund statuses:', refundRequestsError)
     }
-  }, [initialSales, refreshRefundStatuses])
+  }, [refundRequestsError])
 
   const handleRefresh = () => {
     setIsRefreshing(true)
     router.refresh()
-    void refreshRefundStatuses()
+    void mutateRefundRequests()
     setTimeout(() => setIsRefreshing(false), 800)
   }
 
@@ -353,6 +336,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
       showToast(`Pengajuan refund ${voidingSale.invoice_number} dikirim dan menunggu persetujuan Admin.`, 'ok')
       setRefundStatus(voidingSale.id, 'pending')
       setVoidingSale(null)
+      void mutateRefundRequests()
     } catch (err: unknown) {
       showToast(getUserFacingError(err, 'Pengajuan pembatalan belum dapat dikirim. Silakan coba lagi.'), 'bad')
     } finally {
