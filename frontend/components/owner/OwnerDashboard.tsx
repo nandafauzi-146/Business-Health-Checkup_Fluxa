@@ -7,7 +7,6 @@ import {
   CalendarDays,
   CreditCard,
   DollarSign,
-  Download,
   FileText,
   Package,
   Sparkles,
@@ -31,6 +30,8 @@ import {
 } from 'recharts'
 import { SectionCard, StatusTag } from '@/components/ui/Cards'
 import type { Database, Json } from '@/lib/supabase/types'
+import OwnerReportExport from '@/components/owner/OwnerReportExport'
+import type { OwnerReport } from '@/lib/owner-report-export'
 
 type MonthlySummary = Database['public']['Views']['v_monthly_revenue_cogs']['Row']
 type DailySale = Database['public']['Views']['v_daily_sales_summary']['Row']
@@ -72,6 +73,8 @@ interface Props {
   bestSellingProducts: BestSellingProduct[]
   categorySales: CategorySale[]
   recentSales: RecentSale[]
+  businessName?: string
+  generatedBy?: string
 }
 
 const CATEGORIES_PALETTE = ['#4f83ff', '#8b5cf6', '#20d9f5', '#fbbf24', '#34d399', '#fb7185']
@@ -136,23 +139,6 @@ function getHealthDimensions(metrics: Json | null): HealthDimension[] {
 
     return [{ dimension: name, score, status }]
   })
-}
-
-function exportMonthlyReport(months: MonthlySummary[]) {
-  const escapeCsv = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`
-  const rows = [
-    ['Periode', 'Omzet (Rp)', 'HPP (Rp)', 'Laba Kotor (Rp)'],
-    ...months.map((month) => [month.month, month.gross_revenue, month.cogs, month.gross_profit]),
-  ]
-  const csv = `\uFEFF${rows.map((row) => row.map(escapeCsv).join(',')).join('\r\n')}`
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = `fluxa-ringkasan-${new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta' }).format(new Date())}.csv`
-  document.body.append(anchor)
-  anchor.click()
-  anchor.remove()
-  window.setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 function usePrefersReducedMotion() {
@@ -228,6 +214,8 @@ export default function OwnerDashboardClient({
   bestSellingProducts,
   categorySales,
   recentSales,
+  businessName,
+  generatedBy,
 }: Props) {
   const prefersReducedMotion = usePrefersReducedMotion()
   const overallScore = latestCheckup?.overall_score ?? null
@@ -262,6 +250,44 @@ export default function OwnerDashboardClient({
       : 'var(--bad)'
   const totalCategoryRevenue = categorySales.reduce((total, category) => total + category.revenue, 0)
   const maximumProductQuantity = Math.max(...bestSellingProducts.map((product) => product.quantity), 0)
+  const reportPeriod = monthlySummary.length
+    ? `${new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' })
+      .format(new Date(`${monthlySummary[0].month}-01T12:00:00+07:00`))} – ${new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' })
+      .format(new Date(`${monthlySummary[monthlySummary.length - 1].month}-01T12:00:00+07:00`))}`
+    : 'Tidak ada data'
+  const report: OwnerReport = {
+    title: 'Ringkasan Performa Bisnis',
+    period: reportPeriod,
+    fileName: `Laporan_Dashboard_${monthlySummary[0]?.month ?? 'tanpa_data'}_${monthlySummary[monthlySummary.length - 1]?.month ?? ''}`,
+    businessName,
+    generatedBy,
+    summary: [
+      { label: 'Total omzet', value: monthlySummary.reduce((sum, month) => sum + month.gross_revenue, 0), format: 'currency' },
+      { label: 'Total HPP', value: monthlySummary.reduce((sum, month) => sum + month.cogs, 0), format: 'currency' },
+      { label: 'Laba kotor', value: monthlySummary.reduce((sum, month) => sum + month.gross_profit, 0), format: 'currency' },
+      { label: 'Jumlah periode', value: monthlySummary.length, format: 'number' },
+    ],
+    columns: [
+      { key: 'period', header: 'Periode' },
+      { key: 'revenue', header: 'Omzet (Rp)', format: 'currency' },
+      { key: 'cogs', header: 'HPP (Rp)', format: 'currency' },
+      { key: 'profit', header: 'Laba Kotor (Rp)', format: 'currency' },
+    ],
+    rows: monthlySummary.map((month) => ({
+      period: month.month,
+      revenue: month.gross_revenue,
+      cogs: month.cogs,
+      profit: month.gross_profit,
+    })),
+    chart: {
+      title: 'Tren Omzet dan Laba Kotor',
+      categories: monthlySummary.map((month) => formatMonth(month.month)),
+      series: [
+        { name: 'Omzet', values: monthlySummary.map((month) => month.gross_revenue), color: '#2563eb' },
+        { name: 'Laba kotor', values: monthlySummary.map((month) => month.gross_profit), color: '#14b8a6' },
+      ],
+    },
+  }
 
   return (
     <div className="owner-dashboard role-dashboard-enter">
@@ -273,14 +299,12 @@ export default function OwnerDashboardClient({
         </div>
         <div className="owner-dashboard-actions">
           <span className="dashboard-period"><CalendarDays size={14} /> {monthLabel}</span>
-          <button
-            className="btn btn-primary"
-            type="button"
-            onClick={() => exportMonthlyReport(monthlySummary)}
+          <OwnerReportExport
+            report={report}
             disabled={monthlySummary.length === 0}
-          >
-            <Download size={15} /> Ekspor
-          </button>
+            label="Ekspor"
+            className="btn btn-primary"
+          />
         </div>
       </header>
 

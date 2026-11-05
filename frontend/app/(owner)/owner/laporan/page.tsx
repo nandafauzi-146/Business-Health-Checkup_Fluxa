@@ -1,10 +1,23 @@
 import { createClient } from '@/lib/supabase/server'
 import FinancialReportClient from '@/components/owner/FinancialReport'
+import { redirect } from 'next/navigation'
 
 export const metadata = { title: 'Fluxa | Laporan' }
 
 export default async function OwnerLaporanPage() {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('full_name, business_id')
+    .eq('id', user.id)
+    .single()
+  if (profileError) throw new Error('Profil Owner belum dapat dimuat.')
+  const { data: business, error: businessError } = profile.business_id
+    ? await supabase.from('businesses').select('name').eq('id', profile.business_id).maybeSingle()
+    : { data: null, error: null }
+  if (businessError) throw new Error('Informasi usaha belum dapat dimuat.')
 
   // Ambil view bulanan pendapatan dan HPP
   const [monthlyRes, expensesRes] = await Promise.all([
@@ -47,21 +60,11 @@ export default async function OwnerLaporanPage() {
     }
   })
 
-  // Jika data view kosong, berikan fallback bulan saat ini
-  const currentMonthStr = new Date().toISOString().slice(0, 7)
-  if (reports.length === 0) {
-    reports.push({
-      month: currentMonthStr,
-      total_orders: 0,
-      gross_revenue: 0,
-      cogs: 0,
-      gross_profit: 0,
-      expenses: 0,
-      net_profit: 0,
-      margin_gross: 0,
-      margin_net: 0
-    })
-  }
-
-  return <FinancialReportClient reports={reports} />
+  return (
+    <FinancialReportClient
+      reports={reports}
+      businessName={business?.name ?? undefined}
+      generatedBy={profile.full_name}
+    />
+  )
 }
