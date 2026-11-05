@@ -17,7 +17,10 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
-  DollarSign
+  DollarSign,
+  ShoppingCart,
+  RotateCcw,
+  CookingPot
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { calculateRecipeRatios } from '@/lib/unit-conversion'
@@ -235,27 +238,27 @@ export default function OwnerRawMaterialsHistoryClient({
         )
       case 'production':
         return (
-          <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'rgba(59, 130, 246, 0.12)', color: '#2563eb' }}>
-            🍳 Olah Bumbu
+          <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'rgba(59, 130, 246, 0.12)', color: '#2563eb', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <ChefHat size={12} /> Olah Bumbu
           </span>
         )
       case 'sale_usage':
         return (
-          <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'var(--accs)', color: 'var(--acc)' }}>
-            🛒 Penjualan Menu
+          <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'var(--accs)', color: 'var(--acc)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <ShoppingCart size={12} /> Penjualan Menu
           </span>
         )
       case 'void_return':
         return (
-          <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'rgba(139, 92, 246, 0.12)', color: '#8b5cf6' }}>
-            ↺ Void Dibatalkan
+          <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'rgba(139, 92, 246, 0.12)', color: '#8b5cf6', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <RotateCcw size={12} /> Void Dibatalkan
           </span>
         )
       case 'adjustment':
       default:
         return (
-          <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'var(--warns)', color: 'var(--warn)' }}>
-            ⚖️ Audit Opname
+          <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'var(--warns)', color: 'var(--warn)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <ShieldCheck size={12} /> Audit Opname
           </span>
         )
     }
@@ -708,12 +711,12 @@ export default function OwnerRawMaterialsHistoryClient({
                         </td>
                         <td style={{ padding: '12px 14px' }}>
                           {mat.material_type === 'semi_finished' ? (
-                            <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'rgba(139, 92, 246, 0.12)', color: '#8b5cf6' }}>
-                              🧂 Bumbu Olahan
+                            <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'rgba(139, 92, 246, 0.12)', color: '#8b5cf6', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                              <ChefHat size={12} aria-hidden="true" /> Bumbu Olahan
                             </span>
                           ) : (
-                            <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'var(--accs)', color: 'var(--acc)' }}>
-                              🥩 Bahan Mentah
+                            <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'var(--accs)', color: 'var(--acc)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                              <CookingPot size={12} aria-hidden="true" /> Bahan Mentah
                             </span>
                           )}
                         </td>

@@ -160,7 +160,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
       const updated = promotions.map(p => p.id === promo.id ? { ...p, is_active: nextStatus } : p)
       setPromotions(updated)
       syncToLocalStorage(updated)
-      showToast(`Promo ${promo.code} kini ${nextStatus ? '✅ Aktif di terminal Kasir' : 'Dinonaktifkan'}.`, 'ok')
+      showToast(`Promo ${promo.code} kini ${nextStatus ? 'Aktif di terminal Kasir' : 'Dinonaktifkan'}.`, 'ok')
     } catch (err) {
       showToast(getUserFacingError(err, 'Status promo belum dapat diperbarui. Silakan coba lagi.'), 'bad')
     }
@@ -239,7 +239,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
         const updated = promotions.map(p => p.id === editingPromo.id ? { ...p, ...payload } : p)
         setPromotions(updated)
         syncToLocalStorage(updated)
-        showToast(`✅ Promo ${cleanCode} berhasil diperbarui dan disinkron ke Kasir!`, 'ok')
+        showToast(`Promo ${cleanCode} berhasil diperbarui dan disinkron ke Kasir!`, 'ok')
       } else {
         // Create
         const res = await fetch('/api/admin/promotions', {
@@ -257,7 +257,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
         const updated = [newPromo, ...promotions]
         setPromotions(updated)
         syncToLocalStorage(updated)
-        showToast(`✅ Promo ${cleanCode} berhasil dibuat dan otomatis aktif di POS Kasir!`, 'ok')
+        showToast(`Promo ${cleanCode} berhasil dibuat dan otomatis aktif di POS Kasir!`, 'ok')
       }
       setModalOpen(false)
     } catch (err) {
@@ -337,10 +337,10 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
           boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <CheckCircle2 size={16} />
+            {toast.type === 'ok' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
             <span>{toast.text}</span>
           </div>
-          <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>✕</button>
+          <button onClick={() => setToast(null)} aria-label="Tutup notifikasi" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}><X size={14} /></button>
         </div>
       )}
 

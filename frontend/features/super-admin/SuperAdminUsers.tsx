@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { ChevronLeft, ChevronRight, Eye, Pencil, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react'
 import type { UserRole } from '@/lib/supabase/types'
+import ConfirmationDialog from '@/components/ui/ConfirmationDialog'
 import { ErrorBox, Empty, Loading } from './SuperAdminOverview'
 import styles from './super-admin-content.module.css'
 
@@ -44,6 +45,10 @@ export default function SuperAdminUsers() {
   const [editingUser, setEditingUser] = useState<UserRow | null>(null)
   const [editForm, setEditForm] = useState({ full_name: '', email: '', phone: '', role: 'owner' as UserRole })
   const [savingEdit, setSavingEdit] = useState(false)
+  const [pendingUserChange, setPendingUserChange] = useState<{
+    user: UserRow
+    change: { role?: UserRole; active?: boolean }
+  } | null>(null)
 
   const fetchUsers = useCallback(async () => {
       const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), search: searchTerm })
@@ -127,13 +132,6 @@ export default function SuperAdminUsers() {
   }
 
   async function updateUser(user: UserRow, change: { role?: UserRole; active?: boolean }) {
-    const description = change.role
-      ? `Ubah role ${user.full_name} dari ${roleLabel[user.role]} menjadi ${roleLabel[change.role]}?`
-      : change.active
-        ? `Aktifkan kembali akun ${user.full_name}?`
-        : `Akun ${user.full_name} akan dinonaktifkan sehingga tidak dapat login. Data akun dan bisnis tidak akan dihapus permanen. Lanjutkan?`
-    if (!window.confirm(description)) return
-
     setProcessing(user.id)
     setError('')
     try {
@@ -151,6 +149,7 @@ export default function SuperAdminUsers() {
       setError(updateError instanceof Error ? updateError.message : 'Perubahan pengguna gagal.')
     } finally {
       setProcessing(null)
+      setPendingUserChange(null)
     }
   }
 
@@ -198,24 +197,38 @@ export default function SuperAdminUsers() {
       <div className={styles.heading}>
         <div><span className={styles.eyebrow}>AKUN PLATFORM</span><h1>Manajemen Pengguna</h1><p>Cari akun, tinjau akses, ubah role, dan blokir atau pulihkan kemampuan login akun.</p></div>
         <div className={styles.filters}>
-          <button className={styles.primaryButton} type="button" onClick={() => setCreateOpen((open) => !open)}><Plus size={14} /> Tambah akun</button>
+          <button className={styles.primaryButton} type="button" onClick={() => setCreateOpen(true)}><Plus size={14} /> Tambah akun</button>
           <button className={styles.secondaryButton} type="button" onClick={() => void load()} disabled={loading}><RefreshCw size={14} /> Muat ulang</button>
         </div>
       </div>
       {createOpen && (
-        <form className={styles.panel} onSubmit={createUser}>
-          <div className={styles.panelHeading}><div><h2>Buat akun pengguna</h2><p>Akun dibuat aktif; Owner mendapatkan trial awal tujuh hari.</p></div><button className={styles.secondaryButton} type="button" onClick={() => setCreateOpen(false)} aria-label="Tutup form"><X size={14} /></button></div>
-          <div className={styles.filters}>
-            <input required minLength={2} maxLength={120} aria-label="Nama lengkap" placeholder="Nama lengkap" value={newUser.full_name} onChange={(event) => setNewUser({ ...newUser, full_name: event.target.value })} />
-            <input required type="email" maxLength={254} aria-label="Email" placeholder="Email" value={newUser.email} onChange={(event) => setNewUser({ ...newUser, email: event.target.value })} />
-            <input type="tel" maxLength={32} aria-label="Telepon" placeholder="Telepon" value={newUser.phone} onChange={(event) => setNewUser({ ...newUser, phone: event.target.value })} />
-            <select aria-label="Role akun baru" value={newUser.role} onChange={(event) => setNewUser({ ...newUser, role: event.target.value })}>
-              <option value="owner">Owner</option><option value="admin">Admin</option><option value="kasir">Kasir</option>
-            </select>
-            <input required type="password" minLength={12} maxLength={72} autoComplete="new-password" aria-label="Kata sandi awal minimal 12 karakter" placeholder="Kata sandi awal (min. 12 karakter)" value={newUser.password} onChange={(event) => setNewUser({ ...newUser, password: event.target.value })} />
-            <button className={styles.primaryButton} type="submit" disabled={creating}>{creating ? 'Membuat...' : 'Buat akun'}</button>
-          </div>
-        </form>
+        <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !creating) setCreateOpen(false) }}>
+          <form className={`${styles.panel} ${styles.userDialog} ${styles.userForm}`} onSubmit={createUser} role="dialog" aria-modal="true" aria-labelledby="user-create-title">
+            <div className={styles.modalHeading}>
+              <div className={styles.modalHeadingIcon}><Plus size={18} /></div>
+              <div className={styles.modalHeadingCopy}><h2 id="user-create-title">Buat akun pengguna</h2><p>Akun dibuat aktif; Owner mendapatkan trial awal tujuh hari.</p></div>
+              <button className={styles.modalClose} type="button" onClick={() => setCreateOpen(false)} aria-label="Tutup form" disabled={creating}><X size={17} /></button>
+            </div>
+            {error && <div className={styles.errorBox} role="alert">{error}</div>}
+            <div className={styles.userFormGrid}>
+              <label>Nama lengkap<input required minLength={2} maxLength={120} autoComplete="name" value={newUser.full_name} onChange={(event) => setNewUser({ ...newUser, full_name: event.target.value })} /></label>
+              <label>Email<input required type="email" maxLength={254} autoComplete="email" value={newUser.email} onChange={(event) => setNewUser({ ...newUser, email: event.target.value })} /></label>
+              <label>Telepon<input type="tel" maxLength={32} autoComplete="tel" value={newUser.phone} onChange={(event) => setNewUser({ ...newUser, phone: event.target.value })} /></label>
+              <label>Role akun
+                <select value={newUser.role} onChange={(event) => setNewUser({ ...newUser, role: event.target.value })}>
+                  <option value="owner">Owner</option><option value="admin">Admin</option><option value="kasir">Kasir</option>
+                </select>
+              </label>
+              <label className={styles.userFormFullWidth}>Kata sandi awal
+                <input required type="password" minLength={12} maxLength={72} autoComplete="new-password" aria-label="Kata sandi awal minimal 12 karakter" placeholder="Minimal 12 karakter" value={newUser.password} onChange={(event) => setNewUser({ ...newUser, password: event.target.value })} />
+              </label>
+            </div>
+            <div className={styles.modalActions}>
+              <button className={styles.secondaryButton} type="button" onClick={() => setCreateOpen(false)} disabled={creating}>Batal</button>
+              <button className={styles.primaryButton} type="submit" disabled={creating}>{creating ? 'Membuat...' : 'Buat akun'}</button>
+            </div>
+          </form>
+        </div>
       )}
       <form className={styles.filters} onSubmit={submitSearch}>
         <input aria-label="Cari nama atau email" placeholder="Cari nama atau email..." value={search} onChange={(event) => setSearch(event.target.value)} />
@@ -241,7 +254,7 @@ export default function SuperAdminUsers() {
                     <td><strong>{user.full_name}</strong><small>{user.email || 'Email tidak tersedia'}</small></td>
                     <td>{user.phone || 'Tidak dicantumkan'}</td>
                     <td>{isSuperAdmin ? roleLabel[user.role] : (
-                      <select aria-label={`Role ${user.full_name}`} value={user.role} disabled={processing === user.id} onChange={(event) => void updateUser(user, { role: event.target.value as UserRole })}>
+                      <select aria-label={`Role ${user.full_name}`} value={user.role} disabled={processing === user.id} onChange={(event) => setPendingUserChange({ user, change: { role: event.target.value as UserRole } })}>
                         <option value="kasir">Kasir</option><option value="admin">Admin</option><option value="owner">Owner</option>
                       </select>
                     )}</td>
@@ -255,11 +268,11 @@ export default function SuperAdminUsers() {
                         {!isSuperAdmin && <>
                           <button className={styles.secondaryButton} type="button" onClick={() => openEdit(user)}><Pencil size={13} /> Edit</button>
                           {user.isActive ? (
-                            <button className={styles.dangerButton} type="button" disabled={processing === user.id} onClick={() => void updateUser(user, { active: false })}>
+                            <button className={styles.dangerButton} type="button" disabled={processing === user.id} onClick={() => setPendingUserChange({ user, change: { active: false } })}>
                               <Trash2 size={13} /> {processing === user.id ? 'Memproses...' : 'Hapus'}
                             </button>
                           ) : user.approval_status === 'approved' ? (
-                            <button className={styles.primaryButton} type="button" disabled={processing === user.id} onClick={() => void updateUser(user, { active: true })}>
+                            <button className={styles.primaryButton} type="button" disabled={processing === user.id} onClick={() => setPendingUserChange({ user, change: { active: true } })}>
                               {processing === user.id ? 'Memproses...' : 'Aktifkan'}
                             </button>
                           ) : null}
@@ -320,6 +333,23 @@ export default function SuperAdminUsers() {
             </div>
           </form>
         </div>
+      )}
+      {pendingUserChange && (
+        <ConfirmationDialog
+          isOpen
+          onClose={() => setPendingUserChange(null)}
+          onConfirm={() => updateUser(pendingUserChange.user, pendingUserChange.change)}
+          title={pendingUserChange.change.role ? 'Konfirmasi perubahan role' : pendingUserChange.change.active ? 'Aktifkan akun?' : 'Nonaktifkan akun?'}
+          message={pendingUserChange.change.role
+            ? `Ubah role ${pendingUserChange.user.full_name} dari ${roleLabel[pendingUserChange.user.role]} menjadi ${roleLabel[pendingUserChange.change.role]}?`
+            : pendingUserChange.change.active
+              ? `Aktifkan kembali akun ${pendingUserChange.user.full_name}?`
+              : <>Akun <strong>{pendingUserChange.user.full_name}</strong> tidak dapat login setelah dinonaktifkan. Data akun dan bisnis tidak dihapus permanen.</>}
+          confirmLabel={pendingUserChange.change.role ? 'Ubah role' : pendingUserChange.change.active ? 'Aktifkan' : 'Nonaktifkan'}
+          variant={pendingUserChange.change.active === false ? 'danger' : 'primary'}
+          icon={pendingUserChange.change.active === false ? 'delete' : 'warning'}
+          isLoading={processing === pendingUserChange.user.id}
+        />
       )}
     </section>
   )

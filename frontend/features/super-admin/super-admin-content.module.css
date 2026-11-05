@@ -49,8 +49,52 @@
 .filters input { flex: 1 1 220px; }
 .userActions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .userActions .secondaryButton, .userActions .primaryButton, .userActions .dangerButton { min-height: 32px; padding: 0 9px; }
-.modalBackdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; overflow-y: auto; padding: 20px; background: rgb(15 23 42 / 55%); }
-.userDialog { width: min(100%, 560px); max-height: min(90vh, 760px); overflow-y: auto; }
+.modalBackdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; overflow-y: auto; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); background: rgb(15 23 42 / 62%); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); animation: superAdminModalFade 160ms ease-out; }
+.userDialog { width: min(100%, 560px); max-height: min(90vh, 760px, calc(100dvh - 32px)); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; border-radius: 18px; box-shadow: var(--shadow-raised); animation: superAdminModalEnter 200ms cubic-bezier(.16, 1, .3, 1); }
+.userForm { display: grid; gap: 16px; }
+.modalHeading { display: flex; align-items: flex-start; gap: 12px; }
+.modalHeadingIcon { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; border-radius: 12px; color: var(--role-acc, var(--acc)); background: var(--role-accs, var(--accs)); }
+.modalHeadingCopy { min-width: 0; flex: 1 1 auto; }
+.modalHeadingCopy h2 { margin: 0; color: var(--ink); font-size: 17px; line-height: 1.35; }
+.modalHeadingCopy p { margin: 5px 0 0; color: var(--mute); font-size: 12px; line-height: 1.55; }
+.modalClose { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border: 1px solid var(--line); border-radius: 9px; color: var(--mute); background: var(--bg); cursor: pointer; }
+.modalClose:hover:not(:disabled) { color: var(--ink); border-color: var(--acc); }
+.userFormGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.userFormGrid label { display: grid; min-width: 0; gap: 6px; color: var(--ink); font-size: 11px; font-weight: 650; }
+.userFormGrid input, .userFormGrid select { min-height: 42px; width: 100%; min-width: 0; padding: 0 11px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: var(--input-bg); font: inherit; font-size: 12px; outline: none; transition: border-color 150ms ease, box-shadow 150ms ease; }
+.userFormGrid input::placeholder { color: var(--mute); opacity: .8; }
+.userFormGrid input:focus, .userFormGrid select:focus { border-color: var(--role-acc, var(--acc)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--role-acc, var(--acc)) 16%, transparent); }
+.userFormFullWidth { grid-column: 1 / -1; }
+.modalActions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 9px; padding-top: 4px; }
+.modalActions > button { min-height: 42px; }
+.userDialog > .errorBox { margin: 0; }
+.userDetails { padding-top: 2px; }
+@keyframes superAdminModalFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes superAdminModalEnter { from { opacity: 0; transform: scale(.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.expenseDialog { display: grid; width: min(100%, 560px); max-height: min(90vh, 760px, calc(100dvh - 32px)); gap: 16px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; border-radius: 18px; box-shadow: var(--shadow-raised); animation: superAdminModalEnter 200ms cubic-bezier(.16, 1, .3, 1); }
+.expenseDialog .modalHeading { flex-wrap: wrap; }
+.expenseDialog .modalHeadingCopy { flex: 1 1 200px; }
+.expenseDialog .modalHeading .badge { margin-left: auto; }
+.expenseDialog > p { margin: 0; color: var(--mute); font-size: 12px; line-height: 1.6; }
+.expenseDialog form { min-width: 0; }
+.expenseDialog form > div:first-child { display: grid; gap: 12px; }
+.expenseDialog label { display: block; color: var(--ink); font-size: 12px; font-weight: 650; }
+.expenseDialog input, .expenseDialog select, .expenseDialog textarea { color: var(--ink); background: var(--input-bg); font: inherit; }
+.expenseDialog input:focus, .expenseDialog select:focus, .expenseDialog textarea:focus { border-color: var(--role-acc, var(--acc)) !important; outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--role-acc, var(--acc)) 16%, transparent); }
+.expenseDateCategory { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.expenseDialog .errorBox { margin: 0 0 14px; }
+@media (max-width: 560px) {
+  .modalBackdrop { align-items: start; padding-inline: 12px; }
+  .userDialog, .expenseDialog { max-height: calc(100dvh - 24px); padding: 18px; border-radius: 16px; }
+  .userFormGrid { grid-template-columns: minmax(0, 1fr); }
+  .userFormFullWidth { grid-column: auto; }
+  .expenseDateCategory { grid-template-columns: minmax(0, 1fr); }
+  .modalActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .modalActions > button { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modalBackdrop, .userDialog, .expenseDialog { animation: none; }
+}
 .userDetails { display: grid; grid-template-columns: minmax(130px, .7fr) minmax(0, 1.3fr); gap: 12px 16px; margin: 0; }
 .userDetails dt { color: var(--mute); font-size: 11px; }
 .userDetails dd { min-width: 0; margin: 0; overflow-wrap: anywhere; color: var(--ink); font-size: 12px; font-weight: 600; }
