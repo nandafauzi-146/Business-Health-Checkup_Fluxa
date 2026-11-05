@@ -5,6 +5,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import 'server-only';
 import type { Database } from './types';
 
 export function getSupabaseAdminClient() {
@@ -32,4 +33,3 @@ export function tryGetSupabaseAdminClient() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 }
-

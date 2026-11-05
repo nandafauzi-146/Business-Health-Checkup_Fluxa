@@ -9,7 +9,8 @@ import {
   RefreshCw,
   Shield,
 } from 'lucide-react'
-import { Empty, ErrorBox, humanize, Loading } from './SuperAdminOverview'
+import { Empty, ErrorBox, Loading } from './SuperAdminOverview'
+import { auditActionLabel, auditTableLabel, summarizeAuditData } from '@/lib/audit-log-format'
 import styles from './super-admin-content.module.css'
 
 type AuditEntry = {
@@ -26,12 +27,6 @@ type AuditEntry = {
 
 type AuditResponse = { entries: AuditEntry[]; total: number; page: number; pageSize: number }
 const dateTime = new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' })
-
-function summarize(value: unknown) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return 'Tidak ada data'
-  const entries = Object.entries(value).slice(0, 4)
-  return entries.map(([key, item]) => `${key}: ${String(item)}`).join(' · ') || 'Tidak ada rincian'
-}
 
 export default function SuperAdminAuditLog() {
   const [category, setCategory] = useState<'activity' | 'finance'>('activity')
@@ -127,12 +122,12 @@ export default function SuperAdminAuditLog() {
     <section className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <span className={styles.eyebrow}>AUDIT KEAMANAN & COMPLIANCE</span>
-          <h1>Audit Log Platform</h1>
+          <span className={styles.eyebrow}>RIWAYAT AKTIVITAS</span>
+          <h1>Aktivitas Platform</h1>
           <p>
             {category === 'activity'
-              ? 'Mencatat aktivitas Owner dan Super Admin (FR-05). Aktivitas transaksi kasir tidak dimuat di sini.'
-              : 'Mencatat pembuatan tagihan, konfirmasi notifikasi Midtrans, aktivasi paket, dan pencatatan withdraw (FR-06).'}
+              ? 'Riwayat perubahan akun dan pengelolaan usaha oleh Owner dan Super Admin.'
+              : 'Riwayat tagihan, pembayaran langganan, dan penarikan dana platform.'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -145,7 +140,7 @@ export default function SuperAdminAuditLog() {
         </div>
       </div>
 
-      {/* Category Tabs (FR-05 & FR-06) */}
+      {/* Kategori aktivitas */}
       <div style={{ display: 'flex', gap: '10px', borderBottom: '1px solid var(--line)', paddingBottom: '10px' }}>
         <button
           type="button"
@@ -164,7 +159,7 @@ export default function SuperAdminAuditLog() {
             gap: '6px',
           }}
         >
-          <Shield size={14} /> Aktivitas Owner & Super Admin (FR-05)
+          <Shield size={14} /> Aktivitas akun & usaha
         </button>
         <button
           type="button"
@@ -183,27 +178,27 @@ export default function SuperAdminAuditLog() {
             gap: '6px',
           }}
         >
-          <CreditCard size={14} /> Audit Log Keuangan & Webhook (FR-06)
+          <CreditCard size={14} /> Pembayaran & langganan
         </button>
       </div>
 
       <div className={styles.infoBox}>
         <strong>
           {category === 'activity'
-            ? 'Spesialisasi Log Aktivitas Platform (FR-05)'
-            : 'Jejak Audit Transaksi & Keuangan Platform (FR-06)'}
+            ? 'Aktivitas akun dan usaha'
+            : 'Aktivitas pembayaran dan langganan'}
         </strong>
         <span>
           {category === 'activity'
-            ? 'Sesuai spesifikasi FR-05, audit log umum ini secara ketat hanya menyajikan jejak aksi administratif dari Owner dan Super Admin (approval akun, edit profil, kelola staf/toko). Aktivitas kasir/admin operasional sehari-hari disimpan terpisah.'
-            : 'Audit log keuangan merekam setiap perubahan siklus transaksi: pembuatan tagihan, penerimaan webhook Midtrans Sandbox, perubahan status pembayaran, perpanjangan subscription, dan pencatatan withdraw internal.'}
+            ? 'Menampilkan perubahan data akun, persetujuan pendaftaran, dan pengelolaan usaha. Aktivitas transaksi harian ditampilkan pada halaman riwayat usaha.'
+            : 'Menampilkan pembuatan tagihan, pembaruan status pembayaran, perubahan langganan, dan penarikan dana.'}
         </span>
       </div>
 
       <div className={styles.filters}>
         <input
           aria-label="Filter tindakan"
-          placeholder="Tindakan (mis: USER_CREATED, PAYMENT)"
+          placeholder="Cari jenis aktivitas"
           value={action}
           onChange={(event) => { setAction(event.target.value); setPage(1); setLoading(true) }}
         />
@@ -225,11 +220,11 @@ export default function SuperAdminAuditLog() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Waktu (WIB)</th>
-                  <th>Aktor</th>
-                  <th>Tindakan</th>
-                  <th>Target Entitas</th>
-                  <th>Perubahan Aman</th>
+                  <th>Tanggal & waktu</th>
+                  <th>Dilakukan oleh</th>
+                  <th>Aktivitas</th>
+                  <th>Bagian terkait</th>
+                  <th>Ringkasan perubahan</th>
                 </tr>
               </thead>
               <tbody>
@@ -238,19 +233,25 @@ export default function SuperAdminAuditLog() {
                     <td>{dateTime.format(new Date(entry.created_at))}</td>
                     <td>
                       <strong>{entry.actorName}</strong>
-                      <small>{entry.actorRole || 'System / Webhook'}</small>
+                      <small>{entry.actorRole === 'owner' ? 'Pemilik usaha' : entry.actorRole === 'super_admin' ? 'Super Admin' : 'Sistem otomatis'}</small>
                     </td>
                     <td>
-                      <span className={styles.badge}>{humanize(entry.action)}</span>
+                      <span className={styles.badge}>{auditActionLabel(entry.action)}</span>
                     </td>
                     <td>
-                      <strong>{entry.table_name}</strong>
-                      <small>{entry.record_id || 'Tidak tersedia'}</small>
+                      <strong>{auditTableLabel(entry.table_name)}</strong>
                     </td>
                     <td>
                       <div className={styles.activityDetails}>
-                        <div>Sebelum: {summarize(entry.old_data)}</div>
-                        <div>Sesudah: {summarize(entry.new_data)}</div>
+                        {summarizeAuditData(entry.old_data).length > 0 && (
+                          <div>Sebelum: {summarizeAuditData(entry.old_data).join(' · ')}</div>
+                        )}
+                        {summarizeAuditData(entry.new_data).length > 0 && (
+                          <div>Sesudah: {summarizeAuditData(entry.new_data).join(' · ')}</div>
+                        )}
+                        {summarizeAuditData(entry.old_data).length === 0 && summarizeAuditData(entry.new_data).length === 0 && (
+                          <div>Tidak ada rincian perubahan tambahan.</div>
+                        )}
                       </div>
                     </td>
                   </tr>

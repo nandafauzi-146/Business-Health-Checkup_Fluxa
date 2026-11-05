@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
+import UserScopedSWRProvider from '@/components/providers/UserScopedSWRProvider'
 
 export default async function KasirLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -28,6 +29,7 @@ export default async function KasirLayout({ children }: { children: React.ReactN
   const activeShift = shifts?.[0] || null
 
   return (
+    <UserScopedSWRProvider userId={user.id}>
     <div className="app-layout" data-role="kasir">
       <Sidebar
         role="kasir"
@@ -41,5 +43,6 @@ export default async function KasirLayout({ children }: { children: React.ReactN
         </div>
       </div>
     </div>
+    </UserScopedSWRProvider>
   )
 }

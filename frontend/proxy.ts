@@ -7,13 +7,15 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - images/media assets
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/',
+    '/admin/:path*',
+    '/owner/:path*',
+    '/kasir/:path*',
+    '/super-admin/:path*',
+    '/api/:path*',
+    '/auth/:path*',
+    '/login',
+    '/register',
+    '/payment/:path*',
   ],
 }
