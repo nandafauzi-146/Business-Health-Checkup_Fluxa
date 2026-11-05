@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   Plus, Search, Building2, AlertCircle, CheckCircle, Clock, Calendar,
-  X, Check, ArrowDownLeft, ArrowUpRight, Scale, Tags, Edit2, Trash2, Save
+  X, Check, ArrowDownLeft, ArrowUpRight, Scale, Tags, Edit2, Trash2, Save, Info
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
@@ -1243,7 +1243,7 @@ export default function DebtReceivablesClient({
               alignItems: 'center'
             }}>
               <span style={{ fontSize: 12, color: 'var(--mute)' }}>
-                💡 Kategori yang masih digunakan tidak dapat dihapus
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Info size={14} /> Kategori yang masih digunakan tidak dapat dihapus</span>
               </span>
               <button
                 className="btn btn-secondary"

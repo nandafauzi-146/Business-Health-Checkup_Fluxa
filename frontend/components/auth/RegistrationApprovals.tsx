@@ -10,6 +10,7 @@ import {
   Filter,
   LoaderCircle,
   LogOut,
+  AlertTriangle,
   RefreshCw,
   Rocket,
   ShieldCheck,
@@ -17,10 +18,13 @@ import {
   UserRound,
   X,
   XCircle,
+  Phone,
+  CalendarDays,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getUserFacingError } from '@/lib/user-facing-error'
+import ConfirmationDialog from '@/components/ui/ConfirmationDialog'
 import styles from './registration-approvals.module.css'
 
 interface PaymentInfo {
@@ -82,6 +86,7 @@ export default function RegistrationApprovals() {
   // Rejection modal state
   const [rejectingItem, setRejectingItem] = useState<Registration | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
+  const [approvingItem, setApprovingItem] = useState<Registration | null>(null)
 
   const loadRegistrations = useCallback(async () => {
     setLoading(true)
@@ -134,10 +139,6 @@ export default function RegistrationApprovals() {
   }, [statusFilter, pathFilter])
 
   async function handleApprove(registration: Registration) {
-    if (!window.confirm(`Setujui pendaftaran ${registration.full_name}? Trial 7 hari akan diaktifkan.`)) {
-      return
-    }
-
     setProcessingId(registration.id)
     setError('')
     setNotice('')
@@ -167,6 +168,7 @@ export default function RegistrationApprovals() {
       setError(getUserFacingError(processError, 'Persetujuan pendaftaran belum dapat diproses. Silakan coba lagi.'))
     } finally {
       setProcessingId(null)
+      setApprovingItem(null)
     }
   }
 
@@ -309,14 +311,14 @@ export default function RegistrationApprovals() {
               className={`${styles.filterBtn} ${pathFilter === 'subscribe' ? styles.filterBtnActive : ''}`}
               onClick={() => setPathFilter('subscribe')}
             >
-              🚀 Langganan Langsung
+              <Rocket size={13} /> Langganan Langsung
             </button>
             <button
               type="button"
               className={`${styles.filterBtn} ${pathFilter === 'trial' ? styles.filterBtnActive : ''}`}
               onClick={() => setPathFilter('trial')}
             >
-              🆓 Free Trial
+              <Sparkles size={13} /> Free Trial
             </button>
           </div>
         </div>
@@ -386,10 +388,10 @@ export default function RegistrationApprovals() {
 
                     {/* Meta contacts and dates */}
                     <div className={styles.meta}>
-                      {item.phone && <span>📞 {item.phone}</span>}
-                      <span>📅 Mendaftar: {formatDate(item.created_at)}</span>
+                      {item.phone && <span><Phone size={12} /> {item.phone}</span>}
+                      <span><CalendarDays size={12} /> Mendaftar: {formatDate(item.created_at)}</span>
                       {item.trial_ends_at && (
-                        <span>⏳ Trial Berakhir: {formatDate(item.trial_ends_at)}</span>
+                        <span><Clock3 size={12} /> Trial Berakhir: {formatDate(item.trial_ends_at)}</span>
                       )}
                     </div>
 
@@ -444,7 +446,7 @@ export default function RegistrationApprovals() {
                         <button
                           className={styles.approve}
                           disabled={processingId !== null}
-                          onClick={() => void handleApprove(item)}
+                          onClick={() => setApprovingItem(item)}
                           type="button"
                         >
                           {processingId === item.id ? (
@@ -474,9 +476,26 @@ export default function RegistrationApprovals() {
 
       {/* Modal for inputting rejection reason */}
       {rejectingItem && (
-        <div className={styles.modalBackdrop}>
-          <div className={styles.modalCard} role="dialog" aria-modal="true">
-            <h3>Tolak Pendaftaran</h3>
+        <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && processingId === null) setRejectingItem(null)
+        }}>
+          <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="registration-reject-title">
+            <div className={styles.modalHeading}>
+              <div className={styles.modalHeadingIcon}><AlertTriangle size={18} /></div>
+              <div className={styles.modalHeadingCopy}>
+                <h3 id="registration-reject-title">Tolak Pendaftaran</h3>
+                <p>Alasan penolakan akan diberitahukan kepada pendaftar.</p>
+              </div>
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={() => setRejectingItem(null)}
+                aria-label="Tutup form penolakan"
+                disabled={processingId !== null}
+              >
+                <X size={17} />
+              </button>
+            </div>
             <p>
               Berikan alasan penolakan untuk pendaftar <strong>{rejectingItem.full_name}</strong> ({rejectingItem.email}). Alasan ini akan ditampilkan ke pengguna jika mereka mencoba masuk.
             </p>
@@ -487,6 +506,7 @@ export default function RegistrationApprovals() {
               onChange={(e) => setRejectionReason(e.target.value)}
               disabled={processingId !== null}
             />
+            {error && <div className={styles.error} role="alert">{error}</div>}
             <div className={styles.modalActions}>
               <button
                 type="button"
@@ -507,6 +527,19 @@ export default function RegistrationApprovals() {
             </div>
           </div>
         </div>
+      )}
+      {approvingItem && (
+        <ConfirmationDialog
+          isOpen
+          onClose={() => setApprovingItem(null)}
+          onConfirm={() => handleApprove(approvingItem)}
+          title="Setujui pendaftaran?"
+          message={<>Pendaftaran <strong>{approvingItem.full_name}</strong> akan disetujui dan akses pengguna diaktifkan. Trial 7 hari akan dimulai.</>}
+          confirmLabel="Setujui & Beri Akses"
+          variant="primary"
+          icon="info"
+          isLoading={processingId === approvingItem.id}
+        />
       )}
     </main>
   )

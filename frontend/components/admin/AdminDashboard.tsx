@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { ShoppingCart, Package, TrendingUp, DollarSign, ArrowRight, Layers, CreditCard, Building2, Scale, Boxes, AlertCircle } from 'lucide-react'
+import { ShoppingCart, Package, TrendingUp, DollarSign, ArrowRight, Layers, CreditCard, Building2, Scale, Boxes, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { SectionCard, StatusTag } from '@/components/ui/Cards'
 import { PageHeader } from '@/components/layout/Topbar'
 import type { Database } from '@/lib/supabase/types'
@@ -390,7 +390,7 @@ export default function AdminDashboardClient({
             >
               {rawMatLow.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--ok)', fontSize: 13, fontWeight: 500 }}>
-                  ✅ Seluruh stok bahan baku dalam batas aman
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><CheckCircle2 size={15} /> Seluruh stok bahan baku dalam batas aman</span>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -414,7 +414,7 @@ export default function AdminDashboardClient({
                               {mat.name}
                             </div>
                             <div style={{ fontSize: 11, color: isOut ? 'var(--bad)' : 'var(--warn)', fontWeight: 600, marginTop: 2 }}>
-                              {isOut ? '⚠️ Stok Habis! Segera restock' : '⚠️ Stok Menipis di bawah batas minimum'}
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><AlertCircle size={13} /> {isOut ? 'Stok Habis! Segera restock' : 'Stok Menipis di bawah batas minimum'}</span>
                             </div>
                           </div>
                           <Link
@@ -464,7 +464,7 @@ export default function AdminDashboardClient({
             >
               {lowStock.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--ok)', fontSize: 13, fontWeight: 500 }}>
-                  ✅ Seluruh stok produk siap jual dalam batas aman
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><CheckCircle2 size={15} /> Seluruh stok produk siap jual dalam batas aman</span>
                 </div>
               ) : (
                 <div className="admin-stock-list" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

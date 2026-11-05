@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
+import ConfirmationDialog from '@/components/ui/ConfirmationDialog'
 import { Empty, ErrorBox, Loading } from './SuperAdminOverview'
 import styles from './super-admin-content.module.css'
 
@@ -26,6 +27,7 @@ export default function SuperAdminTrials() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [processing, setProcessing] = useState<string | null>(null)
+  const [pendingAction, setPendingAction] = useState<{ trial: TrialRow; action: 'extend' | 'end' } | null>(null)
 
   const fetchTrials = useCallback(async () => {
       const params = new URLSearchParams({ page: String(page), pageSize: '20' })
@@ -74,10 +76,6 @@ export default function SuperAdminTrials() {
   }
 
   async function updateTrial(trial: TrialRow, action: 'extend' | 'end') {
-    const message = action === 'extend'
-      ? `Perpanjang trial ${trial.full_name} selama 7 hari?`
-      : `Akhiri trial ${trial.full_name} sekarang?`
-    if (!window.confirm(message)) return
     setProcessing(trial.id)
     setError('')
     try {
@@ -95,6 +93,7 @@ export default function SuperAdminTrials() {
       setError(updateError instanceof Error ? updateError.message : 'Perubahan trial gagal.')
     } finally {
       setProcessing(null)
+      setPendingAction(null)
     }
   }
 
@@ -128,12 +127,27 @@ export default function SuperAdminTrials() {
                 <td>{trial.trial_ends_at ? dateFormat.format(new Date(trial.trial_ends_at)) : 'Tanggal tidak tersedia'}</td>
                 <td><span className={`${styles.badge} ${statusClass ? styles[statusClass] : ''}`}>{trialStatus}</span></td>
                 <td>{daysLeft === null ? 'Belum dimulai' : daysLeft === 0 && end && end > now ? 'Kurang dari 1 hari' : `${daysLeft} hari`}</td>
-                <td><div className={styles.filters}><button className={styles.primaryButton} type="button" disabled={processing === trial.id} onClick={() => void updateTrial(trial, 'extend')}>{processing === trial.id ? 'Menyimpan...' : 'Tambah 7 hari'}</button>{trialStatus !== 'Kedaluwarsa' && trialStatus !== 'Belum dimulai' && <button className={styles.dangerButton} type="button" disabled={processing === trial.id} onClick={() => void updateTrial(trial, 'end')}>Akhiri trial</button>}</div></td>
+                <td><div className={styles.filters}><button className={styles.primaryButton} type="button" disabled={processing === trial.id} onClick={() => setPendingAction({ trial, action: 'extend' })}>{processing === trial.id ? 'Menyimpan...' : 'Tambah 7 hari'}</button>{trialStatus !== 'Kedaluwarsa' && trialStatus !== 'Belum dimulai' && <button className={styles.dangerButton} type="button" disabled={processing === trial.id} onClick={() => setPendingAction({ trial, action: 'end' })}>Akhiri trial</button>}</div></td>
               </tr>
             })}</tbody>
           </table></div>
           <div className={styles.pager}><span>{total} akun Owner · waktu evaluasi server {dateFormat.format(new Date(serverNow))}</span><div><button className={styles.secondaryButton} disabled={page <= 1 || loading} onClick={() => { setLoading(true); setPage((current) => current - 1) }} type="button"><ChevronLeft size={14} /> Sebelumnya</button><button className={styles.secondaryButton} disabled={page >= totalPages || loading} onClick={() => { setLoading(true); setPage((current) => current + 1) }} type="button">Berikutnya <ChevronRight size={14} /></button></div></div>
         </>
+      )}
+      {pendingAction && (
+        <ConfirmationDialog
+          isOpen
+          onClose={() => setPendingAction(null)}
+          onConfirm={() => updateTrial(pendingAction.trial, pendingAction.action)}
+          title={pendingAction.action === 'extend' ? 'Perpanjang masa trial?' : 'Akhiri masa trial?'}
+          message={pendingAction.action === 'extend'
+            ? <>Masa trial akun <strong>{pendingAction.trial.full_name}</strong> akan diperpanjang selama 7 hari.</>
+            : <>Masa trial <strong>{pendingAction.trial.full_name}</strong> akan diakhiri sekarang.</>}
+          confirmLabel={pendingAction.action === 'extend' ? 'Perpanjang 7 hari' : 'Akhiri trial'}
+          variant={pendingAction.action === 'end' ? 'danger' : 'primary'}
+          icon={pendingAction.action === 'end' ? 'warning' : 'info'}
+          isLoading={processing === pendingAction.trial.id}
+        />
       )}
     </section>
   )

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import {
   Boxes, Plus, Search, AlertCircle, RefreshCw, Edit, Trash2,
   X, Check, History, ArrowDownRight, ArrowUpRight, ArrowRight,
-  TrendingDown, Package, Layers, UtensilsCrossed, Sparkles, ChefHat
+  TrendingDown, Package, Layers, UtensilsCrossed, Sparkles, ChefHat, ChevronDown
 } from 'lucide-react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/layout/Topbar'
@@ -624,8 +624,75 @@ export default function RawMaterialsClient({
     })
   )
 
+  const renderMaterialActions = (material: RawMaterialItem) => {
+    const isSemi = material.material_type === 'semi_finished'
+    const isLowStock = material.stock <= material.min_stock
+
+    return (
+      <div className="raw-material-actions">
+        {isSemi ? (
+          <div className="raw-material-stock-action">
+            <button
+              className="btn btn-sm raw-material-action raw-material-action-produce"
+              onClick={() => handleOpenProduce(material)}
+              title="Restock atau produksi bumbu olahan"
+            >
+              <ChefHat size={14} /> <span>Restock / Olah Bumbu</span>
+            </button>
+            <details className="raw-material-stock-menu">
+              <summary aria-label={`Pilihan stok untuk ${material.name}`} title="Pilihan stok lainnya">
+                <ChevronDown size={14} />
+              </summary>
+              <div className="raw-material-stock-menu-list">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    handleOpenAdjust(material)
+                    event.currentTarget.closest('details')?.removeAttribute('open')
+                  }}
+                >
+                  <RefreshCw size={14} /> Sesuaikan Stok
+                </button>
+              </div>
+            </details>
+          </div>
+        ) : (
+          <button
+            className="btn btn-sm raw-material-action raw-material-action-restock"
+            onClick={() => handleOpenAdjust(material)}
+            title="Restock atau sesuaikan stok"
+            style={{ background: isLowStock ? 'var(--warn)' : 'var(--acc)', color: '#fff' }}
+          >
+            <RefreshCw size={14} /> <span>Restock</span>
+          </button>
+        )}
+        <button
+          className="btn btn-secondary btn-sm raw-material-action"
+          onClick={() => handleOpenHistory(material)}
+          title="Riwayat mutasi bahan"
+        >
+          <History size={14} /> <span>Riwayat</span>
+        </button>
+        <button
+          className="btn btn-secondary btn-sm raw-material-action"
+          onClick={() => handleOpenEdit(material)}
+          title="Edit bahan baku"
+        >
+          <Edit size={14} /> <span>Edit</span>
+        </button>
+        <button
+          className="btn btn-sm raw-material-action raw-material-action-delete"
+          onClick={() => setDeleteConfirm({ isOpen: true, material })}
+          title="Hapus bahan baku"
+        >
+          <Trash2 size={14} /> <span>Hapus</span>
+        </button>
+      </div>
+    )
+  }
+
   return (
-    <div>
+    <div className="raw-materials-page">
       <PageHeader
         title="Bahan Baku & Bumbu Olahan"
         subtitle="Manajemen stok bahan mentah, resep bumbu olahan (setengah jadi), dan pemantauan restock otomatis"
@@ -776,7 +843,7 @@ export default function RawMaterialsClient({
       </div>
 
       {/* Filter and Search Bar */}
-      <div style={{
+      <div className="raw-material-filter-bar" style={{
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
@@ -785,7 +852,7 @@ export default function RawMaterialsClient({
         marginBottom: 16
       }}>
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4, background: 'var(--bg)', padding: 4, borderRadius: 10, border: '1px solid var(--line)', flexWrap: 'wrap' }}>
+        <div className="raw-material-filter-tabs" style={{ display: 'flex', gap: 4, background: 'var(--bg)', padding: 4, borderRadius: 10, border: '1px solid var(--line)', flexWrap: 'wrap' }}>
           <button
             onClick={() => setFilterTab('all')}
             className={`btn btn-sm ${filterTab === 'all' ? 'btn-primary' : ''}`}
@@ -805,7 +872,7 @@ export default function RawMaterialsClient({
             className={`btn btn-sm ${filterTab === 'semi_finished' ? 'btn-primary' : ''}`}
             style={{ fontSize: 12, border: 'none', background: filterTab === 'semi_finished' ? undefined : 'transparent', color: filterTab === 'semi_finished' ? undefined : 'var(--mute)' }}
           >
-            🧂 Bumbu Olahan ({semiCount})
+            <><Layers size={13} /> Bumbu Olahan ({semiCount})</>
           </button>
           <button
             onClick={() => setFilterTab('need_restock')}
@@ -835,7 +902,7 @@ export default function RawMaterialsClient({
         </div>
 
         {/* Search */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 240 }}>
+        <div className="raw-material-search" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 240 }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -865,8 +932,8 @@ export default function RawMaterialsClient({
 
       {/* Materials Table */}
       <SectionCard title={`Daftar Bahan Baku & Bumbu (${filteredMaterials.length})`}>
-        <div className="table-container">
-          <table className="data-table" style={{ minWidth: 840 }}>
+        <div className="table-container raw-material-table-wrap">
+          <table className="data-table raw-material-table">
             <thead>
               <tr>
                 <th>Nama Bahan / Bumbu</th>
@@ -876,7 +943,7 @@ export default function RawMaterialsClient({
                 <th>Harga Modal / Satuan</th>
                 <th>Total Nilai</th>
                 <th>Penggunaan / Komposisi</th>
-                <th style={{ textAlign: 'right' }}>Aksi</th>
+                <th className="raw-material-actions-heading">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -932,7 +999,10 @@ export default function RawMaterialsClient({
                           color: isSemi ? '#9333ea' : 'var(--mute)',
                           border: `1px solid ${isSemi ? 'rgba(168, 85, 247, 0.3)' : 'var(--line)'}`
                         }}>
-                          {isSemi ? '🧂 Bumbu Olahan' : '🥩 Bahan Mentah'}
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                            {isSemi ? <Layers size={12} /> : <Package size={12} />}
+                            {isSemi ? 'Bumbu Olahan' : 'Bahan Mentah'}
+                          </span>
                         </span>
                       </td>
 
@@ -1011,75 +1081,8 @@ export default function RawMaterialsClient({
                         )}
                       </td>
 
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                          {isSemi ? (
-                            <>
-                              <button
-                                className="btn btn-sm"
-                                onClick={() => handleOpenProduce(m)}
-                                title="Olah / Restock Bumbu Basah dari Bahan Mentah"
-                                style={{
-                                  background: '#9333ea',
-                                  color: '#fff',
-                                  fontWeight: 600,
-                                  fontSize: 11,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 4
-                                }}
-                              >
-                                <ChefHat size={12} /> Restock / Olah Bumbu
-                              </button>
-                              <button
-                                className="btn btn-secondary btn-sm"
-                                onClick={() => handleOpenAdjust(m)}
-                                title="Koreksi / Sesuaikan Stok Bumbu"
-                              >
-                                <RefreshCw size={12} />
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              className="btn btn-sm"
-                              onClick={() => handleOpenAdjust(m)}
-                              title="Restock / Sesuaikan Stok"
-                              style={{
-                                background: isLowStock ? 'var(--warn)' : 'var(--acc)',
-                                color: '#fff',
-                                fontWeight: 600,
-                                fontSize: 11,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 4
-                              }}
-                            >
-                              <RefreshCw size={12} /> Restock
-                            </button>
-                          )}
-                          <button
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => handleOpenHistory(m)}
-                            title="Riwayat Mutasi Bahan"
-                          >
-                            <History size={12} />
-                          </button>
-                          <button
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => handleOpenEdit(m)}
-                            title="Edit Bahan Baku"
-                          >
-                            <Edit size={12} />
-                          </button>
-                          <button
-                            className="btn btn-sm"
-                            onClick={() => setDeleteConfirm({ isOpen: true, material: m })}
-                            title="Hapus Bahan Baku"
-                            style={{ background: 'transparent', border: '1px solid var(--line)', color: 'var(--bad)', cursor: 'pointer' }}
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
+                      <td className="raw-material-actions-cell">
+                        {renderMaterialActions(m)}
                       </td>
                     </tr>
                   )
@@ -1087,6 +1090,87 @@ export default function RawMaterialsClient({
               )}
             </tbody>
           </table>
+        </div>
+        <div className="raw-material-card-list">
+          {filteredMaterials.length === 0 ? (
+            <div className="raw-material-empty-card">
+              Tidak ada bahan baku yang cocok dengan filter / pencarian
+            </div>
+          ) : filteredMaterials.map((material) => {
+            const isSemi = material.material_type === 'semi_finished'
+            const isOutOfStock = material.stock <= 0
+            const isLowStock = material.stock <= material.min_stock
+            const statusTag = isOutOfStock ? 'kritis' : isLowStock ? 'menipis' : 'aman'
+            const statusLabel = isOutOfStock ? 'Habis' : isLowStock ? 'Perlu Restock' : 'Aman'
+
+            return (
+              <article className="raw-material-card" key={material.id}>
+                <header className="raw-material-card-header">
+                  <div className="raw-material-card-title">
+                    <span className={`raw-material-card-icon${isSemi ? ' is-semi' : ''}`}>
+                      {isSemi ? <ChefHat size={18} /> : <Boxes size={18} />}
+                    </span>
+                    <div className="raw-material-card-name">
+                      <h3>{material.name}</h3>
+                      <span>SKU: {material.sku || '—'}</span>
+                    </div>
+                  </div>
+                  <span className={`raw-material-type${isSemi ? ' is-semi' : ''}`}>
+                    {isSemi ? 'Bumbu Olahan' : 'Bahan Mentah'}
+                  </span>
+                </header>
+
+                <div className="raw-material-card-stats">
+                  <div className="raw-material-card-stat">
+                    <span>Stok Saat Ini</span>
+                    <strong className={isOutOfStock ? 'is-out' : isLowStock ? 'is-low' : ''}>
+                      {new Intl.NumberFormat('id-ID').format(material.stock)} {material.unit}
+                    </strong>
+                  </div>
+                  <div className="raw-material-card-stat">
+                    <span>Status Stok</span>
+                    <StatusTag status={statusTag} label={statusLabel} />
+                  </div>
+                  <div className="raw-material-card-stat">
+                    <span>Batas Minimum</span>
+                    <strong>{new Intl.NumberFormat('id-ID').format(material.min_stock)} {material.unit}</strong>
+                  </div>
+                  <div className="raw-material-card-stat">
+                    <span>Harga Modal</span>
+                    <strong>{formatRp(material.cost_per_unit)} / {material.unit}</strong>
+                  </div>
+                  <div className="raw-material-card-stat">
+                    <span>Total Nilai Stok</span>
+                    <strong>{formatRp(material.stock * material.cost_per_unit)}</strong>
+                  </div>
+                </div>
+
+                <div className="raw-material-card-usage">
+                  <span>{isSemi ? 'Komposisi Resep' : 'Penggunaan'}</span>
+                  <div>
+                    {isSemi
+                      ? material.sub_ingredients && material.sub_ingredients.length > 0
+                        ? material.sub_ingredients.map((ingredient, index) => (
+                            <span className="raw-material-usage-chip" key={`${ingredient.sub_material_id}-${index}`}>
+                              {ingredient.sub_material?.name || 'Bahan'} ({ingredient.quantity} {ingredient.unit})
+                            </span>
+                          ))
+                        : <span className="raw-material-usage-empty">Belum ada komposisi resep</span>
+                      : material.products && material.products.length > 0
+                        ? material.products.map((product) => (
+                            <span className="raw-material-usage-chip" key={product.id}>{product.name}</span>
+                          ))
+                        : <span className="raw-material-usage-empty">Belum digunakan pada produk</span>}
+                  </div>
+                </div>
+
+                <div className="raw-material-card-actions">
+                  <span>Aksi</span>
+                  {renderMaterialActions(material)}
+                </div>
+              </article>
+            )
+          })}
         </div>
       </SectionCard>
 
@@ -1555,8 +1639,8 @@ export default function RawMaterialsClient({
                             </span>
                           </div>
 
-                          <div style={{ fontWeight: 700, fontSize: 13, color: isShort ? 'var(--bad)' : 'var(--ink)' }}>
-                            -{needed} {mat?.unit || sub.unit} {isShort && '⚠️ Kurang'}
+                          <div style={{ fontWeight: 700, fontSize: 13, color: isShort ? 'var(--bad)' : 'var(--ink)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            -{needed} {mat?.unit || sub.unit} {isShort && <><AlertCircle size={12} /> Kurang</>}
                           </div>
                         </div>
                       )
