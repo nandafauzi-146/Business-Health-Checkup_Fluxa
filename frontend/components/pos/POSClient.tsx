@@ -968,8 +968,8 @@ export default function POSClient({
                         {item.name}
                       </div>
                     </div>
-                    <button onClick={() => removeFromCart(item.product_id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bad)', padding: 2, flexShrink: 0 }} aria-label={`Hapus ${item.name}`}>
-                      <Trash2 size={13} />
+                    <button onClick={() => removeFromCart(item.product_id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bad)', padding: '4px 6px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12 }} aria-label={`Hapus ${item.name}`}>
+                      <Trash2 size={13} /> Hapus
                     </button>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import {
   Plus, Search, Building2, AlertCircle, CheckCircle, Clock, Calendar,
-  X, Check, ArrowDownLeft, ArrowUpRight, Scale, Tags, Edit2, Trash2, Save, Info
+  X, Check, ArrowDownLeft, ArrowUpRight, Scale, Tags, Trash2, Save, Info, Pencil
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
+import ConfirmationDialog from '@/components/ui/ConfirmationDialog'
 import { createClient } from '@/lib/supabase/client'
 import { getUserFacingError } from '@/lib/user-facing-error'
 
@@ -86,16 +87,30 @@ export default function DebtReceivablesClient({
   const [payAmount, setPayAmount] = useState('')
   const [payMethod, setPayMethod] = useState<'cash' | 'non_cash'>('cash')
   const [payNote, setPayNote] = useState('')
+  const [editingItem, setEditingItem] = useState<DebtReceivableItem | null>(null)
+  const [editForm, setEditForm] = useState({
+    type: 'payable' as DebtReceivableItem['type'],
+    party_name: '',
+    category: '',
+    description: '',
+    total_amount: '',
+    due_date: '',
+    note: '',
+  })
+  const [deleteTarget, setDeleteTarget] = useState<DebtReceivableItem | null>(null)
 
   // Category management modal
   const [catOpen, setCatOpen] = useState(false)
   const [newCatName, setNewCatName] = useState('')
   const [editingCatId, setEditingCatId] = useState<string | null>(null)
   const [editingCatName, setEditingCatName] = useState('')
+  const [categoryDeleteTarget, setCategoryDeleteTarget] = useState<DebtCategory | null>(null)
   const [catSaving, setCatSaving] = useState(false)
 
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ type: 'ok' | 'bad'; msg: string } | null>(null)
+  const editFinancialFieldsLocked = editingItem !== null &&
+    (editingItem.paid_amount > 0 || editingItem.status !== 'unpaid')
 
   const showToast = (msg: string, type: 'ok' | 'bad' = 'ok') => {
     setToast({ type, msg })
@@ -341,6 +356,99 @@ export default function DebtReceivablesClient({
     setPayOpen(true)
   }
 
+  const openEditModal = (item: DebtReceivableItem) => {
+    setEditingItem(item)
+    setEditForm({
+      type: item.type,
+      party_name: item.party_name,
+      category: item.category,
+      description: item.description,
+      total_amount: String(item.total_amount),
+      due_date: item.due_date || '',
+      note: item.note || '',
+    })
+  }
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingItem) return
+
+    const total = Number(editForm.total_amount)
+    if (!editForm.party_name.trim() || !editForm.category.trim() || !editForm.description.trim()) {
+      showToast('Nama pihak, kategori, dan keterangan wajib diisi.', 'bad')
+      return
+    }
+    if (!Number.isSafeInteger(total) || total <= 0) {
+      showToast('Nominal harus berupa angka bulat lebih dari 0.', 'bad')
+      return
+    }
+    if (total < editingItem.paid_amount) {
+      showToast('Total nominal tidak boleh lebih kecil dari jumlah yang sudah dibayar.', 'bad')
+      return
+    }
+
+    setSaving(true)
+    try {
+      const response = await fetch('/api/admin/debt-receivables', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingItem.id,
+          ...editForm,
+          total_amount: total,
+          due_date: editForm.due_date || null,
+        }),
+      })
+      const result = await response.json() as { item?: Record<string, unknown>; error?: string }
+      if (!response.ok) throw new Error(result.error || 'Perubahan hutang/piutang gagal disimpan.')
+      if (!result.item) throw new Error('Server tidak mengembalikan data terbaru.')
+
+      const updatedItem: DebtReceivableItem = {
+        ...editingItem,
+        type: result.item.type as DebtReceivableItem['type'],
+        party_name: String(result.item.party_name || result.item.supplier_name || editForm.party_name),
+        category: String(result.item.category || editForm.category),
+        description: String(result.item.description || editForm.description),
+        total_amount: Number(result.item.total_amount),
+        paid_amount: Number(result.item.paid_amount),
+        remaining_amount: Number(result.item.total_amount) - Number(result.item.paid_amount),
+        due_date: typeof result.item.due_date === 'string' ? result.item.due_date : null,
+        status: result.item.status as DebtReceivableItem['status'],
+        note: typeof result.item.note === 'string' ? result.item.note : null,
+      }
+      setData(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item))
+      setEditingItem(null)
+      showToast('Hutang/piutang berhasil diperbarui.')
+    } catch (err) {
+      showToast(getUserFacingError(err, 'Perubahan hutang/piutang gagal disimpan.'), 'bad')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+
+    setSaving(true)
+    try {
+      const response = await fetch('/api/admin/debt-receivables', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: deleteTarget.id }),
+      })
+      const result = await response.json() as { error?: string }
+      if (!response.ok) throw new Error(result.error || 'Hutang/piutang belum dapat dihapus.')
+      setData(prev => prev.filter(item => item.id !== deleteTarget.id))
+      showToast('Hutang/piutang berhasil dihapus.')
+      setDeleteTarget(null)
+    } catch (err) {
+      showToast(getUserFacingError(err, 'Hutang/piutang belum dapat dihapus.'), 'bad')
+      setDeleteTarget(null)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div>
       <PageHeader
@@ -583,7 +691,7 @@ export default function DebtReceivablesClient({
 
         {/* Data Table */}
         <div className="table-container">
-          <table className="data-table" style={{ minWidth: 840 }}>
+          <table className="data-table" style={{ minWidth: 1120 }}>
             <thead>
               <tr>
                 <th style={{ width: 100 }}>Jenis</th>
@@ -594,7 +702,7 @@ export default function DebtReceivablesClient({
                 <th style={{ textAlign: 'right' }}>Sisa</th>
                 <th>Jatuh Tempo</th>
                 <th>Status</th>
-                <th style={{ textAlign: 'center' }}>Aksi</th>
+                <th style={{ textAlign: 'center', minWidth: 265 }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -698,7 +806,8 @@ export default function DebtReceivablesClient({
                       </td>
 
                       {/* Aksi */}
-                      <td style={{ textAlign: 'center' }}>
+                      <td style={{ textAlign: 'center', minWidth: 265 }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                         {item.status !== 'paid' ? (
                           <button
                             className="btn btn-secondary"
@@ -715,10 +824,40 @@ export default function DebtReceivablesClient({
                             {item.type === 'payable' ? 'Bayar Cicilan' : 'Terima Uang'}
                           </button>
                         ) : (
-                          <span style={{ fontSize: 12, color: 'var(--ok)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <span style={{ fontSize: 12, color: 'var(--ok)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '0 4px' }}>
                             <Check size={14} /> Selesai
                           </span>
                         )}
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => openEditModal(item)}
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5, minHeight: 34, padding: '5px 9px', fontSize: 12 }}
+                        >
+                          <Pencil size={13} /> Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => setDeleteTarget(item)}
+                          disabled={item.paid_amount > 0 || item.status !== 'unpaid'}
+                          title={item.paid_amount > 0 || item.status !== 'unpaid' ? 'Tidak dapat dihapus karena sudah memiliki pembayaran atau sudah lunas.' : 'Hapus hutang/piutang'}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 5,
+                            minHeight: 34,
+                            padding: '5px 9px',
+                            fontSize: 12,
+                            color: 'var(--bad)',
+                            borderColor: 'color-mix(in srgb, var(--bad) 40%, var(--line))',
+                            opacity: item.paid_amount > 0 || item.status !== 'unpaid' ? 0.55 : 1,
+                          }}
+                        >
+                          <Trash2 size={13} /> Hapus
+                        </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -934,6 +1073,123 @@ export default function DebtReceivablesClient({
                   disabled={saving}
                 >
                   {saving ? 'Menyimpan...' : 'Simpan Transaksi'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingItem && (
+        <div className="debt-modal-overlay" onClick={e => { if (e.target === e.currentTarget && !saving) setEditingItem(null) }}>
+          <div className="debt-modal-card" role="dialog" aria-modal="true" aria-labelledby="edit-debt-title">
+            <div className="debt-modal-header">
+              <div style={{ fontWeight: 700, fontSize: 16 }} id="edit-debt-title">Edit Hutang / Piutang</div>
+              <button
+                type="button"
+                onClick={() => setEditingItem(null)}
+                disabled={saving}
+                aria-label="Tutup form edit"
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--mute)' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleEdit} className="debt-modal-body">
+              <div style={{ marginBottom: 14 }}>
+                <label className="label" htmlFor="edit-debt-type">Jenis Transaksi</label>
+                <select
+                  id="edit-debt-type"
+                  className="input"
+                  value={editForm.type}
+                  disabled={editFinancialFieldsLocked}
+                  onChange={e => setEditForm(f => ({ ...f, type: e.target.value as DebtReceivableItem['type'] }))}
+                >
+                  <option value="payable">Hutang Toko</option>
+                  <option value="receivable">Piutang Usaha</option>
+                </select>
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <label className="label" htmlFor="edit-debt-party">Nama Pihak / Mitra *</label>
+                <input
+                  id="edit-debt-party"
+                  className="input"
+                  value={editForm.party_name}
+                  onChange={e => setEditForm(f => ({ ...f, party_name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <label className="label" htmlFor="edit-debt-category">Kategori *</label>
+                <select
+                  id="edit-debt-category"
+                  className="input"
+                  value={editForm.category}
+                  onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
+                  required
+                >
+                  {!categories.some(category => category.name === editForm.category) && (
+                    <option value={editForm.category}>{editForm.category}</option>
+                  )}
+                  {categories.map(category => <option key={category.id} value={category.name}>{category.name}</option>)}
+                </select>
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <label className="label" htmlFor="edit-debt-description">Keterangan *</label>
+                <input
+                  id="edit-debt-description"
+                  className="input"
+                  value={editForm.description}
+                  onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="debt-form-grid-2col">
+                <div>
+                  <label className="label" htmlFor="edit-debt-amount">Total Nominal (Rp) *</label>
+                  <input
+                    id="edit-debt-amount"
+                    className="input"
+                    type="number"
+                    min={Math.max(1, editingItem.paid_amount)}
+                    step="1"
+                    value={editForm.total_amount}
+                    disabled={editFinancialFieldsLocked}
+                    onChange={e => setEditForm(f => ({ ...f, total_amount: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="label" htmlFor="edit-debt-due-date">Jatuh Tempo</label>
+                  <input
+                    id="edit-debt-due-date"
+                    className="input"
+                    type="date"
+                    value={editForm.due_date}
+                    onChange={e => setEditForm(f => ({ ...f, due_date: e.target.value }))}
+                  />
+                </div>
+              </div>
+              {editFinancialFieldsLocked && (
+                <p style={{ margin: '0 0 14px', color: 'var(--mute)', fontSize: 11.5 }}>
+                  Jenis transaksi dan total nominal dikunci karena pembayaran sudah tercatat.
+                </p>
+              )}
+              <div style={{ marginBottom: 14 }}>
+                <label className="label" htmlFor="edit-debt-note">Catatan Tambahan</label>
+                <textarea
+                  id="edit-debt-note"
+                  className="input"
+                  rows={2}
+                  value={editForm.note}
+                  onChange={e => setEditForm(f => ({ ...f, note: e.target.value }))}
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+              <div className="debt-modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setEditingItem(null)} disabled={saving}>Batal</button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </button>
               </div>
             </form>
@@ -1208,21 +1464,23 @@ export default function DebtReceivablesClient({
                       ) : (
                         <>
                           <span style={{ flex: 1, fontSize: 13.5, fontWeight: 500 }}>{cat.name}</span>
-                          <div style={{ display: 'flex', gap: 6, opacity: 0.7 }}>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                             <button
+                              type="button"
                               onClick={() => { setEditingCatId(cat.id); setEditingCatName(cat.name) }}
-                              style={{ background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', color: 'var(--ink)', display: 'flex', alignItems: 'center' }}
+                              style={{ background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 6, padding: '5px 9px', cursor: 'pointer', color: 'var(--ink)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5, minHeight: 34, font: 'inherit', fontSize: 12 }}
                               title={`Ubah nama "${cat.name}"`}
                             >
-                              <Edit2 size={13} />
+                              <Pencil size={13} /> Edit
                             </button>
                             <button
-                              onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                              type="button"
+                              onClick={() => setCategoryDeleteTarget(cat)}
                               disabled={catSaving}
-                              style={{ background: 'transparent', border: '1px solid var(--line)', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', color: 'var(--bad)', display: 'flex', alignItems: 'center' }}
+                              style={{ background: 'transparent', border: '1px solid var(--line)', borderRadius: 6, padding: '5px 9px', cursor: 'pointer', color: 'var(--bad)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5, minHeight: 34, font: 'inherit', fontSize: 12 }}
                               title={`Hapus "${cat.name}"`}
                             >
-                              <Trash2 size={13} />
+                              <Trash2 size={13} /> Hapus
                             </button>
                           </div>
                         </>
@@ -1255,6 +1513,41 @@ export default function DebtReceivablesClient({
           </div>
         </div>
       )}
+      <ConfirmationDialog
+        isOpen={deleteTarget !== null}
+        onClose={() => { if (!saving) setDeleteTarget(null) }}
+        onConfirm={handleDelete}
+        title="Hapus Hutang / Piutang?"
+        message={deleteTarget ? (
+          <span>
+            Catatan <strong>{deleteTarget.party_name}</strong> — {deleteTarget.description} akan dihapus permanen.
+            Penghapusan hanya diizinkan jika belum ada pembayaran tercatat.
+          </span>
+        ) : ''}
+        confirmLabel="Hapus"
+        variant="danger"
+        icon="delete"
+        isLoading={saving}
+      />
+      <ConfirmationDialog
+        isOpen={categoryDeleteTarget !== null}
+        onClose={() => { if (!catSaving) setCategoryDeleteTarget(null) }}
+        onConfirm={async () => {
+          if (!categoryDeleteTarget) return
+          await handleDeleteCategory(categoryDeleteTarget.id, categoryDeleteTarget.name)
+          setCategoryDeleteTarget(null)
+        }}
+        title="Hapus Kategori?"
+        message={categoryDeleteTarget ? (
+          <span>
+            Kategori <strong>{categoryDeleteTarget.name}</strong> akan dihapus. Kategori yang masih digunakan oleh transaksi tidak dapat dihapus.
+          </span>
+        ) : ''}
+        confirmLabel="Hapus"
+        variant="danger"
+        icon="delete"
+        isLoading={catSaving}
+      />
     </div>
   )
 }

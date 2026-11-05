@@ -199,22 +199,24 @@ export default function ExpenseCategoriesClient({
                     </p>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap' }}>
                   <button
                     onClick={() => handleOpenEdit(cat)}
                     className="btn btn-sm"
                     style={{ background: 'var(--accs)', color: 'var(--acc)', border: 'none' }}
                     title="Edit Kategori"
+                    aria-label={`Edit kategori ${cat.name}`}
                   >
-                    <Pencil size={12} />
+                    <Pencil size={12} /> Edit
                   </button>
                   <button
                     onClick={() => handleDelete(cat)}
                     className="btn btn-sm"
                     style={{ background: 'var(--bads)', color: 'var(--bad)', border: 'none' }}
                     title="Hapus Kategori"
+                    aria-label={`Hapus kategori ${cat.name}`}
                   >
-                    <Trash2 size={12} />
+                    <Trash2 size={12} /> Hapus
                   </button>
                 </div>
               </div>
