@@ -650,7 +650,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
                   </div>
                   <strong className={styles.metricValue}>Rp 12,8 jt</strong>
                   <small className={styles.metricTrend}>
-                    <span className={styles.positive}>↗ 12,4%</span> <span>dari 7 hari sebelumnya</span>
+                    <span className={styles.positive}><TrendingUp size={12} aria-hidden="true" /> 12,4%</span> <span>dari 7 hari sebelumnya</span>
                   </small>
                 </div>
 
@@ -663,7 +663,7 @@ export default function LandingPage({ content }: { content?: LandingCMSContent }
                   </div>
                   <strong className={styles.metricValue}>248</strong>
                   <small className={styles.metricTrend}>
-                    <span className={styles.positive}>↗ 9,3%</span> <span>dari 7 hari sebelumnya</span>
+                    <span className={styles.positive}><TrendingUp size={12} aria-hidden="true" /> 9,3%</span> <span>dari 7 hari sebelumnya</span>
                   </small>
                 </div>
               </div>

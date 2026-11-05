@@ -8,6 +8,7 @@ import {
   CreditCard,
   DollarSign,
   FileText,
+  Hand,
   Package,
   Sparkles,
   TrendingUp,
@@ -294,7 +295,7 @@ export default function OwnerDashboardClient({
       <header className="owner-dashboard-header">
         <div>
           <div className="dashboard-eyebrow"><Activity size={13} /> RINGKASAN BISNIS</div>
-          <h1>Selamat datang kembali 👋</h1>
+          <h1>Selamat datang kembali <span style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: 4 }} aria-hidden="true"><Hand size={22} /></span></h1>
           <p>Berikut ringkasan performa bisnis Anda.</p>
         </div>
         <div className="owner-dashboard-actions">

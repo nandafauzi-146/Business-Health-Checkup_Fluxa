@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, X, Check, Wallet, ArrowRight, Tag, ChevronDown, Percent, DollarSign as DollarIcon, Flame, Zap, Sparkles, Printer, AlertCircle } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, X, Check, Wallet, ArrowRight, Tag, ChevronDown, Percent, DollarSign as DollarIcon, Flame, Zap, Sparkles, Printer, AlertCircle, Info, Coffee, CookingPot, Wheat, Package, CircleCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { BukaShiftModal } from '@/components/pos/KasMasukModal'
 import { fetchShiftExpenses } from '@/lib/cash-reconciliation'
@@ -39,8 +39,16 @@ function isLegacyCheckoutSignatureError(error: unknown) {
   return description.includes('public.create_sale') && description.includes('p_customer_id')
 }
 
-const EMOJI_MAP: Record<string, string> = {
-  'Minuman': '☕', 'Bahan Baku': '🧂', 'Makanan': '🍞', 'Lainnya': '📦'
+const CATEGORY_ICON_MAP: Record<string, typeof Package> = {
+  Minuman: Coffee,
+  'Bahan Baku': CookingPot,
+  Makanan: Wheat,
+  Lainnya: Package,
+}
+
+function CategoryGlyph({ category, size }: { category: string; size: number }) {
+  const Icon = CATEGORY_ICON_MAP[category] || Package
+  return <Icon size={size} strokeWidth={1.8} aria-hidden="true" />
 }
 
 type PayMethod = 'cash' | 'non_cash'
@@ -215,13 +223,13 @@ export default function POSClient({
   const handleSelectPromoFromBanner = (promo: Promotion) => {
     if (cart.length === 0) {
       setPromoCode(promo.code)
-      showToast(`💡 Kode ${promo.code} dipilih! Tambahkan produk ke keranjang.`)
+      showToast(`Kode ${promo.code} dipilih! Tambahkan produk ke keranjang.`)
       return
     }
     if (subtotal < promo.min_purchase) {
       setPromoCode(promo.code)
       const diff = promo.min_purchase - subtotal
-      showToast(`💡 Promo ${promo.code} butuh min. belanja ${formatRp(promo.min_purchase)} (kurang ${formatRp(diff)})`)
+      showToast(`Promo ${promo.code} butuh min. belanja ${formatRp(promo.min_purchase)} (kurang ${formatRp(diff)})`)
       return
     }
     applyPromo(promo)
@@ -325,7 +333,7 @@ export default function POSClient({
     setDiscount(String(discAmt))
     setPromoError('')
     setShowPromoDropdown(false)
-    showToast(`✅ Promo ${promo.code} diterapkan! Hemat ${formatRp(discAmt)}`)
+    showToast(`Promo ${promo.code} diterapkan! Hemat ${formatRp(discAmt)}`)
   }
 
   const handleApplyPromoCode = () => {
@@ -487,7 +495,7 @@ export default function POSClient({
         .map(s => `• ${s.materialName}: Butuh ${s.totalRequired} ${s.unit}, tersisa ${s.availableStock} ${s.unit} (Kurang ${s.shortageAmount} ${s.unit})`)
         .join('\n')
       const confirmed = window.confirm(
-        `⚠️ PERINGATAN KETERSEDIAAN BAHAN BAKU\n\nStok bahan baku di gudang tidak mencukupi untuk pesanan ini:\n${shortageDetails}\n\nTetap lanjutkan transaksi penjualan?`
+        `PERINGATAN KETERSEDIAAN BAHAN BAKU\n\nStok bahan baku di gudang tidak mencukupi untuk pesanan ini:\n${shortageDetails}\n\nTetap lanjutkan transaksi penjualan?`
       )
       if (!confirmed) return
     }
@@ -674,7 +682,7 @@ export default function POSClient({
                   color: selectedCategory === cat ? '#fff' : 'var(--ink)'
                 }}
               >
-                {EMOJI_MAP[cat] || '📦'} {cat}
+                <CategoryGlyph category={cat} size={14} /> {cat}
               </button>
             ))}
           </div>
@@ -844,11 +852,13 @@ export default function POSClient({
                           fontSize: 24
                         }}
                       >
-                        {EMOJI_MAP[cat] || '📦'}
+                        <CategoryGlyph category={cat} size={24} />
                       </div>
                     </div>
                   ) : (
-                    <div className="product-thumb">{EMOJI_MAP[cat] || '📦'}</div>
+                    <div className="product-thumb">
+                      <CategoryGlyph category={cat} size={24} />
+                    </div>
                   )}
                   <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 2, lineHeight: 1.3 }}>{p.name}</div>
                   <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--acc)' }}>{formatRp(p.sell_price)}</div>
@@ -864,9 +874,12 @@ export default function POSClient({
                             fontSize: 9.5,
                             fontWeight: 600,
                             color: avail.rawLimit <= 0 ? 'var(--bad)' : avail.rawLimit <= 3 ? 'var(--warn)' : 'var(--ok)',
-                            marginTop: 1
+                            marginTop: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 3
                           }}>
-                            {avail.rawLimit <= 0 ? '⚠️ Bahan baku habis' : `• Bahan: sisa ${avail.rawLimit} porsi`}
+                            {avail.rawLimit <= 0 ? <><AlertCircle size={10} /> Bahan baku habis</> : `• Bahan: sisa ${avail.rawLimit} porsi`}
                           </div>
                         )}
                       </div>
@@ -1110,7 +1123,7 @@ export default function POSClient({
 
                   {promoError && (
                     <div style={{ fontSize: 11.5, color: 'var(--bad)', marginTop: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      ⚠ {promoError}
+                      <AlertCircle size={13} /> {promoError}
                     </div>
                   )}
 
@@ -1342,7 +1355,7 @@ export default function POSClient({
         <div className="dialog-overlay">
           <div className="dialog pos-receipt-dialog" style={{ maxWidth: 380, textAlign: 'center', maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <div className="pos-receipt-success">
-              <div style={{ fontSize: 48, marginBottom: 8 }}>✅</div>
+            <CircleCheck size={48} color="var(--ok)" style={{ marginBottom: 8 }} aria-hidden="true" />
               <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Transaksi Berhasil!</h2>
               <p style={{ color: 'var(--mute)', fontSize: 13, marginBottom: 16 }}>
                 No. Transaksi:{' '}
@@ -1417,7 +1430,7 @@ export default function POSClient({
 
 
       {/* Toast */}
-      {toast && <div className="toast">{toast}</div>}
+      {toast && <div className="toast" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Info size={15} aria-hidden="true" />{toast}</div>}
     </div>
   )
 }

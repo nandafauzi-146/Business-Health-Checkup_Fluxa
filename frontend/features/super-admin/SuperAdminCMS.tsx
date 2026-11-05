@@ -24,6 +24,7 @@ import {
   CreditCard,
   Check,
 } from 'lucide-react'
+import ConfirmationDialog from '@/components/ui/ConfirmationDialog'
 import type { LandingCMSContent, FeatureItem, FAQItem, PackageItem } from '@/lib/cms'
 import defaultContent from '@/content/landing-default.json'
 import styles from './super-admin-cms.module.css'
@@ -61,6 +62,7 @@ export default function SuperAdminCMS() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
 
   const showToast = (type: 'success' | 'error', message: string) => {
     setToast({ type, message })
@@ -115,9 +117,6 @@ export default function SuperAdminCMS() {
   }
 
   const handleReset = async () => {
-    if (!window.confirm('Apakah Anda yakin ingin mengembalikan semua teks Landing Page ke pengaturan bawaan pabrik?')) {
-      return
-    }
     setSaving(true)
     try {
       const res = await fetch('/api/super-admin/cms', {
@@ -347,7 +346,7 @@ export default function SuperAdminCMS() {
           <button
             type="button"
             className={styles.dangerButton}
-            onClick={handleReset}
+            onClick={() => setResetConfirmOpen(true)}
             disabled={saving || loading}
             title="Kembalikan semua teks ke bawaan awal"
           >
@@ -364,6 +363,22 @@ export default function SuperAdminCMS() {
           </button>
         </div>
       </div>
+      {resetConfirmOpen && (
+        <ConfirmationDialog
+          isOpen
+          onClose={() => setResetConfirmOpen(false)}
+          onConfirm={async () => {
+            await handleReset()
+            setResetConfirmOpen(false)
+          }}
+          title="Pulihkan konten bawaan?"
+          message="Semua teks Landing Page akan dikembalikan ke pengaturan bawaan. Perubahan konten saat ini akan diganti."
+          confirmLabel={saving ? 'Memulihkan...' : 'Pulihkan konten'}
+          variant="warning"
+          icon="warning"
+          isLoading={saving}
+        />
+      )}
 
       {/* Navigation Tabs */}
       <nav className={styles.tabsContainer} aria-label="Kategori CMS Landing Page">

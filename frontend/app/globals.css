@@ -8002,6 +8002,440 @@ canvas {
   }
 }
 
+.raw-materials-page {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.raw-material-filter-bar,
+.raw-material-filter-tabs,
+.raw-material-search {
+  min-width: 0;
+}
+
+.raw-material-filter-tabs {
+  max-width: 100%;
+}
+
+.raw-material-search {
+  flex: 0 1 320px;
+}
+
+.raw-material-table-wrap {
+  min-width: 0;
+  overscroll-behavior-x: contain;
+}
+
+.raw-material-table {
+  width: 100%;
+  min-width: 1080px;
+  table-layout: auto;
+}
+
+.raw-material-table th:last-child,
+.raw-material-table td:last-child {
+  min-width: 320px;
+}
+
+.raw-material-actions-heading {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.raw-material-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.raw-material-action {
+  display: inline-flex;
+  min-height: 36px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 8px;
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.raw-material-action svg {
+  flex: 0 0 auto;
+}
+
+.raw-material-action-produce {
+  background: #9333ea;
+  color: #fff;
+  font-weight: 650;
+}
+
+.raw-material-action-produce:hover {
+  background: #7e22ce;
+}
+
+.raw-material-action-delete {
+  border: 1px solid var(--bads);
+  background: var(--bads);
+  color: var(--bad);
+}
+
+.raw-material-stock-action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  border-radius: 8px;
+  background: #9333ea;
+}
+
+.raw-material-stock-action .raw-material-action-produce {
+  border-radius: 8px 0 0 8px;
+}
+
+.raw-material-stock-menu {
+  position: relative;
+  display: flex;
+}
+
+.raw-material-stock-menu summary {
+  display: grid;
+  min-width: 30px;
+  min-height: 36px;
+  place-items: center;
+  border-left: 1px solid rgba(255, 255, 255, .3);
+  border-radius: 0 8px 8px 0;
+  color: #fff;
+  cursor: pointer;
+  list-style: none;
+}
+
+.raw-material-stock-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.raw-material-stock-menu-list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 170px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel);
+  box-shadow: var(--shadow-raised);
+}
+
+.raw-material-stock-menu-list button {
+  display: flex;
+  width: 100%;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+
+.raw-material-stock-menu-list button:hover {
+  background: var(--bg);
+}
+
+.raw-material-card-list {
+  display: none;
+}
+
+@media (min-width: 1200px) {
+  .raw-material-table {
+    min-width: 1080px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .raw-material-table {
+    min-width: 1160px;
+  }
+
+  .raw-material-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 767px) {
+  .raw-materials-page {
+    overflow-x: clip;
+  }
+
+  .raw-materials-page .page-header {
+    gap: 10px;
+  }
+
+  .raw-materials-page .page-header-actions,
+  .raw-materials-page .page-header-actions .btn {
+    width: 100%;
+  }
+
+  .raw-material-filter-bar {
+    align-items: stretch !important;
+    flex-direction: column;
+  }
+
+  .raw-material-filter-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px !important;
+    padding: 6px !important;
+  }
+
+  .raw-material-filter-tabs > button {
+    min-width: 0;
+    min-height: 40px;
+    padding: 7px 6px !important;
+    font-size: 11px !important;
+    line-height: 1.25;
+  }
+
+  .raw-material-search {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .raw-material-table-wrap {
+    display: none;
+  }
+
+  .raw-material-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .raw-material-empty-card {
+    padding: 24px 12px;
+    color: var(--mute);
+    text-align: center;
+  }
+
+  .raw-material-card {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: var(--panel);
+  }
+
+  .raw-material-card-header,
+  .raw-material-card-title {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    gap: 9px;
+  }
+
+  .raw-material-card-header {
+    justify-content: space-between;
+  }
+
+  .raw-material-card-title {
+    flex: 1 1 auto;
+  }
+
+  .raw-material-card-icon {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 9px;
+    background: var(--accs);
+    color: var(--acc);
+  }
+
+  .raw-material-card-icon.is-semi {
+    background: rgba(168, 85, 247, .12);
+    color: #9333ea;
+  }
+
+  .raw-material-card-name {
+    min-width: 0;
+  }
+
+  .raw-material-card-name h3 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .raw-material-card-name > span {
+    display: block;
+    margin-top: 3px;
+    color: var(--mute);
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+
+  .raw-material-type {
+    flex: 0 0 auto;
+    padding: 4px 7px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--bg);
+    color: var(--mute);
+    font-size: 10px;
+    font-weight: 650;
+    text-align: center;
+  }
+
+  .raw-material-type.is-semi {
+    border-color: rgba(168, 85, 247, .3);
+    background: rgba(168, 85, 247, .1);
+    color: #9333ea;
+  }
+
+  .raw-material-card-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg);
+  }
+
+  .raw-material-card-stat {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+  }
+
+  .raw-material-card-stat > span:first-child {
+    color: var(--mute);
+    font-size: 10px;
+  }
+
+  .raw-material-card-stat strong {
+    color: var(--ink);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .raw-material-card-stat strong.is-low {
+    color: var(--warn);
+  }
+
+  .raw-material-card-stat strong.is-out {
+    color: var(--bad);
+  }
+
+  .raw-material-card-usage,
+  .raw-material-card-actions {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .raw-material-card-usage > span,
+  .raw-material-card-actions > span {
+    color: var(--mute);
+    font-size: 11px;
+    font-weight: 650;
+  }
+
+  .raw-material-card-usage > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .raw-material-usage-chip {
+    max-width: 100%;
+    padding: 4px 7px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 10px;
+    overflow-wrap: anywhere;
+  }
+
+  .raw-material-usage-empty {
+    color: var(--mute);
+    font-size: 11px;
+  }
+
+  .raw-material-card-actions .raw-material-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .raw-material-card-actions .raw-material-action,
+  .raw-material-card-actions .raw-material-stock-action {
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
+  }
+
+  .raw-material-card-actions .raw-material-action {
+    padding: 7px 5px;
+    font-size: 11px;
+  }
+
+  .raw-material-card-actions .raw-material-stock-action .raw-material-action-produce {
+    width: auto;
+    flex: 1 1 auto;
+    padding-inline: 5px;
+    font-size: 10px;
+  }
+
+  .raw-material-card-actions .raw-material-stock-menu {
+    flex: 0 0 34px;
+  }
+
+  .raw-material-card-actions .raw-material-stock-menu summary {
+    min-height: 40px;
+  }
+
+  .raw-material-card-actions .raw-material-stock-menu-list {
+    right: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .raw-material-card {
+    padding: 12px;
+  }
+
+  .raw-material-card-header {
+    flex-wrap: wrap;
+  }
+
+  .raw-material-card-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .login-register-prompt {
   margin-top: 16px;
   color: #a7b6d3;

@@ -494,6 +494,9 @@
   color: #8896ab;
 }
 .metric .positive {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: #10b981;
   font-weight: 700;
 }

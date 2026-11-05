@@ -884,7 +884,7 @@ export default function Topbar({ title, subtitle, actions, role }: TopbarProps) 
                       fontSize: 12.5,
                     }}
                   >
-                    <div style={{ fontSize: 24, marginBottom: 6 }}>✨</div>
+                    <Bell size={22} style={{ marginBottom: 6 }} aria-hidden="true" />
                     <div style={{ fontWeight: 600 }}>Tidak ada notifikasi</div>
                     <div style={{ fontSize: 11.5, opacity: 0.8, marginTop: 2 }}>
                       Semua laporan dan aktivitas telah ditinjau.

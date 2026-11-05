@@ -306,7 +306,7 @@ export default function BusinessHealthClient({
               background: aiSource === 'ai_llm' ? 'var(--oks)' : 'var(--bg)',
               color: aiSource === 'ai_llm' ? 'var(--ok)' : 'var(--ink)'
             }}>
-              {aiSource === 'ai_llm' ? '✓ Terverifikasi AI Live' : 'Rule Engine'}
+              {aiSource === 'ai_llm' ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><CheckCircle size={12} /> Terverifikasi AI Live</span> : 'Rule Engine'}
             </span>
           }
         >
