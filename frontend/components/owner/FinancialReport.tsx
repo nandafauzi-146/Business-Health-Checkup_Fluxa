@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts'
-import { DollarSign, TrendingUp, TrendingDown, Percent, FileSpreadsheet, ArrowUpRight } from 'lucide-react'
+import { DollarSign, TrendingUp, TrendingDown, Percent, ArrowUpRight } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, FormatRupiah } from '@/components/ui/Cards'
+import OwnerReportExport from '@/components/owner/OwnerReportExport'
+import type { OwnerReport } from '@/lib/owner-report-export'
 
 interface MonthlyData {
   month: string
@@ -18,10 +20,62 @@ interface MonthlyData {
   margin_net: number
 }
 
-export default function FinancialReportClient({ reports }: { reports: MonthlyData[] }) {
+export default function FinancialReportClient({
+  reports,
+  businessName,
+  generatedBy,
+}: {
+  reports: MonthlyData[]
+  businessName?: string
+  generatedBy?: string
+}) {
   const [selectedMonth, setSelectedMonth] = useState<string>(reports[0]?.month || '')
 
   const currentData = reports.find(r => r.month === selectedMonth) || reports[0]
+  const trendReports = reports.slice(0, 12).reverse()
+  const selectedPeriod = currentData
+    ? new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' })
+      .format(new Date(`${currentData.month}-01T12:00:00+07:00`))
+    : 'Tidak ada data'
+  const exportReport: OwnerReport = {
+    title: 'Laporan Laba Rugi Bulanan',
+    period: selectedPeriod,
+    fileName: `Laporan_Keuangan_${selectedPeriod}`,
+    businessName,
+    generatedBy,
+    summary: currentData
+      ? [
+          { label: 'Total omzet', value: currentData.gross_revenue, format: 'currency' },
+          { label: 'Jumlah transaksi', value: currentData.total_orders, format: 'number' },
+          { label: 'Laba kotor', value: currentData.gross_profit, format: 'currency' },
+          { label: 'Laba bersih', value: currentData.net_profit, format: 'currency' },
+        ]
+      : [],
+    columns: [
+      { key: 'item', header: 'Komponen Laporan' },
+      { key: 'amount', header: 'Nilai (Rp)', format: 'currency' },
+      { key: 'detail', header: 'Keterangan' },
+    ],
+    rows: currentData
+      ? [
+          { item: 'Pendapatan Penjualan Bersih', amount: currentData.gross_revenue, detail: `${currentData.total_orders} transaksi berhasil` },
+          { item: 'Harga Pokok Penjualan (HPP)', amount: currentData.cogs, detail: 'Biaya barang terjual' },
+          { item: 'Laba Kotor', amount: currentData.gross_profit, detail: `Margin ${currentData.margin_gross.toFixed(1)}%` },
+          { item: 'Beban Operasional', amount: currentData.expenses, detail: 'Beban tercatat pada periode ini' },
+          { item: 'Laba Bersih', amount: currentData.net_profit, detail: `Margin ${currentData.margin_net.toFixed(1)}%` },
+        ]
+      : [],
+    chart: {
+      title: 'Tren Laba Kotor dan Laba Bersih',
+      categories: trendReports.map((report) =>
+        new Intl.DateTimeFormat('id-ID', { month: 'short', timeZone: 'Asia/Jakarta' })
+          .format(new Date(`${report.month}-01T12:00:00+07:00`))),
+      series: [
+        { name: 'Laba kotor', values: trendReports.map((report) => report.gross_profit), color: '#14b8a6' },
+        { name: 'Laba bersih', values: trendReports.map((report) => report.net_profit), color: '#2563eb' },
+      ],
+    },
+  }
 
   return (
     <div>
@@ -29,9 +83,7 @@ export default function FinancialReportClient({ reports }: { reports: MonthlyDat
         title="Laporan Laba Rugi Bulanan"
         subtitle="Analisis terstruktur pendapatan kotor, HPP, beban operasional, dan margin laba bersih bisnis"
         actions={
-          <button onClick={() => window.print()} className="btn btn-secondary">
-            <FileSpreadsheet size={16} /> Cetak / Ekspor Laporan
-          </button>
+          <OwnerReportExport report={exportReport} disabled={!currentData} />
         }
       />
 
@@ -48,11 +100,14 @@ export default function FinancialReportClient({ reports }: { reports: MonthlyDat
         >
           {reports.map(r => (
             <option key={r.month} value={r.month}>
-              {new Date(r.month + '-01').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+              {new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' })
+                .format(new Date(`${r.month}-01T12:00:00+07:00`))}
             </option>
           ))}
         </select>
       </div>
+
+      {!currentData && <p className="card" role="status">Belum ada data laporan keuangan untuk ditampilkan.</p>}
 
       {currentData && (
         <>

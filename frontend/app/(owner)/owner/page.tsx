@@ -12,6 +12,18 @@ function splitIntoBatches(ids: string[], batchSize = 100) {
 
 export default async function OwnerDashboardPage() {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Sesi Owner tidak ditemukan.')
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('full_name, business_id')
+    .eq('id', user.id)
+    .single()
+  if (profileError) throw new Error('Profil Owner belum dapat dimuat.')
+  const { data: business, error: businessError } = profile.business_id
+    ? await supabase.from('businesses').select('name').eq('id', profile.business_id).maybeSingle()
+    : { data: null, error: null }
+  if (businessError) throw new Error('Informasi usaha belum dapat dimuat.')
   const now = new Date()
   const jakartaDateParts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Jakarta',
@@ -144,6 +156,8 @@ export default async function OwnerDashboardPage() {
       recentSales={[...completedSalesResult.data]
         .sort((left, right) => right.created_at.localeCompare(left.created_at))
         .slice(0, 5)}
+      businessName={business?.name ?? undefined}
+      generatedBy={profile.full_name}
     />
   )
 }

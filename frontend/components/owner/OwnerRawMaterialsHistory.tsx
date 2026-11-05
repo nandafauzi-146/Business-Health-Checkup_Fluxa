@@ -8,7 +8,6 @@ import {
   TrendingUp,
   Search,
   Filter,
-  Download,
   Calendar,
   Layers,
   ChefHat,
@@ -22,6 +21,8 @@ import {
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { calculateRecipeRatios } from '@/lib/unit-conversion'
+import OwnerReportExport from '@/components/owner/OwnerReportExport'
+import type { OwnerReport } from '@/lib/owner-report-export'
 
 export interface RawMaterialSubItem {
   id: string
@@ -70,6 +71,8 @@ interface Props {
   materials: OwnerRawMaterialItem[]
   movements: OwnerRawMaterialMovement[]
   loadError?: string | null
+  businessName?: string
+  generatedBy?: string
 }
 
 function formatRp(n: number) {
@@ -78,19 +81,26 @@ function formatRp(n: number) {
 
 function formatDate(iso: string) {
   const d = new Date(iso)
-  return d.toLocaleString('id-ID', {
+  return new Intl.DateTimeFormat('id-ID', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
-  })
+    minute: '2-digit',
+    timeZone: 'Asia/Jakarta',
+  }).format(d)
+}
+
+function getJakartaDate(iso: string) {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta' }).format(new Date(iso))
 }
 
 export default function OwnerRawMaterialsHistoryClient({
   materials,
   movements,
-  loadError
+  loadError,
+  businessName,
+  generatedBy,
 }: Props) {
   const [activeTab, setActiveTab] = useState<'history' | 'stock'>('history')
   const [search, setSearch] = useState('')
@@ -127,7 +137,7 @@ export default function OwnerRawMaterialsHistoryClient({
       if (dateFilter !== 'all') {
         const movTime = new Date(mov.created_at).getTime()
         if (dateFilter === 'today') {
-          const isToday = new Date(mov.created_at).toDateString() === new Date().toDateString()
+          const isToday = getJakartaDate(mov.created_at) === getJakartaDate(new Date().toISOString())
           if (!isToday) return false
         } else if (dateFilter === '7days') {
           if (now - movTime > 7 * 86400000) return false
@@ -159,29 +169,53 @@ export default function OwnerRawMaterialsHistoryClient({
     )
   }, [materials, search])
 
-  // Export CSV
-  const handleExportCSV = () => {
-    if (filteredMovements.length === 0) return
-    const headers = ['Waktu', 'Bahan Baku', 'Tipe Mutasi', 'Perubahan', 'Stok Sebelum', 'Stok Sesudah', 'Satuan', 'Dilakukan Oleh', 'Keterangan']
-    const rows = filteredMovements.map(m => [
-      formatDate(m.created_at),
-      `"${m.raw_material_name}"`,
-      m.type,
-      m.quantity,
-      m.previous_stock,
-      m.current_stock,
-      m.unit,
-      `"${m.creator_name || 'Admin Toko'}"`,
-      `"${(m.note || '').replace(/"/g, '""')}"`
-    ])
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
-    const encodedUri = encodeURI(csvContent)
-    const link = document.createElement('a')
-    link.setAttribute('href', encodedUri)
-    link.setAttribute('download', `riwayat-bahan-baku-${new Date().toISOString().slice(0, 10)}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+  const dateLabels = { all: 'Semua Waktu', today: 'Hari Ini', '7days': '7 Hari Terakhir', '30days': '30 Hari Terakhir' }
+  const movementLabels: Record<string, string> = {
+    in: 'Restock Masuk',
+    out: 'Pengurangan',
+    production: 'Olah Bumbu',
+    sale_usage: 'Pemakaian Penjualan',
+    void_return: 'Pengembalian Void',
+    adjustment: 'Audit Opname',
+  }
+  const selectedMaterial = materials.find((material) => material.id === selectedMaterialId)
+  const report: OwnerReport = {
+    title: 'Laporan Riwayat Bahan Baku',
+    period: [
+      dateLabels[dateFilter],
+      selectedMaterial?.name,
+      typeFilter === 'all' ? null : movementLabels[typeFilter] ?? typeFilter,
+      search.trim() ? `Pencarian: ${search.trim()}` : null,
+    ].filter(Boolean).join(' · '),
+    fileName: `Laporan_Bahan_Baku_${dateFilter}_${selectedMaterial?.name ?? 'semua_bahan'}`,
+    businessName,
+    generatedBy,
+    summary: [
+      { label: 'Jumlah mutasi', value: filteredMovements.length, format: 'number' },
+      { label: 'Bahan berbeda', value: new Set(filteredMovements.map((movement) => movement.raw_material_id)).size, format: 'number' },
+    ],
+    columns: [
+      { key: 'time', header: 'Waktu', format: 'date-time' },
+      { key: 'material', header: 'Bahan Baku' },
+      { key: 'type', header: 'Jenis Aktivitas' },
+      { key: 'quantity', header: 'Perubahan', format: 'number' },
+      { key: 'before', header: 'Stok Sebelum', format: 'number' },
+      { key: 'after', header: 'Stok Sesudah', format: 'number' },
+      { key: 'unit', header: 'Satuan' },
+      { key: 'actor', header: 'Dilakukan Oleh' },
+      { key: 'note', header: 'Keterangan' },
+    ],
+    rows: filteredMovements.map((movement) => ({
+      time: movement.created_at,
+      material: movement.raw_material_name,
+      type: movementLabels[movement.type] ?? movement.type,
+      quantity: movement.quantity,
+      before: movement.previous_stock,
+      after: movement.current_stock,
+      unit: movement.unit,
+      actor: movement.creator_name || 'Admin Toko',
+      note: movement.note || '',
+    })),
   }
 
   // Helper badge for mutation type
@@ -527,17 +561,12 @@ export default function OwnerRawMaterialsHistoryClient({
               </select>
             </div>
 
-            {/* Export CSV button */}
-            <button
-              type="button"
-              onClick={handleExportCSV}
+            <OwnerReportExport
+              report={report}
               disabled={filteredMovements.length === 0}
+              label={`Ekspor (${filteredMovements.length})`}
               className="btn btn-secondary btn-sm"
-              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-            >
-              <Download size={14} />
-              Ekspor CSV ({filteredMovements.length})
-            </button>
+            />
           </div>
 
           {/* Table */}
@@ -844,4 +873,3 @@ export default function OwnerRawMaterialsHistoryClient({
     </div>
   )
 }
-
