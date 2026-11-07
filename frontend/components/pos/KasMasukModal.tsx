@@ -130,7 +130,7 @@ export function BukaShiftModal({ onSuccess, onCancel }: BukaShiftModalProps) {
     <div style={{
       position: 'fixed',
       inset: 0,
-      zIndex: 9999,
+      zIndex: 2147483000,
       background: 'rgba(15, 18, 24, 0.72)',
       backdropFilter: 'blur(8px)',
       WebkitBackdropFilter: 'blur(8px)',
@@ -836,7 +836,7 @@ export function TutupShiftModal({ activeShift, userId, onSuccess, onCancel }: Tu
     <div style={{
       position: 'fixed',
       inset: 0,
-      zIndex: 9999,
+      zIndex: 2147483000,
       background: 'rgba(15, 18, 24, 0.72)',
       backdropFilter: 'blur(8px)',
       WebkitBackdropFilter: 'blur(8px)',

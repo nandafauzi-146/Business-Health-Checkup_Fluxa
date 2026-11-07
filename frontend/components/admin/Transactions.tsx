@@ -467,7 +467,7 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
         <div
           className="modal-backdrop"
           onClick={e => e.target === e.currentTarget && setSelectedSale(null)}
-          style={{ zIndex: 1100 }}
+          style={{ zIndex: 2147483000 }}
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-rincian-title"
@@ -695,7 +695,7 @@ export default function AdminTransactionsClient({ initialSales }: { initialSales
 
       {/* Modal Dialog Konfirmasi Void */}
       {voidDialogOpen && selectedSale && (
-        <div className="modal-backdrop" style={{ zIndex: 1200 }} onClick={e => e.target === e.currentTarget && setVoidDialogOpen(false)}>
+        <div className="modal-backdrop" style={{ zIndex: 2147483100 }} onClick={e => e.target === e.currentTarget && setVoidDialogOpen(false)}>
           <div className="modal-content" style={{ maxWidth: 460 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--bad)' }}>
