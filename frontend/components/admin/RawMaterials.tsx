@@ -726,7 +726,7 @@ export default function RawMaterialsClient({
           position: 'fixed',
           bottom: 24,
           right: 24,
-          zIndex: 9999,
+          zIndex: 2147483646,
           padding: '12px 18px',
           background: toast.type === 'ok' ? 'var(--ok)' : 'var(--bad)',
           color: '#fff',

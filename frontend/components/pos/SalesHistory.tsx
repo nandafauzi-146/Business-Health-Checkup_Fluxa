@@ -526,6 +526,10 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
       {/* Toast Alert */}
       {toast && (
         <div style={{
+          position: 'fixed',
+          right: 24,
+          bottom: 24,
+          zIndex: 2147483646,
           padding: '12px 18px',
           borderRadius: 12,
           marginBottom: 16,
@@ -809,7 +813,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
         <div
           className="modal-backdrop"
           onClick={e => e.target === e.currentTarget && setSelectedSale(null)}
-          style={{ zIndex: 1100 }}
+          style={{ zIndex: 2147483000 }}
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-pos-detail-title"
@@ -1037,7 +1041,7 @@ export default function SalesHistoryClient({ initialSales }: { initialSales: Sal
         <div style={{
           position: 'fixed',
           inset: 0,
-          zIndex: 9999,
+          zIndex: 2147483000,
           background: 'rgba(15, 18, 24, 0.72)',
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
