@@ -982,7 +982,7 @@ export default function ShiftClient({
           role="dialog"
           aria-modal="true"
           style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
+            position: 'fixed', inset: 0, zIndex: 2147483000,
             background: 'rgba(15, 18, 24, 0.72)',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',

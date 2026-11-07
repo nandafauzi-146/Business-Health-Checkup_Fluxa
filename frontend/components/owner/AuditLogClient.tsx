@@ -1135,7 +1135,7 @@ export default function AuditLogClient({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 9999,
+          zIndex: 2147483000,
           padding: 16
         }}>
           <div style={{

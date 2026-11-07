@@ -780,7 +780,7 @@ export default function OwnerRawMaterialsHistoryClient({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000,
+          zIndex: 2147483000,
           padding: 16
         }}>
           <div style={{

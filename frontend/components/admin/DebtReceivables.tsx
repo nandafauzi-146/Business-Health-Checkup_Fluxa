@@ -482,7 +482,7 @@ export default function DebtReceivablesClient({
           position: 'fixed',
           bottom: 24,
           right: 24,
-          zIndex: 9999,
+          zIndex: 2147483646,
           background: toast.type === 'ok' ? 'var(--acc)' : 'var(--bad)',
           color: '#fff',
           padding: '12px 20px',

@@ -323,6 +323,10 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
       {/* Toast Alert */}
       {toast && (
         <div style={{
+          position: 'fixed',
+          top: 24,
+          right: 24,
+          zIndex: 2147483646,
           padding: '12px 18px',
           borderRadius: 12,
           marginBottom: 16,
@@ -646,7 +650,7 @@ export default function AdminDiscountsClient({ initialPromotions }: { initialPro
         <div style={{
           position: 'fixed',
           inset: 0,
-          zIndex: 9999,
+          zIndex: 2147483000,
           background: 'rgba(15, 18, 24, 0.72)',
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
