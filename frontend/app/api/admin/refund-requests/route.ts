@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       if (code === 'PGRST202' || code === '42883') {
         const { data: sale, error: saleError } = await supabase
           .from('sales')
-          .select('id, cashier_id, status')
+          .select('id, cashier_id, status, business_id')
           .eq('id', sale_id)
           .maybeSingle()
         if (saleError) {
@@ -118,6 +118,13 @@ export async function POST(request: Request) {
           return NextResponse.json(
             { error: 'Refund hanya dapat diajukan untuk transaksi yang telah selesai.' },
             { status: 409 },
+          )
+        }
+        if (!sale.business_id) {
+          console.error('Sale has no business_id; refusing to create an unscoped refund request:', sale_id)
+          return NextResponse.json(
+            { error: 'Bisnis transaksi belum dapat divalidasi untuk pengajuan refund.' },
+            { status: 503 },
           )
         }
 
@@ -145,6 +152,7 @@ export async function POST(request: Request) {
           .from('refund_requests')
           .insert({
             sale_id,
+            business_id: sale.business_id,
             requested_by: user.id,
             reason: reason.trim(),
             status: 'pending',

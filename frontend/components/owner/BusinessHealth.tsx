@@ -1,10 +1,18 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from 'recharts'
 import { Sparkles, RefreshCw, CheckCircle, AlertTriangle, Bot, Activity, Layers, ArrowUpRight, DollarSign, Calendar, Users, FileText, Building2 } from 'lucide-react'
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
 import { PageHeader } from '@/components/layout/Topbar'
+import {
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
+  ResponsiveContainer,
+  Tooltip,
+} from 'recharts'
 import { FinancialHealthInput, BusinessHealthDiagnosis } from '@intelligence/index'
 import { normalizeAiResponseText } from '@intelligence/ai/normalize-text'
 import { getUserFacingError } from '@/lib/user-facing-error'
@@ -178,8 +186,7 @@ export default function BusinessHealthClient({
 
   const radarData = dimensions.map(d => ({
     subject: d.dimension,
-    score: d.score,
-    fullMark: 100
+    score: d.score
   }))
 
   const scoreColor = (score: number) =>
@@ -280,19 +287,53 @@ export default function BusinessHealthClient({
 
         {/* Radar Chart 6 Dimensi */}
         <SectionCard title="Radar 6 Dimensi Kesehatan Bisnis">
-          <div style={{ height: 260, width: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData}>
-                <PolarGrid stroke="var(--line)" />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: 'var(--mute)', fontWeight: 600 }} />
-                <Radar name="Skor" dataKey="score" stroke="var(--acc)" fill="var(--acc)" fillOpacity={0.25} />
-                <Tooltip
-                  formatter={(val: any) => [`${val}/100`, 'Skor']}
-                  contentStyle={{ background: 'var(--panel)', color: 'var(--ink)', borderRadius: 8, border: '1px solid var(--line)', fontSize: 12 }}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
+          {radarData.length === 0 ? (
+            <div style={{ height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mute)', fontSize: 13 }}>
+              Data skor dimensi belum tersedia.
+            </div>
+          ) : (
+            <div
+              role="img"
+              aria-label="Radar skor kesehatan bisnis untuk enam dimensi"
+              style={{ width: '100%', height: 280, minWidth: 0 }}
+            >
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={280}>
+                <RadarChart data={radarData} outerRadius="62%" margin={{ top: 16, right: 28, bottom: 12, left: 28 }}>
+                  <PolarGrid stroke="var(--line)" />
+                  <PolarAngleAxis
+                    dataKey="subject"
+                    tick={{ fill: 'var(--mute)', fontSize: 10, fontWeight: 600 }}
+                  />
+                  <PolarRadiusAxis
+                    angle={30}
+                    domain={[0, 100]}
+                    tick={false}
+                    axisLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--line)',
+                      borderRadius: 10,
+                      color: 'var(--ink)',
+                      fontSize: 12,
+                    }}
+                    formatter={value => [`${Number(value)}/100`, 'Skor']}
+                  />
+                  <Radar
+                    name="Skor kesehatan"
+                    dataKey="score"
+                    stroke="var(--acc)"
+                    fill="var(--acc)"
+                    fillOpacity={0.24}
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: 'var(--acc)' }}
+                    isAnimationActive={false}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </SectionCard>
       </div>
 

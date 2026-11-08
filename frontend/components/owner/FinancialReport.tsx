@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts'
-import { DollarSign, TrendingUp, TrendingDown, Percent, ArrowUpRight } from 'lucide-react'
+import { DollarSign, TrendingUp, TrendingDown, Percent } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
 import { SectionCard, FormatRupiah } from '@/components/ui/Cards'
+import OwnerBarChart from '@/components/owner/OwnerBarChart'
 import OwnerReportExport from '@/components/owner/OwnerReportExport'
 import type { OwnerReport } from '@/lib/owner-report-export'
 
@@ -18,6 +18,12 @@ interface MonthlyData {
   net_profit: number
   margin_gross: number
   margin_net: number
+}
+
+function formatMonthLabel(month: string) {
+  const [year, monthNumber] = month.split('-').map(Number)
+  return new Intl.DateTimeFormat('id-ID', { month: 'short', timeZone: 'Asia/Jakarta' })
+    .format(new Date(Date.UTC(year, monthNumber - 1, 1, 12)))
 }
 
 export default function FinancialReportClient({
@@ -71,8 +77,8 @@ export default function FinancialReportClient({
         new Intl.DateTimeFormat('id-ID', { month: 'short', timeZone: 'Asia/Jakarta' })
           .format(new Date(`${report.month}-01T12:00:00+07:00`))),
       series: [
-        { name: 'Laba kotor', values: trendReports.map((report) => report.gross_profit), color: '#14b8a6' },
-        { name: 'Laba bersih', values: trendReports.map((report) => report.net_profit), color: '#2563eb' },
+        { name: 'Laba kotor', values: trendReports.map((report) => report.gross_profit), color: '#2864ea' },
+        { name: 'Laba bersih', values: trendReports.map((report) => report.net_profit), color: '#22b8a7' },
       ],
     },
   }
@@ -202,27 +208,35 @@ export default function FinancialReportClient({
             </SectionCard>
 
             <SectionCard title="Historis Tren Margin Laba">
-              <div style={{ height: 260, width: '100%', marginTop: 8 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={reports.slice().reverse()} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
-                    <XAxis dataKey="month" stroke="var(--mute)" fontSize={11} tickLine={false} />
-                    <YAxis
-                      stroke="var(--mute)"
-                      fontSize={11}
-                      tickLine={false}
-                      tickFormatter={val => `Rp ${(val / 1000).toLocaleString('id-ID')}k`}
-                    />
-                    <Tooltip
-                      formatter={(val: any) => [`Rp ${Number(val).toLocaleString('id-ID')}`, '']}
-                      contentStyle={{ background: 'var(--panel)', color: 'var(--ink)', borderRadius: 8, border: '1px solid var(--line)' }}
-                    />
-                    <Legend />
-                    <Bar dataKey="gross_profit" name="Laba Kotor" fill="var(--ok)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="net_profit" name="Laba Bersih" fill="var(--acc)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              {trendReports.length === 0 ? (
+                <div role="status" style={{ height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mute)', fontSize: 13 }}>
+                  Belum ada data historis margin laba untuk ditampilkan.
+                </div>
+              ) : (
+                <OwnerBarChart
+                  data={trendReports.map(report => ({
+                    label: formatMonthLabel(report.month),
+                    values: { gross: report.margin_gross, net: report.margin_net },
+                  }))}
+                  series={[
+                    {
+                      key: 'gross',
+                      label: 'Margin Laba Kotor',
+                      color: '#2864ea',
+                      formatValue: value => `${value.toFixed(1)}%`,
+                    },
+                    {
+                      key: 'net',
+                      label: 'Margin Laba Bersih',
+                      color: '#22b8a7',
+                      formatValue: value => `${value.toFixed(1)}%`,
+                    },
+                  ]}
+                  ariaLabel="Grafik historis margin laba kotor dan margin laba bersih"
+                  height={260}
+                  axisFormatter={value => `${value.toFixed(0)}%`}
+                />
+              )}
             </SectionCard>
           </div>
         </>

@@ -14,21 +14,18 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useId } from 'react'
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
+  Area,
+  AreaChart,
   Cell,
-  ComposedChart,
-  Line,
   Pie,
   PieChart,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
-  YAxis,
 } from 'recharts'
+import OwnerBarChart from '@/components/owner/OwnerBarChart'
+import OwnerTrendChart from '@/components/owner/OwnerTrendChart'
 import { SectionCard, StatusTag } from '@/components/ui/Cards'
 import type { Database, Json } from '@/lib/supabase/types'
 import OwnerReportExport from '@/components/owner/OwnerReportExport'
@@ -78,7 +75,7 @@ interface Props {
   generatedBy?: string
 }
 
-const CATEGORIES_PALETTE = ['#4f83ff', '#8b5cf6', '#20d9f5', '#fbbf24', '#34d399', '#fb7185']
+const CATEGORIES_PALETTE = ['#2864ea', '#8b5cf6', '#20d9f5', '#fbbf24', '#34d399', '#fb7185']
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
   style: 'currency',
@@ -109,6 +106,46 @@ function formatDay(value: string) {
     day: 'numeric',
     timeZone: 'Asia/Jakarta',
   }).format(new Date(`${value}T12:00:00+07:00`))
+}
+
+function CategoryDonut({ categories }: { categories: CategorySale[] }) {
+  const chartData = categories
+    .map(category => ({ ...category, value: Math.max(0, category.revenue) }))
+    .filter(category => category.value > 0)
+
+  return (
+    <div role="img" aria-label="Distribusi omzet berdasarkan kategori penjualan" style={{ width: '100%', height: 150, minWidth: 0 }}>
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={150}>
+        <PieChart>
+          <Pie
+            data={chartData}
+            dataKey="value"
+            nameKey="name"
+            innerRadius="58%"
+            outerRadius="82%"
+            paddingAngle={2}
+            stroke="var(--panel)"
+            strokeWidth={2}
+            isAnimationActive={false}
+          >
+            {chartData.map((category, index) => (
+              <Cell key={category.id} fill={CATEGORIES_PALETTE[index % CATEGORIES_PALETTE.length]} />
+            ))}
+          </Pie>
+          <Tooltip
+            contentStyle={{
+              background: 'var(--panel)',
+              border: '1px solid var(--line)',
+              borderRadius: 10,
+              color: 'var(--ink)',
+              fontSize: 12,
+            }}
+            formatter={value => [formatRp(Number(value)), 'Omzet']}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  )
 }
 
 function formatTime(value: string) {
@@ -142,35 +179,33 @@ function getHealthDimensions(metrics: Json | null): HealthDimension[] {
   })
 }
 
-function usePrefersReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true)
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches)
-    updatePreference()
-    mediaQuery.addEventListener('change', updatePreference)
-    return () => mediaQuery.removeEventListener('change', updatePreference)
-  }, [])
-
-  return prefersReducedMotion
-}
-
 function Sparkline({ values, color }: { values: number[]; color: string }) {
+  const gradientId = `owner-sparkline-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
   if (values.length < 2 || values.every((value) => value === 0)) return null
 
-  const minimum = Math.min(...values)
-  const range = Math.max(...values) - minimum || 1
-  const points = values.map((value, index) => {
-    const x = (index / (values.length - 1)) * 100
-    const y = 30 - ((value - minimum) / range) * 24
-    return `${x},${y}`
-  })
-
   return (
-    <svg className="owner-kpi-sparkline" viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true">
-      <polyline points={points.join(' ')} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <div className="owner-kpi-sparkline" aria-hidden="true">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={29}>
+        <AreaChart data={values.map(value => ({ value }))} margin={{ top: 3, right: 2, bottom: 0, left: 2 }}>
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={color}
+            strokeWidth={2}
+            fill={`url(#${gradientId})`}
+            dot={false}
+            activeDot={false}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
   )
 }
 
@@ -218,7 +253,6 @@ export default function OwnerDashboardClient({
   businessName,
   generatedBy,
 }: Props) {
-  const prefersReducedMotion = usePrefersReducedMotion()
   const overallScore = latestCheckup?.overall_score ?? null
   const healthDimensions = getHealthDimensions(latestCheckup?.metrics ?? null)
   const monthLabel = new Intl.DateTimeFormat('id-ID', {
@@ -284,8 +318,8 @@ export default function OwnerDashboardClient({
       title: 'Tren Omzet dan Laba Kotor',
       categories: monthlySummary.map((month) => formatMonth(month.month)),
       series: [
-        { name: 'Omzet', values: monthlySummary.map((month) => month.gross_revenue), color: '#2563eb' },
-        { name: 'Laba kotor', values: monthlySummary.map((month) => month.gross_profit), color: '#14b8a6' },
+        { name: 'Omzet', values: monthlySummary.map((month) => month.gross_revenue), color: '#2864ea' },
+        { name: 'Laba kotor', values: monthlySummary.map((month) => month.gross_profit), color: '#22b8a7' },
       ],
     },
   }
@@ -354,29 +388,31 @@ export default function OwnerDashboardClient({
             <SectionCard title="Tren Omzet & Transaksi">
               <p className="owner-panel-subtitle">Performa penjualan 7 hari terakhir</p>
               {dailyChartData.length > 0 ? (
-                <>
-                  <div className="owner-chart-legend">
-                    <span><i className="owner-legend-revenue" /> Omzet</span>
-                    <span><i className="owner-legend-transactions" /> Transaksi</span>
-                  </div>
-                  <ResponsiveContainer width="100%" height={240}>
-                    <ComposedChart data={dailyChartData} margin={{ top: 12, right: 0, left: -10, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 5" stroke="var(--line)" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--mute)' }} axisLine={false} tickLine={false} />
-                      <YAxis yAxisId="revenue" tick={{ fontSize: 9, fill: 'var(--mute)' }} axisLine={false} tickLine={false} tickFormatter={formatCompact} width={48} />
-                      <YAxis yAxisId="transactions" orientation="right" allowDecimals={false} hide />
-                      <Tooltip
-                        formatter={(value, name) => [
-                          name === 'revenue' ? formatRp(Number(value ?? 0)) : Number(value ?? 0).toLocaleString('id-ID'),
-                          name === 'revenue' ? 'Omzet' : 'Transaksi',
-                        ]}
-                        contentStyle={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 12, fontSize: 11 }}
-                      />
-                      <Bar yAxisId="revenue" dataKey="revenue" name="Omzet" fill="var(--acc)" radius={[5, 5, 0, 0]} isAnimationActive={!prefersReducedMotion} animationDuration={650} />
-                      <Line yAxisId="transactions" dataKey="transactions" name="Transaksi" type="monotone" stroke="#a78bfa" strokeWidth={2} dot={{ r: 3, fill: '#a78bfa', strokeWidth: 0 }} activeDot={{ r: 5 }} isAnimationActive={!prefersReducedMotion} animationDuration={750} />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </>
+                <OwnerTrendChart
+                  data={dailyChartData.map(day => ({
+                    label: day.name,
+                    values: { revenue: day.revenue, transactions: day.transactions },
+                  }))}
+                  series={[
+                    {
+                      key: 'revenue',
+                      label: 'Omzet',
+                      color: '#20d9f5',
+                      formatValue: value => formatRp(value),
+                    },
+                    {
+                      key: 'transactions',
+                      label: 'Transaksi',
+                      color: '#a78bfa',
+                      axis: 'secondary',
+                      formatValue: value => `${Math.round(value)} transaksi`,
+                      formatAxisValue: value => `${Math.round(value)}`,
+                    },
+                  ]}
+                  ariaLabel="Grafik tren omzet dan jumlah transaksi tujuh hari terakhir"
+                  height={250}
+                  axisFormatter={formatCompact}
+                />
               ) : (
                 <div className="dashboard-empty-state">Belum ada transaksi pada 7 hari terakhir.</div>
               )}
@@ -438,19 +474,7 @@ export default function OwnerDashboardClient({
               {totalCategoryRevenue > 0 ? (
                 <div className="owner-category-chart">
                   <div className="owner-category-donut">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={categorySales} dataKey="revenue" nameKey="name" innerRadius="66%" outerRadius="92%" paddingAngle={3} stroke="none" isAnimationActive={!prefersReducedMotion} animationDuration={700}>
-                          {categorySales.map((category, index) => (
-                            <Cell key={category.id} fill={CATEGORIES_PALETTE[index % CATEGORIES_PALETTE.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(value) => [formatRp(Number(value ?? 0)), 'Omzet']}
-                          contentStyle={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 12, fontSize: 11 }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
+                    <CategoryDonut categories={categorySales} />
                     <div className="owner-category-total"><span>Total</span><strong>{formatRp(totalCategoryRevenue)}</strong></div>
                   </div>
                   <div className="owner-category-legend">
@@ -472,19 +496,29 @@ export default function OwnerDashboardClient({
           {monthlyChartData.length > 0 && (
             <SectionCard title="Ringkasan Keuangan Bulanan">
               <p className="owner-panel-subtitle">Perbandingan omzet dan laba kotor dari data transaksi</p>
-              <ResponsiveContainer width="100%" height={188}>
-                <BarChart data={monthlyChartData} margin={{ top: 8, right: 8, left: -8, bottom: 0 }} barGap={6}>
-                  <CartesianGrid strokeDasharray="3 5" stroke="var(--line)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--mute)' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 9, fill: 'var(--mute)' }} axisLine={false} tickLine={false} tickFormatter={formatCompact} width={48} />
-                  <Tooltip
-                    formatter={(value, name) => [formatRp(Number(value ?? 0)), name === 'revenue' ? 'Omzet' : 'Laba kotor']}
-                    contentStyle={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 12, fontSize: 11 }}
-                  />
-                  <Bar dataKey="revenue" name="Omzet" fill="var(--acc)" radius={[5, 5, 0, 0]} isAnimationActive={!prefersReducedMotion} animationDuration={650} />
-                  <Bar dataKey="profit" name="Laba kotor" fill="#22d3ee" radius={[5, 5, 0, 0]} isAnimationActive={!prefersReducedMotion} animationDuration={720} />
-                </BarChart>
-              </ResponsiveContainer>
+              <OwnerBarChart
+                data={monthlyChartData.map(month => ({
+                  label: month.name,
+                  values: { revenue: month.revenue, profit: month.profit },
+                }))}
+                series={[
+                  {
+                    key: 'revenue',
+                    label: 'Omzet',
+                    color: '#20d9f5',
+                    formatValue: value => formatRp(value),
+                  },
+                  {
+                    key: 'profit',
+                    label: 'Laba kotor',
+                    color: '#22d3a6',
+                    formatValue: value => formatRp(value),
+                  },
+                ]}
+                ariaLabel="Grafik ringkasan omzet dan laba kotor bulanan"
+                height={230}
+                axisFormatter={formatCompact}
+              />
             </SectionCard>
           )}
         </main>

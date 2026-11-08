@@ -134,33 +134,66 @@ function reportChartMarkup(chart?: ReportChart) {
   if (!chart || chart.categories.length === 0 || chart.series.length === 0) return ''
 
   const width = 920
+  const height = 218
   const plotTop = 18
-  const plotHeight = 150
-  const plotLeft = 32
-  const plotWidth = width - plotLeft - 16
-  const values = chart.series.flatMap((series) => series.values)
+  const plotBottom = 174
+  const plotHeight = plotBottom - plotTop
+  const plotLeft = 54
+  const plotRight = width - 38
+  const plotWidth = plotRight - plotLeft
+  const values = chart.series.flatMap((series) =>
+    chart.categories.map((_, index) => series.values[index] ?? 0)
+  )
   const minimum = Math.min(0, ...values)
   const maximum = Math.max(0, ...values)
   const range = maximum - minimum || 1
   const baseline = plotTop + (maximum / range) * plotHeight
-  const groupWidth = plotWidth / chart.categories.length
-  const barWidth = Math.min(28, groupWidth / (chart.series.length + 1))
-  const bars = chart.categories.flatMap((category, categoryIndex) =>
-    chart.series.map((series, seriesIndex) => {
-      const value = series.values[categoryIndex] ?? 0
-      const barHeight = Math.abs(value / range) * plotHeight
-      const x = plotLeft + categoryIndex * groupWidth
-        + (groupWidth - barWidth * chart.series.length) / 2
-        + seriesIndex * barWidth
-      const y = value >= 0 ? baseline - barHeight : baseline
-      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(3, barWidth - 3).toFixed(1)}" height="${Math.max(1, barHeight).toFixed(1)}" rx="3" fill="${escapeHtml(series.color)}"><title>${escapeHtml(series.name)} · ${escapeHtml(category)}: ${escapeHtml(formatSummaryValue({ label: '', value, format: 'currency' }))}</title></rect>`
-    })).join('')
+  const x = (index: number) => plotLeft + (
+    chart.categories.length === 1
+      ? plotWidth / 2
+      : (index / (chart.categories.length - 1)) * plotWidth
+  )
+  const y = (value: number) => plotTop + ((maximum - value) / range) * plotHeight
+  const formatAxisValue = (value: number) => {
+    const sign = value < 0 ? '-' : ''
+    const amount = Math.abs(value)
+    if (amount >= 1_000_000) return `${sign}Rp ${(amount / 1_000_000).toFixed(1)} jt`
+    if (amount >= 1_000) return `${sign}Rp ${Math.round(amount / 1_000)} rb`
+    return `${sign}Rp ${Math.round(amount).toLocaleString('id-ID')}`
+  }
+  const grid = [0, 0.25, 0.5, 0.75, 1].map((level) => {
+    const value = minimum + range * (1 - level)
+    const lineY = plotTop + plotHeight * level
+    return `<g><line x1="${plotLeft}" y1="${lineY.toFixed(1)}" x2="${plotRight}" y2="${lineY.toFixed(1)}" stroke="#e2e8f0" stroke-dasharray="${level === 1 ? '' : '4 6'}"/><text x="${plotLeft - 10}" y="${(lineY + 3).toFixed(1)}" text-anchor="end">${escapeHtml(formatAxisValue(value))}</text></g>`
+  }).join('')
+  const seriesMarkup = chart.series.map((series, seriesIndex) => {
+    const points = chart.categories.map((_, index) => ({
+      x: x(index),
+      y: y(series.values[index] ?? 0),
+    }))
+    const line = points.reduce((path, point, index) => {
+      if (index === 0) return `M ${point.x.toFixed(1)} ${point.y.toFixed(1)}`
+      const previous = points[index - 1]
+      const beforePrevious = points[index - 2] ?? previous
+      const next = points[index + 1] ?? point
+      return `${path} C ${(previous.x + (point.x - beforePrevious.x) / 6).toFixed(1)} ${(previous.y + (point.y - beforePrevious.y) / 6).toFixed(1)}, ${(point.x - (next.x - previous.x) / 6).toFixed(1)} ${(point.y - (next.y - previous.y) / 6).toFixed(1)}, ${point.x.toFixed(1)} ${point.y.toFixed(1)}`
+    }, '')
+    const area = `${line} L ${points[points.length - 1].x.toFixed(1)} ${baseline.toFixed(1)} L ${points[0].x.toFixed(1)} ${baseline.toFixed(1)} Z`
+    const color = escapeHtml(series.color)
+    const gradientId = `report-chart-gradient-${seriesIndex}`
+    const latest = points[points.length - 1]
+    const pointTitles = points.map((point, index) => {
+      const value = series.values[index] ?? 0
+      return `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="9" fill="transparent"><title>${escapeHtml(series.name)} · ${escapeHtml(chart.categories[index])}: ${escapeHtml(formatSummaryValue({ label: '', value, format: 'currency' }))}</title></circle>`
+    }).join('')
+    return `<defs><linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity=".2"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#${gradientId})"/><path d="${line}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${pointTitles}<circle cx="${latest.x.toFixed(1)}" cy="${latest.y.toFixed(1)}" r="10" fill="none" stroke="${color}" stroke-opacity=".28" stroke-width="5"/><circle cx="${latest.x.toFixed(1)}" cy="${latest.y.toFixed(1)}" r="5" fill="${color}" stroke="#fff" stroke-width="2"/>`
+  }).join('')
   const labels = chart.categories.map((category, index) =>
-    `<text x="${(plotLeft + index * groupWidth + groupWidth / 2).toFixed(1)}" y="${plotTop + plotHeight + 20}" text-anchor="middle">${escapeHtml(category.slice(0, 16))}</text>`).join('')
+    `<text x="${x(index).toFixed(1)}" y="${height - 8}" text-anchor="middle">${escapeHtml(category.slice(0, 16))}</text>`).join('')
   const legend = chart.series.map((series) =>
     `<span><i style="background:${escapeHtml(series.color)}"></i>${escapeHtml(series.name)}</span>`).join('')
 
-  return `<section class="chart-section"><h2>${escapeHtml(chart.title)}</h2><div class="chart-legend">${legend}</div><svg viewBox="0 0 ${width} 198" role="img" aria-label="${escapeHtml(chart.title)}"><line x1="${plotLeft}" y1="${baseline.toFixed(1)}" x2="${width - 16}" y2="${baseline.toFixed(1)}" stroke="#cbd5e1" stroke-width="1"/>${bars}${labels}</svg></section>`
+  return `<section class="chart-section"><h2>${escapeHtml(chart.title)}</h2><div class="chart-legend">${legend}</div><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(chart.title)}">${grid}${seriesMarkup}${labels}</svg></section>`
 }
 
 function csvCell(value: ReportValue, column?: ReportColumn) {
@@ -487,7 +520,7 @@ export function printReportPdf(report: OwnerReport) {
           .chart-section svg text { fill: #526078; font: 9px Arial, sans-serif; }
           .chart-legend { display: flex; flex-wrap: wrap; gap: 12px; color: #526078; font-size: 9px; }
           .chart-legend span { display: inline-flex; align-items: center; gap: 5px; }
-          .chart-legend i { width: 8px; height: 8px; border-radius: 2px; }
+          .chart-legend i { width: 16px; height: 3px; border-radius: 2px; }
           h2 { margin: 0 0 9px; font-size: 14px; }
           table { width: 100%; border-collapse: collapse; table-layout: auto; }
           thead { display: table-header-group; }

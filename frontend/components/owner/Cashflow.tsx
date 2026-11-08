@@ -1,10 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts'
-import { TrendingUp, TrendingDown, DollarSign, Wallet, ArrowUpRight, ArrowDownLeft, Calendar } from 'lucide-react'
+import { Wallet, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 import { PageHeader } from '@/components/layout/Topbar'
-import { KpiCard, SectionCard, FormatRupiah } from '@/components/ui/Cards'
+import { SectionCard, FormatRupiah } from '@/components/ui/Cards'
+import OwnerTrendChart from '@/components/owner/OwnerTrendChart'
 
 interface CashflowEntry {
   date: string
@@ -13,7 +12,8 @@ interface CashflowEntry {
   net: number
 }
 
-interface CashflowProps {
+export interface CashflowProps {
+  periodLabel: string
   totalIn: number
   totalOut: number
   netCashflow: number
@@ -28,7 +28,19 @@ interface CashflowProps {
   }[]
 }
 
+function formatCompactRupiah(amount: number) {
+  if (amount >= 1_000_000) return `Rp ${(amount / 1_000_000).toFixed(1)} jt`
+  if (amount >= 1_000) return `Rp ${Math.round(amount / 1_000)} rb`
+  return `Rp ${Math.round(amount).toLocaleString('id-ID')}`
+}
+
+function formatChartDate(date: string) {
+  const [, month, day] = date.split('-')
+  return `${day}/${month}`
+}
+
 export default function CashflowClient({
+  periodLabel,
   totalIn,
   totalOut,
   netCashflow,
@@ -48,7 +60,7 @@ export default function CashflowClient({
           <div className="kpi-icon" style={{ background: 'var(--oks)', color: 'var(--ok)' }}>
             <ArrowDownLeft size={20} />
           </div>
-          <div className="kpi-label">Total Kas Masuk</div>
+          <div className="kpi-label">Total Kas Masuk · {periodLabel}</div>
           <div className="kpi-value" style={{ color: 'var(--ok)' }}>
             <FormatRupiah amount={totalIn} />
           </div>
@@ -59,7 +71,7 @@ export default function CashflowClient({
           <div className="kpi-icon" style={{ background: 'var(--bads)', color: 'var(--bad)' }}>
             <ArrowUpRight size={20} />
           </div>
-          <div className="kpi-label">Total Kas Keluar</div>
+          <div className="kpi-label">Total Kas Keluar · {periodLabel}</div>
           <div className="kpi-value" style={{ color: 'var(--bad)' }}>
             <FormatRupiah amount={totalOut} />
           </div>
@@ -70,7 +82,7 @@ export default function CashflowClient({
           <div className="kpi-icon" style={{ background: netCashflow >= 0 ? 'var(--oks)' : 'var(--bads)', color: netCashflow >= 0 ? 'var(--ok)' : 'var(--bad)' }}>
             <Wallet size={20} />
           </div>
-          <div className="kpi-label">Net Cash Flow (Surplus/Defisit)</div>
+          <div className="kpi-label">Net Cash Flow · {periodLabel}</div>
           <div className="kpi-value" style={{ color: netCashflow >= 0 ? 'var(--ok)' : 'var(--bad)' }}>
             <FormatRupiah amount={netCashflow} />
           </div>
@@ -80,28 +92,39 @@ export default function CashflowClient({
 
       {/* Grafik Arus Kas Masuk vs Keluar */}
       <div style={{ marginBottom: 20 }}>
-        <SectionCard title="Tren Arus Kas Harian (Kas Masuk vs Kas Keluar)">
-          <div style={{ height: 320, width: '100%', marginTop: 12 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
-                <XAxis dataKey="date" stroke="var(--mute)" fontSize={12} tickLine={false} />
-                <YAxis
-                  stroke="var(--mute)"
-                  fontSize={12}
-                  tickLine={false}
-                  tickFormatter={val => `Rp ${(val / 1000).toLocaleString('id-ID')}k`}
-                />
-                <Tooltip
-                  formatter={(val: any) => [`Rp ${Number(val).toLocaleString('id-ID')}`, '']}
-                  contentStyle={{ background: 'var(--panel)', color: 'var(--ink)', borderRadius: 8, border: '1px solid var(--line)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                />
-                <Legend />
-                <Bar dataKey="cash_in" name="Kas Masuk" fill="var(--ok)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="cash_out" name="Kas Keluar" fill="var(--bad)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        <SectionCard
+          title="Tren Arus Kas Harian (Kas Masuk vs Kas Keluar)"
+          action={<span style={{ fontSize: 11, color: 'var(--mute)' }}>{periodLabel}</span>}
+        >
+          {chartData.length === 0 ? (
+            <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mute)', fontSize: 13 }}>
+              Belum ada data arus kas untuk ditampilkan.
+            </div>
+          ) : (
+            <OwnerTrendChart
+              data={chartData.map(entry => ({
+                label: formatChartDate(entry.date),
+                values: { cashIn: entry.cash_in, cashOut: entry.cash_out },
+              }))}
+              series={[
+                {
+                  key: 'cashIn',
+                  label: 'Kas Masuk',
+                  color: 'var(--ok)',
+                  formatValue: value => formatCompactRupiah(value),
+                },
+                {
+                  key: 'cashOut',
+                  label: 'Kas Keluar',
+                  color: 'var(--bad)',
+                  formatValue: value => formatCompactRupiah(value),
+                },
+              ]}
+              ariaLabel="Grafik tren kas masuk dan kas keluar harian"
+              height={280}
+              axisFormatter={formatCompactRupiah}
+            />
+          )}
         </SectionCard>
       </div>
 
