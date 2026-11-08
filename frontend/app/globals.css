@@ -6032,8 +6032,10 @@ tr:hover td,
 }
 
 .owner-kpi-sparkline {
+  display: block;
   width: 42%;
   height: 29px;
+  min-width: 0;
   overflow: visible;
   flex: 0 0 42%;
 }
@@ -6077,18 +6079,6 @@ tr:hover td,
   color: var(--mute);
   font-size: 9px;
   white-space: nowrap;
-}
-
-.owner-chart-legend {
-  justify-content: flex-start;
-  margin: 0 0 -6px;
-}
-
-.owner-legend-transactions {
-  width: 12px;
-  height: 2px;
-  border-radius: 0;
-  background: #a78bfa;
 }
 
 .owner-dashboard .section-header {
@@ -6387,35 +6377,6 @@ tr:hover td,
   color: var(--ink);
   font-size: 14px;
   font-weight: 650;
-}
-
-.owner-chart-legend {
-  display: flex;
-  justify-content: flex-end;
-  gap: 16px;
-  margin: -5px 2px 0;
-  color: var(--mute);
-  font-size: 11px;
-}
-
-.owner-chart-legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.owner-chart-legend i {
-  width: 9px;
-  height: 9px;
-  border-radius: 3px;
-}
-
-.owner-legend-revenue {
-  background: var(--acc);
-}
-
-.owner-legend-profit {
-  background: #22d3ee;
 }
 
 .owner-financial-summary {
@@ -6779,7 +6740,7 @@ tr:hover td,
   }
 
   .owner-dashboard-grid {
-    grid-template-columns: minmax(0, 1.7fr) minmax(265px, .9fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -7386,8 +7347,7 @@ canvas {
   padding-bottom: 96px;
 }
 
-.recharts-responsive-container,
-.recharts-wrapper {
+.recharts-responsive-container {
   max-width: 100%;
 }
 

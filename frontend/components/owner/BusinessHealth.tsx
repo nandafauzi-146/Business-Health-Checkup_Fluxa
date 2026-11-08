@@ -4,6 +4,15 @@ import { useState, useCallback, useEffect } from 'react'
 import { Sparkles, RefreshCw, CheckCircle, AlertTriangle, Bot, Activity, Layers, ArrowUpRight, DollarSign, Calendar, Users, FileText, Building2 } from 'lucide-react'
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
 import { PageHeader } from '@/components/layout/Topbar'
+import {
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
+  ResponsiveContainer,
+  Tooltip,
+} from 'recharts'
 import { FinancialHealthInput, BusinessHealthDiagnosis } from '@intelligence/index'
 import { normalizeAiResponseText } from '@intelligence/ai/normalize-text'
 import { getUserFacingError } from '@/lib/user-facing-error'
@@ -86,19 +95,6 @@ function FormattedAiNarration({ text }: { text: string }) {
       })}
     </div>
   )
-}
-
-function getRadarPoints(scores: number[], radius: number) {
-  const centerX = 300
-  const centerY = 150
-
-  return scores.map((score, index) => {
-    const angle = -Math.PI / 2 + (index * 2 * Math.PI) / scores.length
-    const pointRadius = radius * Math.min(100, Math.max(0, score)) / 100
-    const x = centerX + Math.cos(angle) * pointRadius
-    const y = centerY + Math.sin(angle) * pointRadius
-    return `${x},${y}`
-  }).join(' ')
 }
 
 export default function BusinessHealthClient({
@@ -296,72 +292,47 @@ export default function BusinessHealthClient({
               Data skor dimensi belum tersedia.
             </div>
           ) : (
-            <svg
-              viewBox="0 0 600 300"
+            <div
               role="img"
               aria-label="Radar skor kesehatan bisnis untuk enam dimensi"
-              style={{ display: 'block', width: '100%', height: 260, overflow: 'visible' }}
+              style={{ width: '100%', height: 280, minWidth: 0 }}
             >
-              {[20, 40, 60, 80, 100].map(level => (
-                <polygon
-                  key={level}
-                  points={getRadarPoints(radarData.map(() => level), 92)}
-                  fill="none"
-                  stroke="var(--line)"
-                  strokeWidth={1}
-                />
-              ))}
-              {radarData.map((dimension, index) => {
-                const angle = -Math.PI / 2 + (index * 2 * Math.PI) / radarData.length
-                const axisX = 300 + Math.cos(angle) * 92
-                const axisY = 150 + Math.sin(angle) * 92
-                const labelX = 300 + Math.cos(angle) * 126
-                const labelY = 150 + Math.sin(angle) * 126
-                const textAnchor = Math.cos(angle) > 0.25
-                  ? 'start'
-                  : Math.cos(angle) < -0.25
-                    ? 'end'
-                    : 'middle'
-
-                return (
-                  <g key={dimension.subject}>
-                    <line x1={300} y1={150} x2={axisX} y2={axisY} stroke="var(--line)" strokeWidth={1} />
-                    <text
-                      x={labelX}
-                      y={labelY}
-                      textAnchor={textAnchor}
-                      fill="var(--mute)"
-                      fontSize={11}
-                      fontWeight={600}
-                    >
-                      <tspan x={labelX}>{dimension.subject}</tspan>
-                      <tspan x={labelX} dy={14}>{dimension.score}/100</tspan>
-                    </text>
-                  </g>
-                )
-              })}
-              <polygon
-                points={getRadarPoints(radarData.map(dimension => dimension.score), 92)}
-                fill="var(--acc)"
-                fillOpacity={0.25}
-                stroke="var(--acc)"
-                strokeWidth={2}
-              />
-              {radarData.map((dimension, index) => {
-                const angle = -Math.PI / 2 + (index * 2 * Math.PI) / radarData.length
-                const radius = 92 * Math.min(100, Math.max(0, dimension.score)) / 100
-
-                return (
-                  <circle
-                    key={dimension.subject}
-                    cx={300 + Math.cos(angle) * radius}
-                    cy={150 + Math.sin(angle) * radius}
-                    r={3}
-                    fill="var(--acc)"
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={280}>
+                <RadarChart data={radarData} outerRadius="62%" margin={{ top: 16, right: 28, bottom: 12, left: 28 }}>
+                  <PolarGrid stroke="var(--line)" />
+                  <PolarAngleAxis
+                    dataKey="subject"
+                    tick={{ fill: 'var(--mute)', fontSize: 10, fontWeight: 600 }}
                   />
-                )
-              })}
-            </svg>
+                  <PolarRadiusAxis
+                    angle={30}
+                    domain={[0, 100]}
+                    tick={false}
+                    axisLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--line)',
+                      borderRadius: 10,
+                      color: 'var(--ink)',
+                      fontSize: 12,
+                    }}
+                    formatter={value => [`${Number(value)}/100`, 'Skor']}
+                  />
+                  <Radar
+                    name="Skor kesehatan"
+                    dataKey="score"
+                    stroke="var(--acc)"
+                    fill="var(--acc)"
+                    fillOpacity={0.24}
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: 'var(--acc)' }}
+                    isAnimationActive={false}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </SectionCard>
       </div>
