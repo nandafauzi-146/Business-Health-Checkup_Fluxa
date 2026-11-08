@@ -1,6 +1,7 @@
 'use client'
 
 import useSWR from 'swr'
+import { createClient } from '@/lib/supabase/client'
 
 export interface RefundRequest {
   id: string
@@ -25,7 +26,15 @@ interface RefundRequestsResponse {
 }
 
 async function fetchRefundRequests(url: string): Promise<RefundRequestsResponse> {
-  const response = await fetch(url, { cache: 'no-store' })
+  let response = await fetch(url, { cache: 'no-store', credentials: 'same-origin' })
+
+  if (response.status === 401) {
+    const { data, error } = await createClient().auth.refreshSession()
+    if (!error && data.session) {
+      response = await fetch(url, { cache: 'no-store', credentials: 'same-origin' })
+    }
+  }
+
   const result = await response.json() as RefundRequestsResponse & { error?: string }
   if (!response.ok || !Array.isArray(result.requests)) {
     throw new Error(result.error || 'Pengajuan refund belum dapat dimuat.')
