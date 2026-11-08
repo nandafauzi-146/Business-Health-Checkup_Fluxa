@@ -1,4 +1,5 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
+import { generateQrSvgDataUrl } from './qr-generator'
 
 export type MidtransPaymentStatus =
   | 'pending'
@@ -125,6 +126,8 @@ export type CoreApiChargeResult = {
   orderId: string
   // QRIS specific
   qrCodeUrl?: string
+  qrString?: string
+  paymentUrl?: string
   // Bank Transfer / VA specific
   vaNumber?: string
   vaBank?: string
@@ -222,14 +225,54 @@ export async function createCoreApiCharge(
     rawData: data,
   }
 
-  // Extract QRIS QR code URL from actions array
+  // Extract QRIS details: QR image (with Server Key), raw qr_string, and alternative payment url
   if (paymentMethod === 'qris') {
+    if (typeof data.qr_string === 'string') {
+      result.qrString = data.qr_string
+    }
+
     const actions = Array.isArray(data.actions) ? data.actions as Record<string, unknown>[] : []
     const generateQr = actions.find(
       (a) => a.name === 'generate-qr-code' && typeof a.url === 'string'
     )
-    if (generateQr) {
-      result.qrCodeUrl = generateQr.url as string
+    const deeplink = actions.find(
+      (a) => (a.name === 'deeplink-redirect' || a.name === 'qr-code-url') && typeof a.url === 'string'
+    )
+    if (deeplink && typeof deeplink.url === 'string') {
+      result.paymentUrl = deeplink.url
+    }
+
+    // Direct Midtrans QR-code endpoint requires HTTP Basic Auth with Server Key.
+    // Fetch on the server using Server Key and encode to base64 Data URL so the frontend browser can render without 401.
+    if (generateQr && typeof generateQr.url === 'string') {
+      try {
+        const qrRes = await fetch(generateQr.url, {
+          headers: {
+            Authorization: midtransAuthorization(activeConfig.serverKey),
+            Accept: 'image/png, image/*, */*',
+          },
+          cache: 'no-store',
+        })
+        if (qrRes.ok) {
+          const buffer = await qrRes.arrayBuffer()
+          const base64 = Buffer.from(buffer).toString('base64')
+          const contentType = qrRes.headers.get('content-type') || 'image/png'
+          result.qrCodeUrl = `data:${contentType};base64,${base64}`
+        } else {
+          console.warn('Midtrans QR endpoint returned status:', qrRes.status)
+        }
+      } catch (qrErr) {
+        console.error('Failed to fetch QRIS image directly from Midtrans:', qrErr)
+      }
+    }
+
+    // High-fidelity fallback: Generate QR Code SVG Data URL from raw EMVCo qr_string if direct image fetch failed
+    if (!result.qrCodeUrl && result.qrString) {
+      try {
+        result.qrCodeUrl = generateQrSvgDataUrl(result.qrString)
+      } catch (qrGenErr) {
+        console.error('Failed to generate fallback QR SVG:', qrGenErr)
+      }
     }
   }
 
@@ -248,6 +291,53 @@ export async function createCoreApiCharge(
   }
 
   return result
+}
+
+export async function extractQrisDetailsFromMidtrans(
+  data: Record<string, unknown>,
+  serverKey: string
+): Promise<{ qrCodeUrl?: string; qrString?: string; paymentUrl?: string }> {
+  const qrString = typeof data.qr_string === 'string' ? data.qr_string : undefined
+  const actions = Array.isArray(data.actions) ? data.actions as Record<string, unknown>[] : []
+  const generateQr = actions.find(
+    (a) => a.name === 'generate-qr-code' && typeof a.url === 'string'
+  )
+  const deeplink = actions.find(
+    (a) => (a.name === 'deeplink-redirect' || a.name === 'qr-code-url') && typeof a.url === 'string'
+  )
+  const paymentUrl = deeplink && typeof deeplink.url === 'string' ? deeplink.url : undefined
+
+  let qrCodeUrl: string | undefined
+
+  if (generateQr && typeof generateQr.url === 'string') {
+    try {
+      const qrRes = await fetch(generateQr.url, {
+        headers: {
+          Authorization: midtransAuthorization(serverKey),
+          Accept: 'image/png, image/*, */*',
+        },
+        cache: 'no-store',
+      })
+      if (qrRes.ok) {
+        const buffer = await qrRes.arrayBuffer()
+        const base64 = Buffer.from(buffer).toString('base64')
+        const contentType = qrRes.headers.get('content-type') || 'image/png'
+        qrCodeUrl = `data:${contentType};base64,${base64}`
+      }
+    } catch (err) {
+      console.warn('Error fetching QR image from Midtrans endpoint:', err)
+    }
+  }
+
+  if (!qrCodeUrl && qrString) {
+    try {
+      qrCodeUrl = generateQrSvgDataUrl(qrString)
+    } catch (err) {
+      console.error('Error generating fallback QR SVG from qrString:', err)
+    }
+  }
+
+  return { qrCodeUrl, qrString, paymentUrl }
 }
 
 export async function cancelMidtransTransaction(
