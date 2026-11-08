@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from 'recharts'
 import { Sparkles, RefreshCw, CheckCircle, AlertTriangle, Bot, Activity, Layers, ArrowUpRight, DollarSign, Calendar, Users, FileText, Building2 } from 'lucide-react'
 import { SectionCard, StatusTag, FormatRupiah } from '@/components/ui/Cards'
 import { PageHeader } from '@/components/layout/Topbar'
@@ -87,6 +86,19 @@ function FormattedAiNarration({ text }: { text: string }) {
       })}
     </div>
   )
+}
+
+function getRadarPoints(scores: number[], radius: number) {
+  const centerX = 300
+  const centerY = 150
+
+  return scores.map((score, index) => {
+    const angle = -Math.PI / 2 + (index * 2 * Math.PI) / scores.length
+    const pointRadius = radius * Math.min(100, Math.max(0, score)) / 100
+    const x = centerX + Math.cos(angle) * pointRadius
+    const y = centerY + Math.sin(angle) * pointRadius
+    return `${x},${y}`
+  }).join(' ')
 }
 
 export default function BusinessHealthClient({
@@ -178,8 +190,7 @@ export default function BusinessHealthClient({
 
   const radarData = dimensions.map(d => ({
     subject: d.dimension,
-    score: d.score,
-    fullMark: 100
+    score: d.score
   }))
 
   const scoreColor = (score: number) =>
@@ -280,19 +291,78 @@ export default function BusinessHealthClient({
 
         {/* Radar Chart 6 Dimensi */}
         <SectionCard title="Radar 6 Dimensi Kesehatan Bisnis">
-          <div style={{ height: 260, width: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData}>
-                <PolarGrid stroke="var(--line)" />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: 'var(--mute)', fontWeight: 600 }} />
-                <Radar name="Skor" dataKey="score" stroke="var(--acc)" fill="var(--acc)" fillOpacity={0.25} />
-                <Tooltip
-                  formatter={(val: any) => [`${val}/100`, 'Skor']}
-                  contentStyle={{ background: 'var(--panel)', color: 'var(--ink)', borderRadius: 8, border: '1px solid var(--line)', fontSize: 12 }}
+          {radarData.length === 0 ? (
+            <div style={{ height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mute)', fontSize: 13 }}>
+              Data skor dimensi belum tersedia.
+            </div>
+          ) : (
+            <svg
+              viewBox="0 0 600 300"
+              role="img"
+              aria-label="Radar skor kesehatan bisnis untuk enam dimensi"
+              style={{ display: 'block', width: '100%', height: 260, overflow: 'visible' }}
+            >
+              {[20, 40, 60, 80, 100].map(level => (
+                <polygon
+                  key={level}
+                  points={getRadarPoints(radarData.map(() => level), 92)}
+                  fill="none"
+                  stroke="var(--line)"
+                  strokeWidth={1}
                 />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
+              ))}
+              {radarData.map((dimension, index) => {
+                const angle = -Math.PI / 2 + (index * 2 * Math.PI) / radarData.length
+                const axisX = 300 + Math.cos(angle) * 92
+                const axisY = 150 + Math.sin(angle) * 92
+                const labelX = 300 + Math.cos(angle) * 126
+                const labelY = 150 + Math.sin(angle) * 126
+                const textAnchor = Math.cos(angle) > 0.25
+                  ? 'start'
+                  : Math.cos(angle) < -0.25
+                    ? 'end'
+                    : 'middle'
+
+                return (
+                  <g key={dimension.subject}>
+                    <line x1={300} y1={150} x2={axisX} y2={axisY} stroke="var(--line)" strokeWidth={1} />
+                    <text
+                      x={labelX}
+                      y={labelY}
+                      textAnchor={textAnchor}
+                      fill="var(--mute)"
+                      fontSize={11}
+                      fontWeight={600}
+                    >
+                      <tspan x={labelX}>{dimension.subject}</tspan>
+                      <tspan x={labelX} dy={14}>{dimension.score}/100</tspan>
+                    </text>
+                  </g>
+                )
+              })}
+              <polygon
+                points={getRadarPoints(radarData.map(dimension => dimension.score), 92)}
+                fill="var(--acc)"
+                fillOpacity={0.25}
+                stroke="var(--acc)"
+                strokeWidth={2}
+              />
+              {radarData.map((dimension, index) => {
+                const angle = -Math.PI / 2 + (index * 2 * Math.PI) / radarData.length
+                const radius = 92 * Math.min(100, Math.max(0, dimension.score)) / 100
+
+                return (
+                  <circle
+                    key={dimension.subject}
+                    cx={300 + Math.cos(angle) * radius}
+                    cy={150 + Math.sin(angle) * radius}
+                    r={3}
+                    fill="var(--acc)"
+                  />
+                )
+              })}
+            </svg>
+          )}
         </SectionCard>
       </div>
 
