@@ -9,6 +9,7 @@ import {
   SUPPORTED_BANKS,
   type SupportedBank,
 } from '@/lib/midtrans'
+import { generateQrSvgDataUrl } from '@/lib/qr-generator'
 
 function getServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
@@ -97,87 +98,111 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Pembayaran tidak ditemukan.' }, { status: 404 })
     }
 
-    let config: ReturnType<typeof getMidtransConfig>
+    // 1. Direct path: if this payment record already has the QRIS string stored in snap_token:
+    if (payment.snap_token && payment.snap_token.startsWith('qris:')) {
+      const rawQr = payment.snap_token.slice(5)
+      const qrCodeUrl = generateQrSvgDataUrl(rawQr)
+      return NextResponse.json({
+        orderId: payment.order_id,
+        status: payment.status,
+        paymentMethod: 'qris',
+        qrCodeUrl,
+        qrString: rawQr,
+        paymentUrl: payment.snap_url,
+        snapToken: payment.snap_token,
+        snapUrl: payment.snap_url,
+        expiresAt: payment.expires_at,
+        amount: payment.amount,
+        planName: payment.plan_name,
+      })
+    }
+
+    // 2. Query Midtrans if configured
+    let config: ReturnType<typeof getMidtransConfig> | null = null
     try {
       config = getMidtransConfig()
     } catch {
-      return NextResponse.json({
-        orderId: payment.order_id,
-        status: payment.status,
-        expiresAt: payment.expires_at,
-        amount: payment.amount,
-        planName: payment.plan_name,
-        snapToken: payment.snap_token,
-        snapUrl: payment.snap_url,
-        paymentUrl: payment.snap_url,
-        qrCodeUrl: `/api/subscription/qr-image?order_id=${encodeURIComponent(payment.order_id)}`,
-      })
+      config = null
     }
 
-    const midtransRes = await fetchMidtransTransactionStatus(payment.order_id, config)
-    if (midtransRes.ok && midtransRes.data) {
-      const data = midtransRes.data
-      const paymentType = typeof data.payment_type === 'string' ? data.payment_type : 'qris'
+    if (config) {
+      try {
+        const midtransRes = await fetchMidtransTransactionStatus(payment.order_id, config)
+        if (midtransRes.ok && midtransRes.data) {
+          const data = midtransRes.data
+          const paymentType = typeof data.payment_type === 'string' ? data.payment_type : null
 
-      if (paymentType === 'qris' || Array.isArray(data.actions)) {
-        const qris = await extractQrisDetailsFromMidtrans(data, config.serverKey)
-        return NextResponse.json({
-          orderId: payment.order_id,
-          status: payment.status,
-          midtransStatus: data.transaction_status,
-          paymentMethod: 'qris',
-          qrCodeUrl: qris.qrCodeUrl || `/api/subscription/qr-image?order_id=${encodeURIComponent(payment.order_id)}`,
-          qrString: qris.qrString,
-          paymentUrl: qris.paymentUrl || payment.snap_url,
-          snapToken: payment.snap_token,
-          snapUrl: payment.snap_url,
-          expiresAt: payment.expires_at,
-          expiryTime: typeof data.expiry_time === 'string' ? data.expiry_time : undefined,
-          amount: payment.amount,
-          planName: payment.plan_name,
-        })
-      }
+          if (paymentType === 'qris' || data.actions || data.qr_string) {
+            const qris = await extractQrisDetailsFromMidtrans(data, config.serverKey)
+            if (qris.qrCodeUrl || qris.qrString) {
+              const qrCodeUrl = qris.qrCodeUrl || (qris.qrString ? generateQrSvgDataUrl(qris.qrString) : undefined)
+              return NextResponse.json({
+                orderId: payment.order_id,
+                status: payment.status,
+                midtransStatus: data.transaction_status,
+                paymentMethod: 'qris',
+                qrCodeUrl,
+                qrString: qris.qrString,
+                paymentUrl: qris.paymentUrl || payment.snap_url,
+                snapToken: payment.snap_token,
+                snapUrl: payment.snap_url,
+                expiresAt: payment.expires_at,
+                expiryTime: typeof data.expiry_time === 'string' ? data.expiry_time : undefined,
+                amount: payment.amount,
+                planName: payment.plan_name,
+              })
+            }
+          }
 
-      // Bank Transfer / VA
-      let vaNumber: string | undefined
-      let vaBank: string | undefined
-      const vaNumbers = Array.isArray(data.va_numbers) ? data.va_numbers as Record<string, unknown>[] : []
-      if (vaNumbers.length > 0) {
-        vaNumber = typeof vaNumbers[0].va_number === 'string' ? vaNumbers[0].va_number : undefined
-        vaBank = typeof vaNumbers[0].bank === 'string' ? vaNumbers[0].bank : undefined
-      }
-      if (!vaNumber && typeof data.permata_va_number === 'string') {
-        vaNumber = data.permata_va_number
-        vaBank = 'permata'
-      }
+          // Bank Transfer / VA
+          let vaNumber: string | undefined
+          let vaBank: string | undefined
+          const vaNumbers = Array.isArray(data.va_numbers) ? data.va_numbers as Record<string, unknown>[] : []
+          if (vaNumbers.length > 0) {
+            vaNumber = typeof vaNumbers[0].va_number === 'string' ? vaNumbers[0].va_number : undefined
+            vaBank = typeof vaNumbers[0].bank === 'string' ? vaNumbers[0].bank : undefined
+          }
+          if (!vaNumber && typeof data.permata_va_number === 'string') {
+            vaNumber = data.permata_va_number
+            vaBank = 'permata'
+          }
 
-      return NextResponse.json({
-        orderId: payment.order_id,
-        status: payment.status,
-        midtransStatus: data.transaction_status,
-        paymentMethod: 'bank_transfer',
-        vaNumber,
-        vaBank,
-        expiresAt: payment.expires_at,
-        expiryTime: typeof data.expiry_time === 'string' ? data.expiry_time : undefined,
-        amount: payment.amount,
-        planName: payment.plan_name,
-        snapToken: payment.snap_token,
-        snapUrl: payment.snap_url,
-      })
+          if (vaNumber) {
+            return NextResponse.json({
+              orderId: payment.order_id,
+              status: payment.status,
+              midtransStatus: data.transaction_status,
+              paymentMethod: 'bank_transfer',
+              vaNumber,
+              vaBank,
+              expiresAt: payment.expires_at,
+              expiryTime: typeof data.expiry_time === 'string' ? data.expiry_time : undefined,
+              amount: payment.amount,
+              planName: payment.plan_name,
+              snapToken: payment.snap_token,
+              snapUrl: payment.snap_url,
+            })
+          }
+        }
+      } catch {
+        // Continue to fallback
+      }
     }
 
-    // Fallback if Midtrans status not yet queried
+    // 3. Fallback: Payment exists but no QRIS/VA method has been charged yet.
+    // Return paymentMethod: null so the user can select QRIS or Virtual Account!
     return NextResponse.json({
       orderId: payment.order_id,
       status: payment.status,
+      paymentMethod: null,
+      qrCodeUrl: null,
+      qrString: null,
       expiresAt: payment.expires_at,
       amount: payment.amount,
       planName: payment.plan_name,
       snapToken: payment.snap_token,
       snapUrl: payment.snap_url,
       paymentUrl: payment.snap_url,
-      qrCodeUrl: `/api/subscription/qr-image?order_id=${encodeURIComponent(payment.order_id)}`,
     })
   } catch (error) {
     console.error('Error fetching charge details:', error)
@@ -270,63 +295,66 @@ export async function POST(request: Request) {
       .maybeSingle()
 
     if (recentPayment) {
-      // Check if this pending payment is already charged in Midtrans
-      try {
-        const midtransStatus = await fetchMidtransTransactionStatus(recentPayment.order_id, config)
-        if (midtransStatus.ok && midtransStatus.data && midtransStatus.data.transaction_status === 'pending') {
-          const mData = midtransStatus.data
-          const qris = await extractQrisDetailsFromMidtrans(mData, config.serverKey)
-          if (paymentMethod === 'qris' && (qris.qrCodeUrl || qris.qrString)) {
-            return NextResponse.json({
-              orderId: recentPayment.order_id,
-              paymentMethod: 'qris',
-              qrCodeUrl: qris.qrCodeUrl || `/api/subscription/qr-image?order_id=${encodeURIComponent(recentPayment.order_id)}`,
-              qrString: qris.qrString,
-              paymentUrl: qris.paymentUrl || recentPayment.snap_url,
-              expiryTime: typeof mData.expiry_time === 'string' ? mData.expiry_time : undefined,
-              expiresAt: recentPayment.expires_at,
-              snapToken: recentPayment.snap_token,
-              snapUrl: recentPayment.snap_url,
-              reused: true,
-            })
-          }
-        }
-      } catch {
-        // Fall through to charge call
+      // 1. If recentPayment already has QRIS stored in snap_token:
+      if (paymentMethod === 'qris' && recentPayment.snap_token?.startsWith('qris:')) {
+        const rawQr = recentPayment.snap_token.slice(5)
+        const qrCodeUrl = generateQrSvgDataUrl(rawQr)
+        return NextResponse.json({
+          orderId: recentPayment.order_id,
+          paymentMethod: 'qris',
+          qrCodeUrl,
+          qrString: rawQr,
+          paymentUrl: recentPayment.snap_url,
+          expiresAt: recentPayment.expires_at,
+          snapToken: recentPayment.snap_token,
+          snapUrl: recentPayment.snap_url,
+          reused: true,
+        })
       }
 
-      const diffMs = Date.now() - new Date(recentPayment.created_at).getTime()
-      if (diffMs < 60000) {
-        // Try to create the Core API charge using the existing order ID
-        const chargeResult = await createCoreApiCharge(
-          recentPayment.order_id,
-          plan.price,
-          paymentMethod as 'qris' | 'bank_transfer',
-          customerName,
-          customerEmail,
-          `Fluxa ${plan.name}`,
-          paymentMethod === 'bank_transfer' ? (bank as SupportedBank) : undefined,
-          config,
-          customerPhone,
-        )
+      // 2. Try to charge using recentPayment.order_id
+      const chargeResult = await createCoreApiCharge(
+        recentPayment.order_id,
+        plan.price,
+        paymentMethod as 'qris' | 'bank_transfer',
+        customerName,
+        customerEmail,
+        `Fluxa ${plan.name}`,
+        paymentMethod === 'bank_transfer' ? (bank as SupportedBank) : undefined,
+        config,
+        customerPhone,
+      )
 
-        if (chargeResult.ok) {
-          return NextResponse.json({
-            orderId: recentPayment.order_id,
-            paymentMethod: chargeResult.paymentMethod,
-            qrCodeUrl: chargeResult.qrCodeUrl || `/api/subscription/qr-image?order_id=${encodeURIComponent(recentPayment.order_id)}`,
-            qrString: chargeResult.qrString,
-            paymentUrl: chargeResult.paymentUrl || recentPayment.snap_url,
-            vaNumber: chargeResult.vaNumber,
-            vaBank: chargeResult.vaBank,
-            expiryTime: chargeResult.expiryTime,
-            expiresAt: recentPayment.expires_at,
-            snapToken: recentPayment.snap_token,
-            snapUrl: recentPayment.snap_url,
-            reused: true,
-          })
+      if (chargeResult.ok) {
+        const qrCodeUrl = chargeResult.qrCodeUrl || (chargeResult.qrString ? generateQrSvgDataUrl(chargeResult.qrString) : undefined)
+
+        // Store QRIS payload in snap_token so subsequent page loads or reloads render immediately!
+        if (paymentMethod === 'qris' && chargeResult.qrString) {
+          await admin.from('subscription_payments').update({
+            gateway_transaction_id: (chargeResult.rawData?.transaction_id as string) || null,
+            snap_token: `qris:${chargeResult.qrString}`,
+            snap_url: chargeResult.paymentUrl || recentPayment.snap_url,
+            updated_at: new Date().toISOString(),
+          }).eq('id', recentPayment.id)
         }
+
+        return NextResponse.json({
+          orderId: recentPayment.order_id,
+          paymentMethod: chargeResult.paymentMethod,
+          qrCodeUrl,
+          qrString: chargeResult.qrString,
+          paymentUrl: chargeResult.paymentUrl || recentPayment.snap_url,
+          vaNumber: chargeResult.vaNumber,
+          vaBank: chargeResult.vaBank,
+          expiryTime: chargeResult.expiryTime,
+          expiresAt: recentPayment.expires_at,
+          snapToken: chargeResult.qrString ? `qris:${chargeResult.qrString}` : recentPayment.snap_token,
+          snapUrl: chargeResult.paymentUrl || recentPayment.snap_url,
+          reused: true,
+        })
       }
+      // If charging existing order_id failed (e.g. Midtrans says order_id already used in Snap),
+      // fall through and create a fresh order ID!
     }
 
     // Create a fresh order
@@ -372,6 +400,18 @@ export async function POST(request: Request) {
       }, { status: 502 })
     }
 
+    const qrCodeUrl = chargeResult.qrCodeUrl || (chargeResult.qrString ? generateQrSvgDataUrl(chargeResult.qrString) : undefined)
+
+    // Store QRIS payload in snap_token
+    if (paymentMethod === 'qris' && chargeResult.qrString) {
+      await admin.from('subscription_payments').update({
+        gateway_transaction_id: (chargeResult.rawData?.transaction_id as string) || null,
+        snap_token: `qris:${chargeResult.qrString}`,
+        snap_url: chargeResult.paymentUrl || null,
+        updated_at: new Date().toISOString(),
+      }).eq('id', payment.id)
+    }
+
     // Audit log
     try {
       await admin.from('audit_logs').insert({
@@ -395,13 +435,15 @@ export async function POST(request: Request) {
     return NextResponse.json({
       orderId,
       paymentMethod: chargeResult.paymentMethod,
-      qrCodeUrl: chargeResult.qrCodeUrl || `/api/subscription/qr-image?order_id=${encodeURIComponent(orderId)}`,
+      qrCodeUrl,
       qrString: chargeResult.qrString,
       paymentUrl: chargeResult.paymentUrl,
       vaNumber: chargeResult.vaNumber,
       vaBank: chargeResult.vaBank,
       expiryTime: chargeResult.expiryTime,
       expiresAt,
+      snapToken: chargeResult.qrString ? `qris:${chargeResult.qrString}` : undefined,
+      snapUrl: chargeResult.paymentUrl,
     }, { status: 201 })
   } catch (error) {
     console.error('Unable to create Core API charge.', error)

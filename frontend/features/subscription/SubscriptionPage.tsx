@@ -194,7 +194,6 @@ export default function SubscriptionPage() {
   // QRIS Image asynchronous state
   const [loadedQrKey, setLoadedQrKey] = useState<string | null>(null)
   const [qrImageError, setQrImageError] = useState(false)
-  const [qrReloadKey, setQrReloadKey] = useState(0)
 
   // Status refresh loading state
   const [checkingStatus, setCheckingStatus] = useState(false)
@@ -241,12 +240,14 @@ export default function SubscriptionPage() {
               const cached = sessionStorage.getItem(`fluxa_charge_result:${pending.order_id}`)
               if (cached) {
                 const parsed = JSON.parse(cached) as ChargeResult
-                if (parsed.qrCodeUrl || parsed.vaNumber) {
+                if ((parsed.qrCodeUrl && parsed.qrCodeUrl.startsWith('data:')) || parsed.vaNumber) {
                   setChargeResult(parsed)
                   if (parsed.paymentMethod) {
                     setSelectedMethod(parsed.paymentMethod as SelectedMethod)
                   }
                   restored = true
+                } else {
+                  sessionStorage.removeItem(`fluxa_charge_result:${pending.order_id}`)
                 }
               }
             } catch {}
@@ -258,7 +259,7 @@ export default function SubscriptionPage() {
               .then((r) => (r.ok ? r.json() : null))
               .then((chargeData: ChargeResult | null) => {
                 if (cancelled || !chargeData) return
-                if (chargeData.qrCodeUrl || chargeData.vaNumber) {
+                if ((chargeData.qrCodeUrl && chargeData.qrCodeUrl.startsWith('data:')) || chargeData.vaNumber) {
                   setChargeResult(chargeData)
                   if (chargeData.paymentMethod) {
                     setSelectedMethod(chargeData.paymentMethod as SelectedMethod)
@@ -268,6 +269,9 @@ export default function SubscriptionPage() {
                       sessionStorage.setItem(`fluxa_charge_result:${pending.order_id}`, JSON.stringify(chargeData))
                     } catch {}
                   }
+                } else {
+                  setChargeResult(null)
+                  setSelectedMethod(null)
                 }
               })
               .catch(() => {})
@@ -975,7 +979,7 @@ export default function SubscriptionPage() {
               <>
                 {/* QRIS / VA Result Display */}
                 {chargeResult && chargeResult.qrCodeUrl && (() => {
-                  const currentQrKey = `${chargeResult.qrCodeUrl}-${qrReloadKey}`
+                  const currentQrKey = chargeResult.qrCodeUrl
                   const isQrLoading = !qrImageError && loadedQrKey !== currentQrKey
 
                   return (
@@ -999,28 +1003,39 @@ export default function SubscriptionPage() {
                             <p className={styles.qrErrorText}>
                               Gambar QR Code belum dapat dimuat langsung.
                             </p>
-                            <button
-                              type="button"
-                              className={styles.qrRetryBtn}
-                              onClick={() => {
-                                setQrImageError(false)
-                                setLoadedQrKey(null)
-                                setQrReloadKey((k) => k + 1)
-                              }}
-                            >
-                              <RefreshCw size={13} />
-                              Muat Ulang QR
-                            </button>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                              <button
+                                type="button"
+                                className={styles.btnPrimary}
+                                style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+                                onClick={() => {
+                                  const planId = data?.plans.find(p => p.name === activePendingPayment.plan_name)?.id
+                                  if (planId) void handleMethodCharge('qris', planId)
+                                }}
+                              >
+                                <RefreshCw size={13} />
+                                Terbitkan QRIS Sekarang
+                              </button>
+                              <button
+                                type="button"
+                                className={styles.qrRetryBtn}
+                                onClick={() => {
+                                  setChargeResult(null)
+                                  setSelectedMethod(null)
+                                  if (typeof window !== 'undefined') {
+                                    sessionStorage.removeItem(`fluxa_charge_result:${activePendingPayment.order_id}`)
+                                  }
+                                }}
+                              >
+                                Pilih Metode Lain
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           /* eslint-disable-next-line @next/next/no-img-element */
                           <img
                             key={currentQrKey}
-                            src={
-                              chargeResult.qrCodeUrl.startsWith('data:')
-                                ? chargeResult.qrCodeUrl
-                                : `${chargeResult.qrCodeUrl}${chargeResult.qrCodeUrl.includes('?') ? '&' : '?'}v=${qrReloadKey}`
-                            }
+                            src={chargeResult.qrCodeUrl}
                             alt="QR Code QRIS Pembayaran Fluxa"
                             className={styles.qrCodeImage}
                             width={220}

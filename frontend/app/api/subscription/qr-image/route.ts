@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     const admin = getServiceClient()
     const { data: payment, error: paymentError } = await admin
       .from('subscription_payments')
-      .select('id, order_id, owner_id, status, expires_at')
+      .select('id, order_id, owner_id, status, expires_at, snap_token')
       .eq('order_id', orderId)
       .maybeSingle()
 
@@ -52,6 +52,18 @@ export async function GET(request: Request) {
       if (profile?.role !== 'super_admin') {
         return new Response('Forbidden', { status: 403 })
       }
+    }
+
+    // 1. Direct fast path: If snap_token has stored raw EMVCo QRIS (prefixed with qris:), render SVG immediately!
+    if (payment.snap_token?.startsWith('qris:')) {
+      const rawQr = payment.snap_token.slice(5)
+      const svg = generateQrSvg(rawQr)
+      return new Response(svg, {
+        headers: {
+          'Content-Type': 'image/svg+xml; charset=utf-8',
+          'Cache-Control': 'public, max-age=86400',
+        },
+      })
     }
 
     let config: ReturnType<typeof getMidtransConfig>
