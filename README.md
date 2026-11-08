@@ -91,20 +91,13 @@ Membuat / memperbarui 3 akun demo ke database Supabase:
 npm run seed:accounts
 ```
 
-### Kredensial Akun Demo
-| Role | Email | Password |
-|---|---|---|
-| **Owner** | `owner@demo.local` | `Owner123!` |
-| **Admin** | `admin@demo.local` | `Admin123!` |
-| **Kasir** | `kasir@demo.local` | `Kasir123!` |
-
 ---
 
 ## Panduan Pengembangan
 
 ### Migrasi Database
 
-Migrasi SQL berada di `database/supabase/migrations/` dengan urutan `0001` s/d `0027`:
+Migrasi SQL berada di `database/supabase/migrations/` dengan urutan `0001` s/d `0037`:
 
 | File | Isi |
 |---|---|
@@ -135,10 +128,20 @@ Migrasi SQL berada di `database/supabase/migrations/` dengan urutan `0001` s/d `
 | `0025` | Registration path & auto approve |
 | `0026` | Landing CMS content |
 | `0027` | Security hardening |
+| `0028` | Subscription plan payment links |
+| `0029` | Isolasi data multi-bisnis |
+| `0030` | Rekonsiliasi kas dan pengeluaran shift |
+| `0031` | Bahan baku dan komposisi produk |
+| `0032` | Pengurangan otomatis sub-bahan |
+| `0033` | Rasio resep, konversi unit, dan ketersediaan |
+| `0034` | Konversi unit universal tanpa densitas |
+| `0035` | Perhitungan biaya bahan resep |
+| `0036` | Trial yang dapat dikonfigurasi |
+| `0037` | Memperbaiki visibilitas promo dan RPC pembayaran hutang/piutang |
 
 **Aturan migrasi:**
 - Jangan ubah migrasi yang sudah diterapkan di database bersama (production/staging) — buat file baru.
-- Nomor migrasi harus unik. Migrasi terakhir saat ini: `0027`.
+- Nomor migrasi harus unik. Migrasi terakhir saat ini: `0037`.
 - `combined_setup.sql` hanya untuk setup lokal — jangan jalankan di produksi.
 
 ### Registrasi, Persetujuan, dan Trial
