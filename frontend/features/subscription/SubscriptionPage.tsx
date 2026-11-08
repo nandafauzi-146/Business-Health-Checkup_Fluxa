@@ -92,6 +92,10 @@ type ChargeResult = {
   orderId?: string
   paymentMethod?: string
   qrCodeUrl?: string
+  qrString?: string
+  paymentUrl?: string
+  snapUrl?: string
+  snapToken?: string
   vaNumber?: string
   vaBank?: string
   expiryTime?: string
@@ -187,6 +191,11 @@ export default function SubscriptionPage() {
   const [chargeResult, setChargeResult] = useState<ChargeResult | null>(null)
   const [chargingMethod, setChargingMethod] = useState(false)
 
+  // QRIS Image asynchronous state
+  const [loadedQrKey, setLoadedQrKey] = useState<string | null>(null)
+  const [qrImageError, setQrImageError] = useState(false)
+  const [qrReloadKey, setQrReloadKey] = useState(0)
+
   // Status refresh loading state
   const [checkingStatus, setCheckingStatus] = useState(false)
   const [cancellingPayment, setCancellingPayment] = useState(false)
@@ -224,6 +233,45 @@ export default function SubscriptionPage() {
         const pending = res.payments.find((p) => p.status === 'pending')
         if (pending && !cancelled) {
           setShowPaymentModal(true)
+
+          // 1. Check sessionStorage for persisted charge details
+          let restored = false
+          if (typeof window !== 'undefined') {
+            try {
+              const cached = sessionStorage.getItem(`fluxa_charge_result:${pending.order_id}`)
+              if (cached) {
+                const parsed = JSON.parse(cached) as ChargeResult
+                if (parsed.qrCodeUrl || parsed.vaNumber) {
+                  setChargeResult(parsed)
+                  if (parsed.paymentMethod) {
+                    setSelectedMethod(parsed.paymentMethod as SelectedMethod)
+                  }
+                  restored = true
+                }
+              }
+            } catch {}
+          }
+
+          // 2. If not in sessionStorage, retrieve active charge details from backend
+          if (!restored) {
+            void fetch(`/api/subscription/charge?orderId=${encodeURIComponent(pending.order_id)}`)
+              .then((r) => (r.ok ? r.json() : null))
+              .then((chargeData: ChargeResult | null) => {
+                if (cancelled || !chargeData) return
+                if (chargeData.qrCodeUrl || chargeData.vaNumber) {
+                  setChargeResult(chargeData)
+                  if (chargeData.paymentMethod) {
+                    setSelectedMethod(chargeData.paymentMethod as SelectedMethod)
+                  }
+                  if (typeof window !== 'undefined') {
+                    try {
+                      sessionStorage.setItem(`fluxa_charge_result:${pending.order_id}`, JSON.stringify(chargeData))
+                    } catch {}
+                  }
+                }
+              })
+              .catch(() => {})
+          }
         } else if (res.plans.length > 0 && !cancelled) {
           const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
           const targetPlanId = params?.get('planId')
@@ -283,6 +331,11 @@ export default function SubscriptionPage() {
       await load()
 
       if (result.status === 'success') {
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.removeItem(`fluxa_charge_result:${orderId}`)
+          } catch {}
+        }
         setShowPaymentModal(false)
         setChargeResult(null)
         setSelectedMethod(null)
@@ -292,6 +345,11 @@ export default function SubscriptionPage() {
           router.push('/owner')
         }, 1500)
       } else if (result.status === 'expired' || result.status === 'failed' || result.status === 'cancelled') {
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.removeItem(`fluxa_charge_result:${orderId}`)
+          } catch {}
+        }
         setChargeResult(null)
         setSelectedMethod(null)
         setError(`Status pembayaran: ${paymentStatusLabels[result.status]?.label ?? result.status}. Silakan coba bayar kembali.`)
@@ -303,7 +361,7 @@ export default function SubscriptionPage() {
     } finally {
       if (!silent) setCheckingStatus(false)
     }
-  }, [load])
+  }, [load, router])
 
   // Auto-polling for active pending payments (every 5 seconds, up to 36 times = 3 minutes)
   useEffect(() => {
@@ -383,6 +441,12 @@ export default function SubscriptionPage() {
         throw new Error(result.error || 'Gagal membatalkan pembayaran.')
       }
 
+      if (typeof window !== 'undefined' && activePendingPayment) {
+        try {
+          sessionStorage.removeItem(`fluxa_charge_result:${activePendingPayment.order_id}`)
+        } catch {}
+      }
+
       setShowCancelConfirmModal(false)
       setShowPaymentModal(false)
       setChargeResult(null)
@@ -427,6 +491,12 @@ export default function SubscriptionPage() {
       setChargeResult(result)
       setSelectedMethod(method)
       setSelectedPlanForCheckout(null)
+
+      if (typeof window !== 'undefined' && result.orderId) {
+        try {
+          sessionStorage.setItem(`fluxa_charge_result:${result.orderId}`, JSON.stringify(result))
+        } catch {}
+      }
 
       // Reload data to pick up the new payment record
       await load()
@@ -904,37 +974,108 @@ export default function SubscriptionPage() {
             {!countdown.isExpired ? (
               <>
                 {/* QRIS / VA Result Display */}
-                {chargeResult && chargeResult.qrCodeUrl && (
-                  <div className={styles.qrisResultCard}>
-                    <div className={styles.qrisResultHeader}>
-                      <QrCode size={20} color="#28765a" />
-                      <span>Scan QRIS untuk Membayar</span>
+                {chargeResult && chargeResult.qrCodeUrl && (() => {
+                  const currentQrKey = `${chargeResult.qrCodeUrl}-${qrReloadKey}`
+                  const isQrLoading = !qrImageError && loadedQrKey !== currentQrKey
+
+                  return (
+                    <div className={styles.qrisResultCard}>
+                      <div className={styles.qrisResultHeader}>
+                        <QrCode size={20} color="var(--acc)" />
+                        <span>Scan QRIS untuk Membayar</span>
+                      </div>
+
+                      <div className={styles.qrCodeContainer}>
+                        {isQrLoading && (
+                          <div className={styles.qrLoadingOverlay}>
+                            <Loader2 size={30} className={styles.spinner} color="var(--acc)" />
+                            <span className={styles.qrLoadingText}>Menyiapkan QR Code...</span>
+                          </div>
+                        )}
+
+                        {qrImageError ? (
+                          <div className={styles.qrErrorBox}>
+                            <AlertCircle size={32} color="#dc2626" />
+                            <p className={styles.qrErrorText}>
+                              Gambar QR Code belum dapat dimuat langsung.
+                            </p>
+                            <button
+                              type="button"
+                              className={styles.qrRetryBtn}
+                              onClick={() => {
+                                setQrImageError(false)
+                                setLoadedQrKey(null)
+                                setQrReloadKey((k) => k + 1)
+                              }}
+                            >
+                              <RefreshCw size={13} />
+                              Muat Ulang QR
+                            </button>
+                          </div>
+                        ) : (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            key={currentQrKey}
+                            src={
+                              chargeResult.qrCodeUrl.startsWith('data:')
+                                ? chargeResult.qrCodeUrl
+                                : `${chargeResult.qrCodeUrl}${chargeResult.qrCodeUrl.includes('?') ? '&' : '?'}v=${qrReloadKey}`
+                            }
+                            alt="QR Code QRIS Pembayaran Fluxa"
+                            className={styles.qrCodeImage}
+                            width={220}
+                            height={220}
+                            onLoad={() => setLoadedQrKey(currentQrKey)}
+                            onError={() => setQrImageError(true)}
+                          />
+                        )}
+                      </div>
+
+                      {/* Alternative Payment Link */}
+                      {(chargeResult.paymentUrl || chargeResult.snapUrl || activePendingPayment.snap_url) && (
+                        <div className={styles.qrisAlternativeUrlBox}>
+                          <div className={styles.qrisAlternativeUrlHeader}>
+                            <span>Kendala Scan QR?</span>
+                            <span style={{ fontSize: '11px', color: 'var(--mute)' }}>Tautan Pembayaran</span>
+                          </div>
+                          <div className={styles.qrisAlternativeActions}>
+                            <a
+                              href={chargeResult.paymentUrl || chargeResult.snapUrl || activePendingPayment.snap_url || '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={styles.qrisAlternativeBtn}
+                            >
+                              <ExternalLink size={13} />
+                              Buka Link Pembayaran
+                            </a>
+                            <button
+                              type="button"
+                              className={styles.qrRetryBtn}
+                              onClick={() => handleCopy(chargeResult.paymentUrl || chargeResult.snapUrl || activePendingPayment.snap_url || '', 'altPaymentUrl')}
+                            >
+                              <Copy size={13} />
+                              {copiedText === 'altPaymentUrl' ? 'Tersalin!' : 'Salin Tautan'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className={styles.qrisGuide}>
+                        <p className={styles.qrisGuideTitle}>
+                          <Info size={15} />
+                          Cara Membayar via QRIS:
+                        </p>
+                        <ol className={styles.qrisGuideList}>
+                          <li>Buka aplikasi e-wallet atau mobile banking Anda (GoPay, OVO, DANA, ShopeePay, BCA Mobile, Livin, BRImo, dll)</li>
+                          <li>Pilih menu <strong>Scan</strong> atau <strong>Bayar dengan QR</strong></li>
+                          <li>Arahkan kamera ke QR code di atas</li>
+                          <li>Konfirmasi pembayaran sebesar <strong>{money.format(activePendingPayment.amount)}</strong></li>
+                          <li>Status akan otomatis diperbarui setelah pembayaran berhasil</li>
+                        </ol>
+                      </div>
                     </div>
-                    <div className={styles.qrCodeContainer}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={chargeResult.qrCodeUrl}
-                        alt="QR Code QRIS Pembayaran"
-                        className={styles.qrCodeImage}
-                        width={220}
-                        height={220}
-                      />
-                    </div>
-                    <div className={styles.qrisGuide}>
-                      <p className={styles.qrisGuideTitle}>
-                        <Info size={15} />
-                        Cara Membayar via QRIS:
-                      </p>
-                      <ol className={styles.qrisGuideList}>
-                        <li>Buka aplikasi e-wallet atau mobile banking Anda (GoPay, OVO, DANA, ShopeePay, BCA Mobile, Livin, BRImo, dll)</li>
-                        <li>Pilih menu <strong>Scan</strong> atau <strong>Bayar dengan QR</strong></li>
-                        <li>Arahkan kamera ke QR code di atas</li>
-                        <li>Konfirmasi pembayaran sebesar <strong>{money.format(activePendingPayment.amount)}</strong></li>
-                        <li>Status akan otomatis diperbarui setelah pembayaran berhasil</li>
-                      </ol>
-                    </div>
-                  </div>
-                )}
+                  )
+                })()}
 
                 {chargeResult && chargeResult.vaNumber && (
                   <div className={styles.vaResultCard}>

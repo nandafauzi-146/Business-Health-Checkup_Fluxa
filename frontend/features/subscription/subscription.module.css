@@ -823,6 +823,276 @@
   line-height: 1.45;
 }
 
+/* QRIS & VA Result Card Styles */
+.qrisResultCard {
+  border: 1.5px solid color-mix(in srgb, var(--acc) 30%, transparent);
+  background: var(--bg);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+}
+
+.qrisResultHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.96rem;
+  font-weight: 750;
+  color: var(--ink);
+}
+
+.qrCodeContainer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 16px;
+  border: 2px solid var(--line);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  min-width: 240px;
+  min-height: 240px;
+}
+
+.qrCodeImage {
+  display: block;
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.qrLoadingOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 14px;
+  z-index: 2;
+}
+
+.qrLoadingText {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--mute);
+}
+
+.qrErrorBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  text-align: center;
+  max-width: 230px;
+}
+
+.qrErrorText {
+  font-size: 0.8rem;
+  color: #dc2626;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.qrRetryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.qrRetryBtn:hover {
+  background: var(--bg);
+  border-color: var(--acc);
+}
+
+.qrisGuide {
+  text-align: left;
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.qrisGuideTitle {
+  margin: 0 0 8px;
+  font-size: 0.84rem;
+  font-weight: 750;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.qrisGuideList {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.8rem;
+  color: var(--mute);
+  line-height: 1.6;
+}
+
+.qrisGuideList li {
+  margin-bottom: 4px;
+}
+
+.qrisAlternativeUrlBox {
+  width: 100%;
+  background: var(--panel);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.qrisAlternativeUrlHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.qrisAlternativeActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.qrisAlternativeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  background: var(--accs);
+  color: var(--acc);
+  border: 1px solid color-mix(in srgb, var(--acc) 30%, transparent);
+  transition: all 160ms ease;
+}
+
+.qrisAlternativeBtn:hover {
+  background: var(--acc);
+  color: #ffffff;
+}
+
+.vaResultCard {
+  border: 1.5px solid color-mix(in srgb, #0284c7 35%, transparent);
+  background: color-mix(in srgb, #0284c7 4%, transparent);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.vaResultHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 750;
+  color: var(--ink);
+}
+
+.vaNumberBox {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vaNumberLabel {
+  font-size: 0.76rem;
+  color: var(--mute);
+  font-weight: 600;
+}
+
+.vaNumberRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vaNumberValue {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+}
+
+.vaCopyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--accs);
+  color: var(--acc);
+  border: 1px solid color-mix(in srgb, var(--acc) 30%, transparent);
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.vaCopyBtn:hover {
+  background: var(--acc);
+  color: #ffffff;
+}
+
+.vaBankName {
+  font-size: 0.78rem;
+  color: var(--mute);
+  font-weight: 600;
+}
+
+.methodCardClickable {
+  cursor: pointer;
+}
+
+.methodCardSelected {
+  border-color: var(--acc);
+  background: var(--accs);
+  box-shadow: 0 0 0 1px var(--acc);
+}
+
 .spinner {
   animation: spin 1s linear infinite;
 }
