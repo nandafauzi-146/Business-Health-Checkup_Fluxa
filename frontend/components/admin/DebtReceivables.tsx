@@ -50,6 +50,15 @@ function formatDate(d: string | null) {
   return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+function getDebtPaymentErrorMessage(error: unknown) {
+  const code = error && typeof error === 'object' ? Reflect.get(error, 'code') : undefined
+  if (code === 'PGRST202' || code === '42883' || code === 'PGRST203') {
+    return 'Fitur pembayaran cicilan belum aktif di database. Minta administrator menjalankan migrasi 0037_fix_business_debt_payment.sql di Supabase, lalu coba lagi.'
+  }
+
+  return getUserFacingError(error, 'Pembayaran belum dapat dicatat. Silakan coba lagi.')
+}
+
 export default function DebtReceivablesClient({
   initialData,
   initialCategories,
@@ -342,7 +351,8 @@ export default function DebtReceivablesClient({
       setPayAmount('')
       setPayNote('')
     } catch (err) {
-      showToast(getUserFacingError(err, 'Pembayaran belum dapat dicatat. Silakan coba lagi.'), 'bad')
+      console.error('[debt-receivables] Could not record installment payment:', err)
+      showToast(getDebtPaymentErrorMessage(err), 'bad')
     } finally {
       setSaving(false)
     }
@@ -482,7 +492,7 @@ export default function DebtReceivablesClient({
           position: 'fixed',
           bottom: 24,
           right: 24,
-          zIndex: 9999,
+          zIndex: 2147483646,
           background: toast.type === 'ok' ? 'var(--acc)' : 'var(--bad)',
           color: '#fff',
           padding: '12px 20px',

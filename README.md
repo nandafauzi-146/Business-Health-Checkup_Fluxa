@@ -100,81 +100,9 @@ npm run seed:accounts
 
 ---
 
-## Panduan Pengembangan
-
-### Migrasi Database
-
-Migrasi SQL berada di `database/supabase/migrations/` dengan urutan `0001` s/d `0027`:
-
-| File | Isi |
-|---|---|
-| `0001` | Extensions (UUID, pgcrypto) |
-| `0002` | Tabel utama (profiles, products, shifts, sales, dll) |
-| `0003` | Indexes performa query |
-| `0004` | Helper functions |
-| `0005` | Triggers audit & stok |
-| `0006` | Business functions (RPC: create_sale, close_shift, void_sale) |
-| `0007` | Row Level Security policies |
-| `0008` | Views (v_monthly_revenue_cogs, dll) |
-| `0009` | Adjust stock RPC |
-| `0010` | Promotions |
-| `0011` | Refund requests |
-| `0012` | Product image_url |
-| `0013` | Supplier payables |
-| `0014` | Disable customer receivables |
-| `0015` | Business debt & receivables |
-| `0016` | Comprehensive audit logging |
-| `0017` | Email field di profiles |
-| `0018` | Registration approval & trials |
-| `0019` | Security & transaction integrity (atomik checkout, void, refund) |
-| `0020` | Refund approval workflow |
-| `0021` | Debt categories |
-| `0022` | Subscriptions & Midtrans payment |
-| `0023` | Platform withdrawals |
-| `0024` | Platform expenses & reporting |
-| `0025` | Registration path & auto approve |
-| `0026` | Landing CMS content |
-| `0027` | Security hardening |
-
-**Aturan migrasi:**
-- Jangan ubah migrasi yang sudah diterapkan di database bersama (production/staging) — buat file baru.
-- Nomor migrasi harus unik. Migrasi terakhir saat ini: `0027`.
-- `combined_setup.sql` hanya untuk setup lokal — jangan jalankan di produksi.
-
-### Registrasi, Persetujuan, dan Trial
-
-Pendaftaran publik membuat akun Owner berstatus menunggu persetujuan; trial 7 hari mulai dihitung ketika Super Admin menyetujui akun di `/super-admin`.
-
-Untuk bootstrap Super Admin pertama, jalankan sekali di SQL Editor Supabase:
-```sql
-update public.profiles
-set role = 'super_admin', approval_status = 'approved'
-where email = 'operator@example.com';
-```
-
-### Paket, Pembayaran, dan Subscription (Midtrans)
-
-Buat paket berbayar melalui `/super-admin/paket`; Owner memilih paket di `/langganan`. Pembayaran diproses via Snap Midtrans dengan webhook tervalidasi. Tambahkan di environment server:
-```env
-MIDTRANS_SERVER_KEY=SB-Mid-server-...
-MIDTRANS_IS_PRODUCTION=false
-```
-Laporan keuangan platform tersedia di `/super-admin/keuangan` dan dapat diekspor ke CSV.
-
-### Super Admin Console
-
-Tersedia di `/super-admin`: ringkasan platform, manajemen pengguna, persetujuan pendaftaran, pengelolaan trial, audit log, dan profil operator. Setiap perubahan role, status auth, dan persetujuan dicatat di tabel `audit_logs`.
-
----
-
-## Aturan Utama
-
-| Topik | Aturan |
-|---|---|
-| **Mata Uang** | Semua kolom uang di database & kalkulator menggunakan `integer` rupiah utuh (bukan float) |
-| **Transaksi** | Mutasi penjualan & stok wajib via RPC Supabase (`create_sale`, `close_shift`, `void_sale`, `adjust_stock`) |
-| **Akses Role** | Dibagi ketat via Row Level Security (RLS) pada tingkat database Supabase |
-| **Service Role Key** | Hanya boleh diakses melalui `backend/supabase/admin.ts` — jangan pernah `NEXT_PUBLIC_*` |
-| **Tipe Database** | Import dari `@database/types` (kanonik) atau `@backend/index` (backward compat) |
-| **Modul Server** | `backend/` dan `intelligence/` hanya dijalankan di Node.js — tidak masuk bundle browser |
-| **AI & Angka** | Kalkulator TypeScript selalu menjadi sumber angka; AI digunakan untuk narasi & rekomendasi, bukan kalkulasi |
+## Aturan Utama Pengembangan
+- **Mata Uang:** Seluruh kolom uang di database dan kalkulator bisnis menggunakan tipe `integer` rupiah utuh (bukan desimal/float).
+- **Integritas Transaksi:** Mutasi penjualan dan stok wajib melalui RPC Supabase (`create_sale`, `close_shift`, `void_sale`, `adjust_stock`).
+- **Akses Role:** Dibagi secara ketat menggunakan Row Level Security (RLS) pada tingkat database Supabase.
+- **Alur Aplikasi:** Pengguna diarahkan ke `/dashboard` setelah login; halaman operasional memakai `components/layout/app-shell.tsx` untuk navigasi bersama, dan akses transaksi dibatasi untuk Admin dan Owner.
+- **Checkout Kasir:** Pembukaan shift dan checkout menggunakan RPC Supabase (`open_shift`, `create_sale`); jangan mengubah stok atau membuat transaksi langsung dari frontend.

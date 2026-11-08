@@ -2003,7 +2003,7 @@ tr:hover td,
 
 .transaction-modal-backdrop {
   position: fixed;
-  z-index: 1000;
+  z-index: 2147483000;
   inset: 0;
   display: grid;
   place-items: center;
@@ -3334,7 +3334,7 @@ tr:hover td,
   position: fixed;
   inset: 0;
   background: rgba(15, 18, 24, 0.55);
-  z-index: 1000;
+  z-index: 2147483000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3389,7 +3389,7 @@ tr:hover td,
 .confirmation-dialog-overlay {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: 2147483647;
   background: rgba(15, 23, 42, 0.62);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
@@ -3721,7 +3721,7 @@ tr:hover td,
   border-radius: 10px;
   font-size: 13px;
   font-weight: 500;
-  z-index: 2000;
+  z-index: 2147483646;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.2s ease;
 }
@@ -5560,7 +5560,7 @@ tr:hover td,
 .dialog-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 2147483000;
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(4px);
   display: flex;
@@ -7812,7 +7812,7 @@ canvas {
 }
 
 .owner-report-export-backdrop {
-  z-index: 1200;
+  z-index: 2147483000;
 }
 
 .owner-report-export-dialog {
@@ -8594,7 +8594,7 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 2147483000;
   padding: 16px;
   animation: fadeIn 0.15s ease-out;
 }

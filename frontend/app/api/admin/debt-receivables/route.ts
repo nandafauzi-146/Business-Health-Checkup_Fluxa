@@ -1,8 +1,7 @@
 /**
  * /api/admin/debt-receivables
  * API route untuk operasi Hutang & Piutang Usaha (supplier_payables).
- * Menggunakan service client agar business_id dapat disisipkan secara server-side
- * dan tidak tergantung pada RLS client-side yang memerlukan business_id dari pengguna.
+ * Membuat catatan menggunakan sesi pengguna agar RLS membatasi data ke bisnis pengguna.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
@@ -36,7 +35,7 @@ async function requireAdminOrOwner() {
   if (!profile || profile.approval_status !== 'approved') return null
   if (!['admin', 'owner'].includes(profile.role)) return null
 
-  return { user, profile }
+  return { user, profile, supabase }
 }
 
 // ---------------------------------------------------------------------------
@@ -85,8 +84,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Nominal harus berupa angka lebih dari 0.' }, { status: 400 })
     }
 
-    const admin = getServiceClient()
-    const { data: inserted, error } = await admin
+    const { data: inserted, error } = await auth.supabase
       .from('supplier_payables')
       .insert({
         supplier_name: party_name.trim(),

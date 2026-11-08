@@ -69,12 +69,15 @@ export async function POST(req: Request) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role, approval_status')
+      .select('role, approval_status, business_id')
       .eq('id', user.id)
       .single()
 
     if (profile?.approval_status !== 'approved' || !['admin', 'owner'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden: Hanya Admin atau Owner yang dapat mengelola promo.' }, { status: 403 })
+    }
+    if (!profile.business_id) {
+      return NextResponse.json({ error: 'Akun belum terhubung ke data bisnis.' }, { status: 422 })
     }
 
     const body = await req.json()
@@ -122,7 +125,8 @@ export async function POST(req: Request) {
         end_date: end_date || null,
         is_active: Boolean(is_active),
         description: description?.trim() || null,
-        created_by: user.id
+        created_by: user.id,
+        business_id: profile.business_id
       })
       .select()
       .single()
@@ -165,12 +169,15 @@ export async function PATCH(req: Request) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role, approval_status')
+      .select('role, approval_status, business_id')
       .eq('id', user.id)
       .single()
 
     if (profile?.approval_status !== 'approved' || !['admin', 'owner'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden: Hanya Admin atau Owner yang dapat mengelola promo.' }, { status: 403 })
+    }
+    if (!profile.business_id) {
+      return NextResponse.json({ error: 'Akun belum terhubung ke data bisnis.' }, { status: 422 })
     }
 
     const allowedFields = ['code', 'name', 'type', 'value', 'min_purchase', 'max_discount', 'start_date', 'end_date', 'is_active', 'description'] as const
@@ -211,6 +218,7 @@ export async function PATCH(req: Request) {
       .from('promotions')
       .update(updates)
       .eq('id', id)
+      .eq('business_id', profile.business_id)
       .select()
       .maybeSingle()
 
@@ -252,12 +260,15 @@ export async function DELETE(req: Request) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role, approval_status')
+      .select('role, approval_status, business_id')
       .eq('id', user.id)
       .single()
 
     if (profile?.approval_status !== 'approved' || !['admin', 'owner'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden: Hanya Admin atau Owner yang dapat mengelola promo.' }, { status: 403 })
+    }
+    if (!profile.business_id) {
+      return NextResponse.json({ error: 'Akun belum terhubung ke data bisnis.' }, { status: 422 })
     }
 
     const adminClient = getAdminClient() || supabase
@@ -265,6 +276,7 @@ export async function DELETE(req: Request) {
       .from('promotions')
       .delete()
       .eq('id', id)
+      .eq('business_id', profile.business_id)
       .select('id')
       .maybeSingle()
 

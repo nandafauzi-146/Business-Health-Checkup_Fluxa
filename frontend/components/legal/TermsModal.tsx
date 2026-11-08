@@ -37,7 +37,7 @@ export default function TermsModal({ isOpen, onClose, onAgree }: TermsModalProps
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 9999,
+        zIndex: 2147483000,
         display: 'grid',
         placeItems: 'center',
         padding: '16px',
